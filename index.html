@@ -11,120 +11,359 @@
   box-sizing:border-box;
 }
 
+:root{
+  --bg:#050711;
+  --card:rgba(17,22,40,.72);
+  --border:rgba(255,255,255,.09);
+  --text:#f8fafc;
+  --muted:#8d98b2;
+  --purple:#8b5cf6;
+  --blue:#4f8cff;
+  --green:#35e58a;
+  --yellow:#facc15;
+}
+
 body{
   margin:0;
-  background:#080b14;
-  color:white;
-  font-family:Arial,sans-serif;
+  min-height:100vh;
+  color:var(--text);
+  font-family:Arial, sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%,rgba(99,50,220,.25),transparent 30%),
+    radial-gradient(circle at 90% 20%,rgba(45,120,255,.18),transparent 30%),
+    radial-gradient(circle at 50% 100%,rgba(125,40,220,.15),transparent 35%),
+    var(--bg);
+  overflow-x:hidden;
+}
+
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  opacity:.18;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:40px 40px;
 }
 
 .app{
-  max-width:600px;
+  width:100%;
+  max-width:680px;
   margin:auto;
-  padding:20px;
+  padding:22px 16px 40px;
+  position:relative;
+  z-index:1;
 }
+
+/* HEADER */
 
 .header{
   display:flex;
   align-items:center;
-  gap:14px;
-  margin-bottom:20px;
+  justify-content:space-between;
+  margin-bottom:22px;
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:13px;
 }
 
 .logo{
-  width:55px;
-  height:55px;
-  border-radius:50%;
-  background:linear-gradient(135deg,#a78bfa,#4f46e5);
-  box-shadow:0 0 35px #6366f188;
+  width:52px;
+  height:52px;
+  border-radius:17px;
+  background:
+    radial-gradient(circle at 35% 30%,#fff 0 5%,transparent 6%),
+    linear-gradient(135deg,#a78bfa,#4f46e5 55%,#2563eb);
+  box-shadow:
+    0 0 30px rgba(124,92,246,.45),
+    inset 0 0 15px rgba(255,255,255,.2);
+  position:relative;
+}
+
+.logo:after{
+  content:"E";
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:27px;
+  font-weight:800;
 }
 
 h1{
   margin:0;
-  font-size:30px;
+  font-size:27px;
+  letter-spacing:.3px;
 }
 
 .subtitle{
-  color:#9ca3af;
-  font-size:13px;
-  margin-top:4px;
-}
-
-.card{
-  background:#111625;
-  border:1px solid #252d42;
-  border-radius:18px;
-  padding:18px;
-  margin-bottom:15px;
-}
-
-.status{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.status span{
-  background:#20283b;
-  color:#aab5d0;
-  padding:7px 12px;
-  border-radius:20px;
+  margin-top:3px;
+  color:var(--muted);
   font-size:12px;
 }
 
-.mic{
-  width:100px;
-  height:100px;
-  border:none;
+.online{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 10px;
+  border:1px solid var(--border);
+  border-radius:20px;
+  background:rgba(255,255,255,.04);
+  color:#b9c3d8;
+  font-size:11px;
+}
+
+.dot{
+  width:7px;
+  height:7px;
   border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 10px var(--green);
+}
+
+/* GLASS CARD */
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:18px;
+  margin-bottom:15px;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:
+    0 15px 50px rgba(0,0,0,.25),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+/* VOICE */
+
+.voice-card{
+  text-align:center;
+  padding:25px 18px 20px;
+}
+
+.state{
+  font-size:13px;
+  font-weight:600;
+  color:#c7d0e5;
+}
+
+.state small{
   display:block;
-  margin:25px auto 15px;
-  background:#6657f5;
-  color:white;
-  font-size:40px;
-  box-shadow:0 0 35px #6657f566;
+  margin-top:5px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:normal;
 }
 
-.mic.listening{
-  background:#e64d72;
-  animation:pulse 1s infinite;
+.orb{
+  width:145px;
+  height:145px;
+  margin:25px auto 20px;
+  border-radius:50%;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  background:
+    radial-gradient(circle at 35% 30%,
+      #ffffff 0 2%,
+      #bba9ff 5%,
+      #7557ff 30%,
+      #32217e 65%,
+      #120d35 100%);
+  box-shadow:
+    0 0 35px rgba(117,87,255,.45),
+    0 0 90px rgba(117,87,255,.18),
+    inset 0 0 35px rgba(255,255,255,.12);
+  transition:.3s;
 }
 
-@keyframes pulse{
+.orb:before,
+.orb:after{
+  content:"";
+  position:absolute;
+  inset:-12px;
+  border:1px solid rgba(139,92,246,.25);
+  border-radius:50%;
+}
+
+.orb:after{
+  inset:-25px;
+  border-color:rgba(79,140,255,.12);
+}
+
+.orb.active{
+  animation:orbPulse 1.4s infinite;
+}
+
+.orb.listening{
+  box-shadow:
+    0 0 45px rgba(236,72,153,.6),
+    0 0 100px rgba(139,92,246,.3);
+}
+
+@keyframes orbPulse{
   50%{
-    transform:scale(1.08);
+    transform:scale(1.045);
+  }
+}
+
+.orb-text{
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+
+.wave{
+  height:35px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  margin-bottom:15px;
+}
+
+.bar{
+  width:3px;
+  height:8px;
+  border-radius:5px;
+  background:#8875ff;
+  opacity:.5;
+}
+
+.listening .bar{
+  animation:wave 700ms infinite ease-in-out;
+}
+
+.bar:nth-child(2){animation-delay:80ms}
+.bar:nth-child(3){animation-delay:160ms}
+.bar:nth-child(4){animation-delay:240ms}
+.bar:nth-child(5){animation-delay:320ms}
+.bar:nth-child(6){animation-delay:240ms}
+.bar:nth-child(7){animation-delay:160ms}
+
+@keyframes wave{
+  50%{
+    height:27px;
+    opacity:1;
   }
 }
 
 .transcript{
-  color:#cbd5e1;
-  text-align:center;
-  min-height:45px;
-  line-height:1.5;
+  min-height:48px;
+  color:#d7deed;
+  font-size:14px;
+  line-height:1.55;
+}
+
+.hint{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:8px;
+}
+
+/* LANGUAGE */
+
+.section-title{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:13px;
+}
+
+.section-title b{
+  font-size:14px;
+}
+
+.section-title span{
+  font-size:10px;
+  color:var(--muted);
+}
+
+.languages{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:7px;
+}
+
+.lang{
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 5px;
+  background:rgba(255,255,255,.035);
+  color:#aeb8ce;
+  font-size:11px;
+  cursor:pointer;
+}
+
+.lang.active{
+  color:white;
+  border-color:rgba(139,92,246,.7);
+  background:rgba(139,92,246,.17);
+  box-shadow:0 0 18px rgba(139,92,246,.12);
+}
+
+/* RESPONSE */
+
+.response-label{
+  color:#9da8c0;
+  font-size:11px;
+  margin-bottom:9px;
 }
 
 .reply{
   font-size:16px;
-  line-height:1.6;
+  line-height:1.65;
+  color:#f0f3f9;
 }
+
+/* SETUP */
 
 .setup{
-  background:#0b1020;
-  border-radius:14px;
-  padding:15px;
   margin-top:15px;
+  border-radius:17px;
+  padding:15px;
+  background:rgba(4,8,20,.65);
+  border:1px solid rgba(255,255,255,.06);
 }
 
-.setup h2{
-  margin-top:0;
-  font-size:18px;
+.setup-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:10px;
+}
+
+.setup-head h2{
+  margin:0;
+  font-size:15px;
+}
+
+.wait{
+  color:var(--yellow);
+  font-size:11px;
+  padding:6px 9px;
+  border-radius:20px;
+  background:rgba(250,204,21,.08);
 }
 
 .row{
   display:flex;
   justify-content:space-between;
+  gap:15px;
   padding:9px 0;
-  border-bottom:1px solid #20283a;
+  border-bottom:1px solid rgba(255,255,255,.055);
+  font-size:12px;
 }
 
 .row:last-child{
@@ -132,43 +371,75 @@ h1{
 }
 
 .label{
-  color:#8f9ab3;
+  color:#7f8aa4;
 }
 
 .value{
-  font-weight:bold;
+  font-weight:600;
+  text-align:right;
 }
 
-.confirmed{
-  color:#4ade80;
+/* MARKETS */
+
+.market{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,.055);
 }
 
-.wait{
-  color:#facc15;
+.market:last-child{
+  border-bottom:none;
 }
 
-.no-trade{
-  color:#fb7185;
+.market-name{
+  font-size:13px;
+  font-weight:600;
 }
+
+.market-status{
+  font-size:10px;
+  color:#71809b;
+  margin-top:3px;
+}
+
+.pending{
+  font-size:11px;
+  color:#9aa5ba;
+}
+
+/* BUTTONS */
 
 .buttons{
   display:flex;
-  gap:10px;
+  gap:9px;
 }
 
 .small{
   flex:1;
+  border:1px solid var(--border);
+  border-radius:13px;
   padding:12px;
-  border-radius:10px;
-  border:1px solid #303a54;
-  background:#1a2234;
-  color:white;
+  color:#e8ecf5;
+  background:rgba(255,255,255,.045);
+  cursor:pointer;
+  font-size:12px;
+}
+
+.small:hover{
+  background:rgba(139,92,246,.12);
 }
 
 .note{
-  color:#7f8aa3;
-  font-size:12px;
-  line-height:1.5;
+  color:#68758f;
+  font-size:10px;
+  line-height:1.55;
+  margin:12px 0 0;
+}
+
+.hidden{
+  display:none;
 }
 </style>
 </head>
@@ -177,44 +448,121 @@ h1{
 
 <div class="app">
 
-  <div class="header">
-    <div class="logo"></div>
+  <!-- HEADER -->
 
-    <div>
-      <h1>Era</h1>
-      <div class="subtitle">
-        Voice Market Analysis Assistant
+  <div class="header">
+
+    <div class="brand">
+
+      <div class="logo"></div>
+
+      <div>
+        <h1>Era</h1>
+        <div class="subtitle">
+          AI Voice Market Assistant
+        </div>
       </div>
+
     </div>
+
+    <div class="online">
+      <span class="dot"></span>
+      Voice Ready
+    </div>
+
   </div>
 
 
-  <div class="card">
+  <!-- VOICE CARD -->
 
-    <div class="status">
-      <b id="state">Ready</b>
-      <span>V1 Demo</span>
+  <div class="card voice-card">
+
+    <div class="state" id="state">
+      Ready
+      <small id="stateSub">
+        Say “Era” to activate
+      </small>
     </div>
 
-    <button class="mic" id="mic">
-      🎙️
-    </button>
+    <div class="orb" id="orb">
+
+      <div class="orb-text">
+        ERA
+      </div>
+
+    </div>
+
+    <div class="wave" id="wave">
+
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+
+    </div>
 
     <div class="transcript" id="transcript">
-      Mic dabaiye aur kahiye:<br>
-      “Era, NIFTY analyse karo.”
+      “Era” bolkar apna command dijiye.
+    </div>
+
+    <div class="hint">
+      Example: “Era, NIFTY analyse karo”
     </div>
 
   </div>
 
 
+  <!-- LANGUAGE -->
+
   <div class="card">
 
-    <b>Era Response</b>
+    <div class="section-title">
+
+      <b>Language</b>
+
+      <span id="languageStatus">
+        Auto Detect
+      </span>
+
+    </div>
+
+    <div class="languages">
+
+      <button class="lang active" data-lang="auto">
+        Auto
+      </button>
+
+      <button class="lang" data-lang="hi-IN">
+        हिन्दी
+      </button>
+
+      <button class="lang" data-lang="gu-IN">
+        ગુજરાતી
+      </button>
+
+      <button class="lang" data-lang="en-IN">
+        English
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- RESPONSE -->
+
+  <div class="card">
+
+    <div class="response-label">
+      ERA RESPONSE
+    </div>
 
     <div class="reply" id="reply">
       Namaste. Main Era hoon.
-      Aap voice se mujhse market ke baare mein pooch sakte hain.
+      Aap “Era” bolkar mujhse market ke baare mein pooch sakte hain.
     </div>
 
     <div id="setup"></div>
@@ -222,73 +570,70 @@ h1{
   </div>
 
 
+  <!-- MARKETS -->
+
   <div class="card">
 
-    <b>Markets</b>
+    <div class="section-title">
+      <b>Markets</b>
+      <span>LIVE DATA</span>
+    </div>
 
-    <div class="setup">
-
-      <div class="row">
-        <span class="label">NIFTY 50</span>
-        <span class="value">Live data pending</span>
+    <div class="market">
+      <div>
+        <div class="market-name">NIFTY 50</div>
+        <div class="market-status">Index</div>
       </div>
+      <div class="pending">Data pending</div>
+    </div>
 
-      <div class="row">
-        <span class="label">BANKNIFTY</span>
-        <span class="value">Live data pending</span>
+    <div class="market">
+      <div>
+        <div class="market-name">BANKNIFTY</div>
+        <div class="market-status">Index</div>
       </div>
+      <div class="pending">Data pending</div>
+    </div>
 
-      <div class="row">
-        <span class="label">FINNIFTY</span>
-        <span class="value">Live data pending</span>
+    <div class="market">
+      <div>
+        <div class="market-name">FINNIFTY</div>
+        <div class="market-status">Index</div>
       </div>
+      <div class="pending">Data pending</div>
+    </div>
 
-      <div class="row">
-        <span class="label">SENSEX</span>
-        <span class="value">Live data pending</span>
+    <div class="market">
+      <div>
+        <div class="market-name">SENSEX</div>
+        <div class="market-status">Index</div>
       </div>
-
+      <div class="pending">Data pending</div>
     </div>
 
   </div>
 
 
-  <div class="card">
-
-    <b>Voice Commands</b>
-
-    <p class="note">
-      “Era, market check karo.”
-      <br><br>
-      “Era, NIFTY analyse karo.”
-      <br><br>
-      “Era, BANKNIFTY scan karo.”
-      <br><br>
-      “Era, koi setup ban raha hai?”
-      <br><br>
-      “Era, option chain check karo.”
-      <br><br>
-      “Era, ye move kyu aaya?”
-    </p>
-
-  </div>
-
+  <!-- CONTROLS -->
 
   <div class="card">
 
     <div class="buttons">
-      <button class="small" id="voiceTest">
-        🔊 Test Voice
+
+      <button class="small" id="enable">
+        🎙️ Enable Voice
       </button>
 
       <button class="small" id="stop">
         ⏹ Stop
       </button>
+
     </div>
 
     <p class="note">
-      Female voice availability aapke Android/browser ki installed
-      voices par depend karegi.
+      Browser/Android available voices ke according Era
+      natural female voice ko automatically select karegi.
+      Live market data abhi connected nahi hai.
     </p>
 
   </div>
@@ -298,25 +643,169 @@ h1{
 
 <script>
 
-const mic = document.getElementById("mic");
+/* =========================================
+   ERA V2
+========================================= */
+
+const orb = document.getElementById("orb");
+const wave = document.getElementById("wave");
 const state = document.getElementById("state");
+const stateSub = document.getElementById("stateSub");
 const transcript = document.getElementById("transcript");
 const reply = document.getElementById("reply");
 const setup = document.getElementById("setup");
+const languageStatus = document.getElementById("languageStatus");
 
 const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+let recognition = null;
+
+let listening = false;
+let voiceEnabled = false;
+let wakeMode = true;
+
+let selectedLanguage = "auto";
+
+let voices = [];
 
 
-let recognition;
+/* =========================================
+   LOAD VOICES
+========================================= */
+
+function loadVoices(){
+
+  if(!("speechSynthesis" in window)){
+    return;
+  }
+
+  voices = speechSynthesis.getVoices();
+
+}
+
+loadVoices();
+
+if("speechSynthesis" in window){
+
+  speechSynthesis.onvoiceschanged =
+  loadVoices;
+
+}
 
 
-/* =========================
-   ERA VOICE
-========================= */
+/* =========================================
+   FIND BETTER FEMALE VOICE
+========================================= */
 
-function eraSpeak(text){
+function findVoice(lang){
+
+  if(!voices.length){
+    return null;
+  }
+
+  const languagePrefix =
+    lang.split("-")[0].toLowerCase();
+
+  const matching =
+    voices.filter(v =>
+      v.lang &&
+      v.lang.toLowerCase().startsWith(languagePrefix)
+    );
+
+  const femaleKeywords =
+    /female|samantha|zira|susan|hazel|aria|jenny|neerja|heera|google/i;
+
+  const female =
+    matching.find(v =>
+      femaleKeywords.test(v.name)
+    );
+
+  if(female){
+    return female;
+  }
+
+  return matching[0] || voices[0];
+
+}
+
+
+/* =========================================
+   LANGUAGE DETECTION
+========================================= */
+
+function detectLanguage(text){
+
+  /* Gujarati Unicode */
+
+  if(/[\u0A80-\u0AFF]/.test(text)){
+    return "gu-IN";
+  }
+
+  /* Hindi / Devanagari */
+
+  if(/[\u0900-\u097F]/.test(text)){
+    return "hi-IN";
+  }
+
+  const t =
+    text.toLowerCase();
+
+  const gujaratiWords = [
+    "shu",
+    "su",
+    "kem",
+    "karvu",
+    "karo",
+    "chhe",
+    "che",
+    "mane",
+    "maru",
+    "tame"
+  ];
+
+  const hindiWords = [
+    "kya",
+    "kaise",
+    "hai",
+    "hain",
+    "mujhe",
+    "mera",
+    "karo",
+    "karna",
+    "batao",
+    "market"
+  ];
+
+  const guScore =
+    gujaratiWords.filter(w =>
+      t.includes(w)
+    ).length;
+
+  const hiScore =
+    hindiWords.filter(w =>
+      t.includes(w)
+    ).length;
+
+  if(guScore > hiScore){
+    return "gu-IN";
+  }
+
+  if(hiScore > 0){
+    return "hi-IN";
+  }
+
+  return "en-IN";
+
+}
+
+
+/* =========================================
+   SPEAK
+========================================= */
+
+function eraSpeak(text, lang){
 
   reply.innerText = text;
 
@@ -326,51 +815,59 @@ function eraSpeak(text){
 
   speechSynthesis.cancel();
 
-  const voiceText =
-  new SpeechSynthesisUtterance(text);
+  const utterance =
+    new SpeechSynthesisUtterance(text);
 
-  voiceText.lang = "hi-IN";
+  utterance.lang =
+    lang || "en-IN";
 
-  voiceText.rate = 0.95;
+  utterance.rate = .92;
 
-  voiceText.pitch = 1.08;
+  utterance.pitch = 1.04;
 
+  utterance.volume = 1;
 
-  const voices =
-  speechSynthesis.getVoices();
+  const voice =
+    findVoice(utterance.lang);
 
-  /*
-  Try to select a female-sounding
-  available voice.
-  */
-
-  const femaleVoice =
-  voices.find(v =>
-    /female|zira|samantha|google.*hindi|google.*india/i
-    .test(v.name)
-  );
-
-  if(femaleVoice){
-    voiceText.voice = femaleVoice;
+  if(voice){
+    utterance.voice = voice;
   }
 
-  speechSynthesis.speak(voiceText);
+  state.innerHTML =
+    'Speaking...<small>Era is responding</small>';
+
+  utterance.onend = function(){
+
+    state.innerHTML =
+      'Ready<small>Say “Era” to activate</small>';
+
+  };
+
+  speechSynthesis.speak(utterance);
+
 }
 
 
-/* =========================
-   SETUP DISPLAY
-========================= */
+/* =========================================
+   PREMIUM SETUP
+========================================= */
 
-function showDemoSetup(){
+function showWaitSetup(){
 
   setup.innerHTML = `
 
     <div class="setup">
 
-      <h2>
-        🟡 WAIT — Live Confirmation Pending
-      </h2>
+      <div class="setup-head">
+
+        <h2>Market Setup</h2>
+
+        <span class="wait">
+          WAIT
+        </span>
+
+      </div>
 
       <div class="row">
         <span class="label">Direction</span>
@@ -398,14 +895,14 @@ function showDemoSetup(){
       </div>
 
       <div class="row">
-        <span class="label">R:R</span>
+        <span class="label">Risk : Reward</span>
         <span class="value">—</span>
       </div>
 
       <div class="row">
         <span class="label">Confirmation</span>
         <span class="value">
-          Live market data required
+          Live data required
         </span>
       </div>
 
@@ -417,149 +914,304 @@ function showDemoSetup(){
     </div>
 
   `;
+
 }
 
 
-/* =========================
-   COMMAND HANDLER
-========================= */
+/* =========================================
+   COMMAND RESPONSE
+========================================= */
 
 function handleCommand(command){
 
   const text =
-  command.toLowerCase();
+    command.toLowerCase();
 
+  let lang =
+    selectedLanguage;
+
+  if(lang === "auto"){
+    lang = detectLanguage(command);
+  }
+
+  languageStatus.innerText =
+    lang === "hi-IN"
+      ? "Hindi"
+      : lang === "gu-IN"
+      ? "Gujarati"
+      : "English";
+
+
+  /* NIFTY */
 
   if(
     text.includes("nifty") ||
     text.includes("निफ्टी")
   ){
 
-    eraSpeak(
-      "NIFTY analysis ke liye mujhe live market data, chart aur option chain chahiye. Is V1 demo mein live data connected nahi hai, isliye main fake entry ya confirmation nahi dungi."
-    );
+    if(lang === "gu-IN"){
 
-    showDemoSetup();
+      eraSpeak(
+        "NIFTY analyse karva mate mane live market data, chart ane option chain joiye. Haju live data connected nathi, etle hu fake entry nahi aapu.",
+        "gu-IN"
+      );
+
+    }else if(lang === "hi-IN"){
+
+      eraSpeak(
+        "NIFTY analysis ke liye mujhe live market data, chart aur option chain chahiye. Abhi live data connected nahi hai, isliye main fake entry nahi dungi.",
+        "hi-IN"
+      );
+
+    }else{
+
+      eraSpeak(
+        "For NIFTY analysis, I need live market data, charts and option chain data. Live data is not connected yet, so I will not give a fake entry.",
+        "en-IN"
+      );
+
+    }
+
+    showWaitSetup();
 
     return;
   }
 
+
+  /* BANKNIFTY */
 
   if(
     text.includes("banknifty") ||
     text.includes("bank nifty")
   ){
 
-    eraSpeak(
-      "BANKNIFTY scan karne ke liye live price, option chain, OI, volume aur market structure data required hai. Live connector next stage mein add hoga."
-    );
+    if(lang === "gu-IN"){
 
-    showDemoSetup();
+      eraSpeak(
+        "BANKNIFTY scan mate live price, option chain, OI, volume ane market structure joiye. Aa data haju connected nathi.",
+        "gu-IN"
+      );
+
+    }else if(lang === "hi-IN"){
+
+      eraSpeak(
+        "BANKNIFTY scan ke liye live price, option chain, OI, volume aur market structure chahiye. Ye data abhi connected nahi hai.",
+        "hi-IN"
+      );
+
+    }else{
+
+      eraSpeak(
+        "BANKNIFTY scanning requires live price, option chain, OI, volume and market structure data. These are not connected yet.",
+        "en-IN"
+      );
+
+    }
+
+    showWaitSetup();
 
     return;
   }
 
+
+  /* OPTION CHAIN */
 
   if(
     text.includes("option chain") ||
     text.includes("option")
   ){
 
-    eraSpeak(
-      "Option chain mein CE PE OI, change in OI, volume, IV aur PCR ko price action ke saath combine karna hoga. Abhi live option chain connected nahi hai."
-    );
+    if(lang === "gu-IN"){
+
+      eraSpeak(
+        "Option chain ma CE PE OI, change in OI, volume, IV ane PCR ne price action sathe analyse karvanu hase.",
+        "gu-IN"
+      );
+
+    }else if(lang === "hi-IN"){
+
+      eraSpeak(
+        "Option chain mein CE PE OI, change in OI, volume, IV aur PCR ko price action ke saath analyse karna hoga.",
+        "hi-IN"
+      );
+
+    }else{
+
+      eraSpeak(
+        "Option chain analysis will combine CE PE OI, change in OI, volume, IV and PCR with price action.",
+        "en-IN"
+      );
+
+    }
 
     return;
   }
 
+
+  /* SETUP / TRADE */
 
   if(
     text.includes("setup") ||
     text.includes("trade")
   ){
 
-    eraSpeak(
-      "Era confirmed setup ke liye multiple confirmations check karegi. Confirmation incomplete hone par main WAIT ya NO TRADE bataungi."
-    );
+    if(lang === "gu-IN"){
 
-    showDemoSetup();
+      eraSpeak(
+        "Confirmed setup mate Era multiple confirmations check karse. Confirmation complete na hoy to hu WAIT athva NO TRADE kahish.",
+        "gu-IN"
+      );
+
+    }else if(lang === "hi-IN"){
+
+      eraSpeak(
+        "Confirmed setup ke liye Era multiple confirmations check karegi. Confirmation complete nahi hone par main WAIT ya NO TRADE bataungi.",
+        "hi-IN"
+      );
+
+    }else{
+
+      eraSpeak(
+        "Era will check multiple confirmations before showing a setup. If confirmation is incomplete, I will say WAIT or NO TRADE.",
+        "en-IN"
+      );
+
+    }
+
+    showWaitSetup();
 
     return;
   }
 
+
+  /* MARKET */
 
   if(
-    text.includes("market") ||
-    text.includes("market check")
+    text.includes("market")
   ){
 
-    eraSpeak(
-      "Market scan ke liye price action, market structure, option chain, volume, volatility aur macro factors ko combine karna hoga. Abhi main demo mode mein hoon."
-    );
+    if(lang === "gu-IN"){
+
+      eraSpeak(
+        "Market scan mate price action, structure, option chain, volume ane volatility ne combine karvu padshe. Haju hu demo mode ma chu.",
+        "gu-IN"
+      );
+
+    }else if(lang === "hi-IN"){
+
+      eraSpeak(
+        "Market scan ke liye price action, structure, option chain, volume aur volatility ko combine karna hoga. Abhi main demo mode mein hoon.",
+        "hi-IN"
+      );
+
+    }else{
+
+      eraSpeak(
+        "Market scanning will combine price action, structure, option chain, volume and volatility. I am currently in demo mode.",
+        "en-IN"
+      );
+
+    }
 
     return;
   }
 
 
+  /* DEFAULT */
+
   eraSpeak(
-    "Maine suna: " +
-    command +
-    ". Aap NIFTY, BANKNIFTY, option chain, market check ya setup ke baare mein pooch sakte hain."
+    "I heard " + command +
+    ". You can ask me about NIFTY, BANKNIFTY, option chain or market setup.",
+    "en-IN"
   );
 
 }
 
 
-/* =========================
-   SPEECH RECOGNITION
-========================= */
+/* =========================================
+   WAKE WORD
+========================================= */
 
-if(SpeechRecognition){
+function containsWakeWord(text){
+
+  const clean =
+    text
+      .toLowerCase()
+      .replace(/[.,!?]/g," ");
+
+  return (
+    clean.includes("era") ||
+    clean.includes("एरा") ||
+    clean.includes("ઇરા")
+  );
+
+}
+
+
+function removeWakeWord(text){
+
+  return text
+    .replace(/era/ig,"")
+    .replace(/एरा/g,"")
+    .replace(/ઇરા/g,"")
+    .trim();
+
+}
+
+
+/* =========================================
+   START LISTENING
+========================================= */
+
+function startListening(){
+
+  if(!SpeechRecognition){
+
+    transcript.innerText =
+      "Android Chrome mein Speech Recognition try kijiye.";
+
+    return;
+
+  }
+
+  if(listening){
+    return;
+  }
 
   recognition =
-  new SpeechRecognition();
+    new SpeechRecognition();
 
-  recognition.lang = "hi-IN";
+  recognition.lang =
+    selectedLanguage === "auto"
+      ? "en-IN"
+      : selectedLanguage;
 
-  recognition.continuous = false;
+  recognition.continuous = true;
 
   recognition.interimResults = true;
+
+  recognition.maxAlternatives = 1;
 
 
   recognition.onstart = function(){
 
-    state.innerText =
-    "Listening...";
+    listening = true;
 
-    mic.classList.add("listening");
-  };
+    orb.classList.add("active");
+    orb.classList.add("listening");
+    wave.classList.add("listening");
 
+    state.innerHTML =
+      'Listening...<small>Say “Era”</small>';
 
-  recognition.onend = function(){
-
-    state.innerText =
-    "Ready";
-
-    mic.classList.remove("listening");
-  };
-
-
-  recognition.onerror = function(){
-
-    state.innerText =
-    "Voice Error";
-
-    mic.classList.remove("listening");
-
-    transcript.innerText =
-    "Microphone permission check kijiye.";
   };
 
 
   recognition.onresult =
   function(event){
 
-    let text = "";
+    let finalText = "";
+    let interimText = "";
 
     for(
       let i = event.resultIndex;
@@ -567,78 +1219,270 @@ if(SpeechRecognition){
       i++
     ){
 
-      text +=
-      event.results[i][0].transcript;
+      const result =
+        event.results[i];
+
+      const text =
+        result[0].transcript;
+
+      if(result.isFinal){
+        finalText += text;
+      }else{
+        interimText += text;
+      }
+
     }
 
+
+    const currentText =
+      (finalText || interimText).trim();
 
     transcript.innerText =
-    text;
+      currentText || "Listening...";
 
 
-    const last =
-    event.results[event.results.length - 1];
+    /*
+      Wake-word logic
+    */
 
+    if(containsWakeWord(currentText)){
 
-    if(last.isFinal){
+      const command =
+        removeWakeWord(currentText);
 
-      handleCommand(text);
+      state.innerHTML =
+        'Thinking...<small>Era is analysing your command</small>';
+
+      if(command.length > 2){
+
+        handleCommand(command);
+
+      }else{
+
+        const lang =
+          selectedLanguage === "auto"
+            ? "hi-IN"
+            : selectedLanguage;
+
+        eraSpeak(
+          lang === "gu-IN"
+            ? "Ha, kahiye. Hu sambhli rahi chu."
+            : lang === "hi-IN"
+            ? "Haan, kahiye. Main sun rahi hoon."
+            : "Yes, I am listening.",
+          lang
+        );
+
+      }
 
     }
 
   };
 
 
-  mic.onclick = function(){
+  recognition.onerror =
+  function(event){
 
-    try{
+    listening = false;
 
-      recognition.start();
+    orb.classList.remove("listening");
+    wave.classList.remove("listening");
 
-    }catch(error){
+    state.innerHTML =
+      'Voice Ready<small>Say “Era” to activate</small>';
 
-      console.log(error);
+    /*
+      Automatically restart common
+      Android speech recognition errors.
+    */
+
+    if(voiceEnabled){
+
+      setTimeout(
+        startListening,
+        1000
+      );
 
     }
 
   };
 
-}else{
 
-  mic.onclick = function(){
+  recognition.onend =
+  function(){
 
-    alert(
-      "Speech recognition is not supported in this browser. Android Chrome try kijiye."
-    );
+    listening = false;
+
+    orb.classList.remove("listening");
+    wave.classList.remove("listening");
+
+    if(voiceEnabled){
+
+      setTimeout(
+        startListening,
+        600
+      );
+
+    }
 
   };
+
+
+  try{
+
+    recognition.start();
+
+  }catch(error){
+
+    listening = false;
+
+  }
 
 }
 
 
-/* =========================
-   BUTTONS
-========================= */
+/* =========================================
+   ENABLE VOICE
+========================================= */
 
-document.getElementById("voiceTest")
+document
+.getElementById("enable")
 .onclick = function(){
 
-  eraSpeak(
-    "Namaste. Main Era hoon. Aap mujhse voice ke through market ke baare mein pooch sakte hain."
-  );
+  voiceEnabled = true;
+
+  state.innerHTML =
+    'Activating...<small>Microphone permission may appear</small>';
+
+  startListening();
 
 };
 
 
-document.getElementById("stop")
-.onclick = function(){
+/* =========================================
+   ORB CLICK
+========================================= */
 
-  speechSynthesis.cancel();
+orb.onclick = function(){
+
+  voiceEnabled = true;
+
+  startListening();
 
 };
 
+
+/* =========================================
+   STOP
+========================================= */
+
+document
+.getElementById("stop")
+.onclick = function(){
+
+  voiceEnabled = false;
+
+  if(recognition){
+
+    try{
+      recognition.stop();
+    }catch(e){}
+
+  }
+
+  listening = false;
+
+  orb.classList.remove("active");
+  orb.classList.remove("listening");
+  wave.classList.remove("listening");
+
+  if("speechSynthesis" in window){
+
+    speechSynthesis.cancel();
+
+  }
+
+  state.innerHTML =
+    'Stopped<small>Press Enable Voice to start again</small>';
+
+};
+
+
+/* =========================================
+   LANGUAGE BUTTONS
+========================================= */
+
+document
+.querySelectorAll(".lang")
+.forEach(button => {
+
+  button.onclick = function(){
+
+    document
+      .querySelectorAll(".lang")
+      .forEach(b =>
+        b.classList.remove("active")
+      );
+
+    this.classList.add("active");
+
+    selectedLanguage =
+      this.dataset.lang;
+
+    languageStatus.innerText =
+      selectedLanguage === "auto"
+        ? "Auto Detect"
+        : selectedLanguage === "hi-IN"
+        ? "Hindi"
+        : selectedLanguage === "gu-IN"
+        ? "Gujarati"
+        : "English";
+
+
+    /*
+      Restart recognition with new language
+    */
+
+    if(voiceEnabled){
+
+      if(recognition){
+
+        try{
+          recognition.stop();
+        }catch(e){}
+
+      }
+
+      setTimeout(
+        startListening,
+        500
+      );
+
+    }
+
+  };
+
+});
+
+
+/* =========================================
+   AUTO INITIAL VOICE
+========================================= */
+
+if(
+  "speechSynthesis" in window
+){
+
+  speechSynthesis.onvoiceschanged =
+    function(){
+
+      loadVoices();
+
+    };
+
+}
 
 </script>
 
 </body>
-  </html>
+</html>
