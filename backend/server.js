@@ -214,55 +214,91 @@ app.get("/", (req, res) => {
    ELEVENLABS NATURAL FEMALE VOICE
 ===================================================== */
 
-app.post(
-  "/api/tts",
-  async (req, res) => {
+app.post("/api/tts", async (req, res) => {
+  try {
+    const apiKey = process.env.ELEVENLABS_API_KEY;
+    const voiceId = process.env.ELEVENLABS_VOICE_ID;
 
-    try {
+    const text =
+      typeof req.body?.text === "string"
+        ? req.body.text.trim()
+        : "";
 
-      const apiKey =
-        process.env.ELEVENLABS_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        error: "ELEVENLABS_API_KEY is missing"
+      });
+    }
 
-      const voiceId =
-        process.env.ELEVENLABS_VOICE_ID;
+    if (!voiceId) {
+      return res.status(500).json({
+        success: false,
+        error: "ELEVENLABS_VOICE_ID is missing"
+      });
+    }
 
-      const text =
-        typeof req.body?.text === "string"
-          ? req.body.text.trim()
-          : "";
+    if (!text) {
+      return res.status(400).json({
+        success: false,
+        error: "Text is required"
+      });
+    }
 
-      if (!apiKey) {
-
-        return res.status(500).json({
-
-          success: false,
-
-          error:
-            "ELEVENLABS_API_KEY is missing"
-        });
+    const response = await axios.post(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+      {
+        text: text.slice(0, 4000),
+        model_id: "eleven_multilingual_v2",
+        output_format: "mp3_44100_128",
+        voice_settings: {
+          stability: 0.42,
+          similarity_boost: 0.82,
+          style: 0.35,
+          use_speaker_boost: true
+        }
+      },
+      {
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg"
+        },
+        responseType: "arraybuffer",
+        timeout: 30000
       }
+    );
 
-      if (!voiceId) {
+    res.status(200);
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.send(Buffer.from(response.data));
 
-        return res.status(500).json({
+  } catch (error) {
 
-          success: false,
+    let detail = error.message;
 
-          error:
-            "ELEVENLABS_VOICE_ID is missing"
-        });
-      }
+    if (error.response?.data) {
+      try {
+        detail = Buffer
+          .from(error.response.data)
+          .toString("utf8");
+      } catch {}
+    }
 
-      if (!text) {
+    console.error(
+      "[ELEVENLABS TTS ERROR]",
+      error.response?.status || "",
+      detail
+    );
 
-        return res.status(400).json({
-
-          success: false,
-
-          error:
-            "Text is required"
-        });
-      }
+    res.status(500).json({
+      success: false,
+      error: "Natural voice generation failed",
+      status: error.response?.status || 500
+    });
+  }
+});
 
 
       /*
