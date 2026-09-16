@@ -18,6 +18,7 @@ const UPSTOX_V3 = "https://api.upstox.com/v3";
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
+
 /* =====================================================
    INSTRUMENT KEYS
 ===================================================== */
@@ -28,6 +29,7 @@ const FINNIFTY_KEY = "NSE_INDEX|Nifty Fin Service";
 const SENSEX_KEY = "BSE_INDEX|SENSEX";
 const VIX_KEY = "NSE_INDEX|India VIX";
 const GIFT_KEY = "GLOBAL_INDEX|SGX NIFTY";
+
 
 const OPTION_UNDERLYINGS = [
   {
@@ -48,12 +50,14 @@ const OPTION_UNDERLYINGS = [
   }
 ];
 
+
 /* =====================================================
    LIVE OPTION CACHE
 ===================================================== */
 
 const optionContracts = new Map();
 const liveOptionData = new Map();
+
 
 /* =====================================================
    WEBSOCKET STATE
@@ -80,16 +84,21 @@ let websocket2LastMessage = null;
 let websocket1Error = null;
 let websocket2Error = null;
 
+
 /* =====================================================
    UPSTOX SDK AUTHENTICATION
 ===================================================== */
 
 function configureUpstoxSDK() {
+
   if (!process.env.UPSTOX_ACCESS_TOKEN) {
-    throw new Error("UPSTOX_ACCESS_TOKEN is missing");
+    throw new Error(
+      "UPSTOX_ACCESS_TOKEN is missing"
+    );
   }
 
-  const defaultClient = UpstoxClient.ApiClient.instance;
+  const defaultClient =
+    UpstoxClient.ApiClient.instance;
 
   const oauth =
     defaultClient.authentications["OAUTH2"];
@@ -100,13 +109,17 @@ function configureUpstoxSDK() {
   return defaultClient;
 }
 
+
 /* =====================================================
    AUTH HEADERS
 ===================================================== */
 
 function authHeaders() {
+
   if (!process.env.UPSTOX_ACCESS_TOKEN) {
-    throw new Error("UPSTOX_ACCESS_TOKEN is missing");
+    throw new Error(
+      "UPSTOX_ACCESS_TOKEN is missing"
+    );
   }
 
   return {
@@ -117,11 +130,13 @@ function authHeaders() {
   };
 }
 
+
 /* =====================================================
    HEALTH
 ===================================================== */
 
 app.get("/", (req, res) => {
+
   const subscribed =
     subscribedContracts1 +
     subscribedContracts2;
@@ -131,186 +146,310 @@ app.get("/", (req, res) => {
     MAX_WEBSOCKET_CONNECTIONS;
 
   res.json({
+
     app: "Era AI V5",
+
     status: "online",
-    message: "Era AI V5 backend is running",
+
+    message:
+      "Era AI V5 backend is running",
 
     liveOptions: {
-      initialized: liveOptionsInitialized,
-      discoveredContracts: optionContracts.size,
-      liveContracts: liveOptionData.size,
-      subscribedContracts: subscribed,
-      maxNormalLTPCSubscriptions: max,
-      websocketConnections: MAX_WEBSOCKET_CONNECTIONS,
-      websocket1: websocket1Connected,
-      websocket2: websocket2Connected
+
+      initialized:
+        liveOptionsInitialized,
+
+      discoveredContracts:
+        optionContracts.size,
+
+      liveContracts:
+        liveOptionData.size,
+
+      subscribedContracts:
+        subscribed,
+
+      maxNormalLTPCSubscriptions:
+        max,
+
+      websocketConnections:
+        MAX_WEBSOCKET_CONNECTIONS,
+
+      websocket1:
+        websocket1Connected,
+
+      websocket2:
+        websocket2Connected
     },
 
     naturalVoice: {
-      provider: "ElevenLabs",
-      configured: Boolean(
-        process.env.ELEVENLABS_API_KEY &&
-        process.env.ELEVENLABS_VOICE_ID
-      )
+
+      provider:
+        "ElevenLabs",
+
+      configured:
+        Boolean(
+          process.env.ELEVENLABS_API_KEY &&
+          process.env.ELEVENLABS_VOICE_ID
+        )
     }
+
   });
+
 });
+
 
 /* =====================================================
    ELEVENLABS NATURAL VOICE
-   ONLY ONE TTS ROUTE
 ===================================================== */
 
-app.post("/api/tts", async (req, res) => {
-  try {
-    const apiKey =
-      process.env.ELEVENLABS_API_KEY;
+app.post(
+  "/api/tts",
+  async (req, res) => {
 
-    const voiceId =
-      process.env.ELEVENLABS_VOICE_ID;
+    try {
 
-    const text =
-      typeof req.body?.text === "string"
-        ? req.body.text.trim()
-        : "";
+      const apiKey =
+        process.env.ELEVENLABS_API_KEY;
 
-    if (!apiKey) {
-      return res.status(500).json({
-        success: false,
-        error: "ELEVENLABS_API_KEY is missing"
-      });
-    }
+      const voiceId =
+        process.env.ELEVENLABS_VOICE_ID;
 
-    if (!voiceId) {
-      return res.status(500).json({
-        success: false,
-        error: "ELEVENLABS_VOICE_ID is missing"
-      });
-    }
+      const text =
+        typeof req.body?.text === "string"
+          ? req.body.text.trim()
+          : "";
 
-    if (!text) {
-      return res.status(400).json({
-        success: false,
-        error: "Text is required"
-      });
-    }
+      const language =
+        typeof req.body?.language === "string"
+          ? req.body.language
+          : "en-IN";
 
-    const cleanText =
-      text.slice(0, 4000);
 
-    console.log(
-      "[ELEVENLABS] Generating voice..."
-    );
+      if (!apiKey) {
 
-    const response =
-      await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
-          voiceId
-        )}`,
+        return res.status(500).json({
 
-        {
-          text: cleanText,
+          success: false,
 
-          model_id:
-            "eleven_multilingual_v2",
+          error:
+            "ELEVENLABS_API_KEY is missing"
+        });
+      }
 
-          voice_settings: {
-            stability: 0.42,
-            similarity_boost: 0.82,
-            style: 0.35,
-            use_speaker_boost: true
-          }
-        },
 
-        {
-          params: {
-            output_format:
-              "mp3_44100_128"
-          },
+      if (!voiceId) {
 
-          headers: {
-            "xi-api-key":
-              apiKey,
+        return res.status(500).json({
 
-            "Content-Type":
-              "application/json",
+          success: false,
 
-            Accept:
-              "audio/mpeg"
-          },
+          error:
+            "ELEVENLABS_VOICE_ID is missing"
+        });
+      }
 
-          responseType:
-            "arraybuffer",
 
-          timeout:
-            30000
-        }
+      if (!text) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          error:
+            "Text is required"
+        });
+      }
+
+
+      const cleanText =
+        text.slice(0, 4000);
+
+
+      console.log(
+        "[ELEVENLABS] Generating voice..."
       );
 
-    const audioBuffer =
-      Buffer.from(response.data);
+      console.log(
+        "[ELEVENLABS] Language:",
+        language
+      );
 
-    console.log(
-      "[ELEVENLABS] Success:",
-      audioBuffer.length,
-      "bytes"
-    );
+      console.log(
+        "[ELEVENLABS] Text length:",
+        cleanText.length
+      );
 
-    res.status(200);
 
-    res.setHeader(
-      "Content-Type",
-      "audio/mpeg"
-    );
+      const response =
+        await axios.post(
 
-    res.setHeader(
-      "Content-Length",
-      audioBuffer.length
-    );
+          `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(
+            voiceId
+          )}`,
 
-    res.setHeader(
-      "Cache-Control",
-      "no-store"
-    );
+          {
 
-    return res.send(audioBuffer);
+            text:
+              cleanText,
 
-  } catch (error) {
+            model_id:
+              "eleven_multilingual_v2",
 
-    let detail =
-      error.message ||
-      "Unknown ElevenLabs error";
+            voice_settings: {
 
-    if (error.response?.data) {
-      try {
-        detail =
-          Buffer
-            .from(error.response.data)
-            .toString("utf8");
-      } catch {
-        detail =
-          String(error.response.data);
+              stability:
+                0.42,
+
+              similarity_boost:
+                0.82,
+
+              style:
+                0.35,
+
+              use_speaker_boost:
+                true
+            }
+          },
+
+          {
+
+            params: {
+
+              output_format:
+                "mp3_44100_128"
+            },
+
+            headers: {
+
+              "xi-api-key":
+                apiKey,
+
+              "Content-Type":
+                "application/json",
+
+              Accept:
+                "audio/mpeg"
+            },
+
+            responseType:
+              "arraybuffer",
+
+            timeout:
+              30000
+          }
+        );
+
+
+      const audioBuffer =
+        Buffer.from(
+          response.data
+        );
+
+
+      if (!audioBuffer.length) {
+
+        throw new Error(
+          "ElevenLabs returned empty audio"
+        );
       }
+
+
+      console.log(
+        "[ELEVENLABS] Success:",
+        audioBuffer.length,
+        "bytes"
+      );
+
+
+      res.status(200);
+
+      res.setHeader(
+        "Content-Type",
+        "audio/mpeg"
+      );
+
+      res.setHeader(
+        "Content-Length",
+        audioBuffer.length
+      );
+
+      res.setHeader(
+        "Cache-Control",
+        "no-store"
+      );
+
+
+      return res.send(
+        audioBuffer
+      );
+
+
+    } catch (error) {
+
+      let detail =
+        error.message ||
+        "Unknown ElevenLabs error";
+
+
+      if (
+        error.response?.data
+      ) {
+
+        try {
+
+          if (
+            Buffer.isBuffer(
+              error.response.data
+            )
+          ) {
+
+            detail =
+              error.response.data
+                .toString("utf8");
+
+          } else {
+
+            detail =
+              JSON.stringify(
+                error.response.data
+              );
+          }
+
+        } catch {
+
+          detail =
+            String(
+              error.response.data
+            );
+        }
+      }
+
+
+      console.error(
+        "[ELEVENLABS TTS ERROR]",
+        error.response?.status || "",
+        detail
+      );
+
+
+      return res.status(
+        error.response?.status || 500
+      ).json({
+
+        success: false,
+
+        error:
+          "Natural voice generation failed",
+
+        status:
+          error.response?.status || 500,
+
+        detail
+      });
     }
-
-    console.error(
-      "[ELEVENLABS TTS ERROR]",
-      error.response?.status || "",
-      detail
-    );
-
-    return res.status(
-      error.response?.status || 500
-    ).json({
-      success: false,
-      error:
-        "Natural voice generation failed",
-      status:
-        error.response?.status || 500,
-      detail
-    });
   }
-});
+);
+
 
 /* =====================================================
    QUOTE HELPER
@@ -320,16 +459,23 @@ function findQuote(
   data,
   instrumentKey
 ) {
+
   if (
     !data ||
     typeof data !== "object"
   ) {
+
     return {};
   }
 
-  if (data[instrumentKey]) {
+
+  if (
+    data[instrumentKey]
+  ) {
+
     return data[instrumentKey];
   }
+
 
   const encoded =
     instrumentKey.replace(
@@ -337,83 +483,128 @@ function findQuote(
       "%7C"
     );
 
-  if (data[encoded]) {
+
+  if (
+    data[encoded]
+  ) {
+
     return data[encoded];
   }
+
 
   const shortName =
     instrumentKey.split("|")[1];
 
+
   for (
     const key of Object.keys(data)
   ) {
+
     if (
       key.includes(shortName) ||
       key.includes(encoded)
     ) {
+
       return data[key];
     }
   }
 
+
   return {};
 }
+
 
 /* =====================================================
    LIVE MARKET
 ===================================================== */
 
 async function getLiveMarketData() {
+
   try {
+
     const keys = [
+
       NIFTY_KEY,
       BANKNIFTY_KEY,
       FINNIFTY_KEY,
       SENSEX_KEY,
       VIX_KEY,
       GIFT_KEY
+
     ].join(",");
+
 
     const response =
       await axios.get(
+
         `${UPSTOX_BASE}/market-quote/quotes`,
+
         {
+
           params: {
-            instrument_key: keys
+
+            instrument_key:
+              keys
           },
 
           headers:
             authHeaders(),
 
-          timeout: 15000
+          timeout:
+            15000
         }
       );
+
 
     const data =
       response.data?.data || {};
 
+
     const nifty =
-      findQuote(data, NIFTY_KEY);
+      findQuote(
+        data,
+        NIFTY_KEY
+      );
 
     const banknifty =
-      findQuote(data, BANKNIFTY_KEY);
+      findQuote(
+        data,
+        BANKNIFTY_KEY
+      );
 
     const finnifty =
-      findQuote(data, FINNIFTY_KEY);
+      findQuote(
+        data,
+        FINNIFTY_KEY
+      );
 
     const sensex =
-      findQuote(data, SENSEX_KEY);
+      findQuote(
+        data,
+        SENSEX_KEY
+      );
 
     const vix =
-      findQuote(data, VIX_KEY);
+      findQuote(
+        data,
+        VIX_KEY
+      );
 
     const gift =
-      findQuote(data, GIFT_KEY);
+      findQuote(
+        data,
+        GIFT_KEY
+      );
+
 
     function normalize(q) {
+
       const ohlc =
         q.ohlc || {};
 
+
       return {
+
         lastPrice:
           q.last_price ??
           null,
@@ -454,7 +645,9 @@ async function getLiveMarketData() {
       };
     }
 
+
     return {
+
       success: true,
 
       timestamp:
@@ -479,6 +672,7 @@ async function getLiveMarketData() {
         normalize(gift)
     };
 
+
   } catch (error) {
 
     console.error(
@@ -487,7 +681,9 @@ async function getLiveMarketData() {
       error.message
     );
 
+
     return {
+
       success: false,
 
       error:
@@ -502,34 +698,43 @@ async function getLiveMarketData() {
   }
 }
 
+
 app.get(
   "/api/market",
   async (req, res) => {
+
     const data =
       await getLiveMarketData();
 
+
     if (!data.success) {
+
       return res
         .status(500)
         .json(data);
     }
 
+
     res.json(data);
   }
 );
+
 
 /* =====================================================
    INDIA DATE
 ===================================================== */
 
 function getIndiaDate() {
+
   const now =
     new Date();
+
 
   const parts =
     new Intl.DateTimeFormat(
       "en-CA",
       {
+
         timeZone:
           "Asia/Kolkata",
 
@@ -544,17 +749,22 @@ function getIndiaDate() {
       }
     ).formatToParts(now);
 
+
   const map = {};
+
 
   parts.forEach(
     p => {
+
       map[p.type] =
         p.value;
     }
   );
 
+
   return `${map.year}-${map.month}-${map.day}`;
 }
+
 
 /* =====================================================
    INTRADAY CANDLES
@@ -564,16 +774,22 @@ async function getIntradayCandles(
   instrumentKey = NIFTY_KEY,
   interval = 5
 ) {
+
   try {
+
     const encoded =
       encodeURIComponent(
         instrumentKey
       );
 
+
     const response =
       await axios.get(
+
         `${UPSTOX_V3}/historical-candle/intraday/${encoded}/minutes/${interval}`,
+
         {
+
           headers:
             authHeaders(),
 
@@ -582,13 +798,17 @@ async function getIntradayCandles(
         }
       );
 
+
     const candles =
       response.data
         ?.data
         ?.candles || [];
 
+
     return candles
+
       .map(c => ({
+
         timestamp:
           c[0],
 
@@ -609,8 +829,11 @@ async function getIntradayCandles(
 
         oi:
           Number(c[6] || 0)
+
       }))
+
       .reverse();
+
 
   } catch (error) {
 
@@ -620,9 +843,11 @@ async function getIntradayCandles(
       error.message
     );
 
+
     return [];
   }
 }
+
 
 /* =====================================================
    EMA
@@ -632,35 +857,47 @@ function calculateEMA(
   values,
   period
 ) {
+
   if (!values.length) {
     return null;
   }
 
+
   if (
     values.length < period
   ) {
+
     return values[
       values.length - 1
     ];
   }
 
+
   const multiplier =
     2 / (period + 1);
 
+
   let ema =
     values
-      .slice(0, period)
+
+      .slice(
+        0,
+        period
+      )
+
       .reduce(
         (a, b) =>
           a + b,
         0
       ) / period;
 
+
   for (
     let i = period;
     i < values.length;
     i++
   ) {
+
     ema =
       (
         values[i] -
@@ -670,8 +907,10 @@ function calculateEMA(
       ema;
   }
 
+
   return ema;
 }
+
 
 /* =====================================================
    RSI
@@ -681,56 +920,74 @@ function calculateRSI(
   values,
   period = 14
 ) {
+
   if (
     values.length <= period
   ) {
+
     return null;
   }
 
+
   let gains = 0;
   let losses = 0;
+
 
   for (
     let i = 1;
     i <= period;
     i++
   ) {
+
     const diff =
       values[i] -
       values[i - 1];
 
-    if (diff >= 0) {
+
+    if (
+      diff >= 0
+    ) {
+
       gains += diff;
+
     } else {
+
       losses +=
         Math.abs(diff);
     }
   }
 
+
   let avgGain =
     gains / period;
 
+
   let avgLoss =
     losses / period;
+
 
   for (
     let i = period + 1;
     i < values.length;
     i++
   ) {
+
     const diff =
       values[i] -
       values[i - 1];
+
 
     const gain =
       diff > 0
         ? diff
         : 0;
 
+
     const loss =
       diff < 0
         ? Math.abs(diff)
         : 0;
+
 
     avgGain =
       (
@@ -738,6 +995,7 @@ function calculateRSI(
         (period - 1) +
         gain
       ) / period;
+
 
     avgLoss =
       (
@@ -747,21 +1005,26 @@ function calculateRSI(
       ) / period;
   }
 
+
   if (
     avgLoss === 0
   ) {
+
     return 100;
   }
+
 
   const rs =
     avgGain /
     avgLoss;
+
 
   return (
     100 -
     100 / (1 + rs)
   );
 }
+
 
 /* =====================================================
    VWAP
@@ -770,12 +1033,15 @@ function calculateRSI(
 function calculateVWAP(
   candles
 ) {
+
   let cumulativePV = 0;
   let cumulativeVolume = 0;
+
 
   for (
     const c of candles
   ) {
+
     const typical =
       (
         c.high +
@@ -783,25 +1049,31 @@ function calculateVWAP(
         c.close
       ) / 3;
 
+
     cumulativePV +=
       typical *
       c.volume;
+
 
     cumulativeVolume +=
       c.volume;
   }
 
+
   if (
     !cumulativeVolume
   ) {
+
     return null;
   }
+
 
   return (
     cumulativePV /
     cumulativeVolume
   );
 }
+
 
 /* =====================================================
    SUPPORT / RESISTANCE
@@ -810,27 +1082,38 @@ function calculateVWAP(
 function calculateSupportResistance(
   candles
 ) {
-  if (!candles.length) {
+
+  if (
+    !candles.length
+  ) {
+
     return {
+
       support: null,
+
       resistance: null
     };
   }
 
+
   const recent =
     candles.slice(-20);
+
 
   const lows =
     recent.map(
       c => c.low
     );
 
+
   const highs =
     recent.map(
       c => c.high
     );
 
+
   return {
+
     support:
       Math.min(...lows),
 
@@ -839,6 +1122,7 @@ function calculateSupportResistance(
   };
 }
 
+
 /* =====================================================
    TECHNICAL ANALYSIS
 ===================================================== */
@@ -846,29 +1130,39 @@ function calculateSupportResistance(
 async function getTechnicalAnalysis(
   instrumentKey = NIFTY_KEY
 ) {
+
   const candles =
     await getIntradayCandles(
       instrumentKey,
       5
     );
 
-  if (!candles.length) {
+
+  if (
+    !candles.length
+  ) {
+
     return {
+
       success: false,
+
       error:
         "Technical candle data unavailable"
     };
   }
+
 
   const closes =
     candles.map(
       c => c.close
     );
 
+
   const current =
     closes[
       closes.length - 1
     ];
+
 
   const ema9 =
     calculateEMA(
@@ -876,11 +1170,13 @@ async function getTechnicalAnalysis(
       9
     );
 
+
   const ema20 =
     calculateEMA(
       closes,
       20
     );
+
 
   const ema50 =
     calculateEMA(
@@ -888,30 +1184,36 @@ async function getTechnicalAnalysis(
       50
     );
 
+
   const rsi =
     calculateRSI(
       closes,
       14
     );
 
+
   const vwap =
     calculateVWAP(
       candles
     );
+
 
   const sr =
     calculateSupportResistance(
       candles
     );
 
+
   let trend =
     "SIDEWAYS";
+
 
   if (
     current > ema9 &&
     ema9 > ema20 &&
     ema20 > ema50
   ) {
+
     trend =
       "BULLISH";
 
@@ -920,31 +1222,39 @@ async function getTechnicalAnalysis(
     ema9 < ema20 &&
     ema20 < ema50
   ) {
+
     trend =
       "BEARISH";
   }
 
+
   let momentum =
     "NEUTRAL";
+
 
   if (
     rsi !== null
   ) {
+
     if (
       rsi >= 60
     ) {
+
       momentum =
         "POSITIVE";
 
     } else if (
       rsi <= 40
     ) {
+
       momentum =
         "NEGATIVE";
     }
   }
 
+
   return {
+
     success: true,
 
     instrumentKey,
@@ -979,6 +1289,7 @@ async function getTechnicalAnalysis(
   };
 }
 
+
 /* =====================================================
    OPTION CONTRACT API
 ===================================================== */
@@ -986,16 +1297,23 @@ async function getTechnicalAnalysis(
 app.get(
   "/api/options/contracts",
   async (req, res) => {
+
     try {
+
       const instrumentKey =
         req.query.instrument_key ||
         NIFTY_KEY;
 
+
       const response =
         await axios.get(
+
           `${UPSTOX_BASE}/option/contract`,
+
           {
+
             params: {
+
               instrument_key:
                 instrumentKey
             },
@@ -1008,13 +1326,16 @@ app.get(
           }
         );
 
+
       res.json({
+
         success: true,
 
         data:
           response.data?.data ||
           []
       });
+
 
     } catch (error) {
 
@@ -1024,7 +1345,9 @@ app.get(
         error.message
       );
 
+
       res.status(500).json({
+
         success: false,
 
         error:
@@ -1037,28 +1360,38 @@ app.get(
   }
 );
 
+
 /* =====================================================
-   FETCH ALL OPTION CONTRACTS
+   FETCH ALL LIVE OPTION CONTRACTS
 ===================================================== */
 
 async function fetchAllLiveOptionContracts() {
+
   const all =
     new Map();
+
 
   for (
     const underlying
     of OPTION_UNDERLYINGS
   ) {
+
     try {
+
       console.log(
         `[LIVE OPTIONS] Loading ${underlying.name} contracts...`
       );
 
+
       const response =
         await axios.get(
+
           `${UPSTOX_BASE}/option/contract`,
+
           {
+
             params: {
+
               instrument_key:
                 underlying.key
             },
@@ -1071,31 +1404,40 @@ async function fetchAllLiveOptionContracts() {
           }
         );
 
+
       const rows =
         response.data?.data ||
         [];
+
 
       for (
         const contract
         of rows
       ) {
+
         if (
           !contract.instrument_key
         ) {
+
           continue;
         }
+
 
         if (
           contract.instrument_type !== "CE" &&
           contract.instrument_type !== "PE"
         ) {
+
           continue;
         }
 
+
         all.set(
+
           contract.instrument_key,
 
           {
+
             ...contract,
 
             underlying_name:
@@ -1107,13 +1449,16 @@ async function fetchAllLiveOptionContracts() {
         );
       }
 
+
       console.log(
         `[LIVE OPTIONS] ${underlying.name}: ${rows.length} contracts`
       );
 
+
     } catch (error) {
 
       console.error(
+
         `[LIVE OPTIONS] ${underlying.name} contract error:`,
 
         error.response?.data ||
@@ -1122,7 +1467,9 @@ async function fetchAllLiveOptionContracts() {
     }
   }
 
+
   optionContracts.clear();
+
 
   for (
     const [
@@ -1131,20 +1478,24 @@ async function fetchAllLiveOptionContracts() {
     ]
     of all
   ) {
+
     optionContracts.set(
       key,
       value
     );
   }
 
+
   console.log(
     `[LIVE OPTIONS] Total discovered contracts: ${optionContracts.size}`
   );
+
 
   return [
     ...optionContracts.values()
   ];
 }
+
 
 /* =====================================================
    LIVE OPTION UPDATE
@@ -1154,19 +1505,29 @@ function updateLiveOption(
   instrumentKey,
   data
 ) {
-  if (!instrumentKey) {
+
+  if (
+    !instrumentKey
+  ) {
+
     return;
   }
+
 
   const previous =
     liveOptionData.get(
       instrumentKey
     ) || {};
 
+
   liveOptionData.set(
+
     instrumentKey,
+
     {
+
       ...previous,
+
       ...data,
 
       instrument_key:
@@ -1178,6 +1539,7 @@ function updateLiveOption(
   );
 }
 
+
 /* =====================================================
    PARSE UPSTOX MESSAGE
 ===================================================== */
@@ -1185,50 +1547,68 @@ function updateLiveOption(
 function parseUpstoxMessage(
   data
 ) {
+
   try {
+
     if (
       data &&
       typeof data === "object" &&
       !Buffer.isBuffer(data)
     ) {
+
       return data;
     }
+
 
     if (
       Buffer.isBuffer(data)
     ) {
+
       const text =
         data.toString(
           "utf8"
         );
 
+
       try {
+
         return JSON.parse(
           text
         );
+
       } catch {
+
         return null;
       }
     }
+
 
     if (
       typeof data === "string"
     ) {
+
       try {
+
         return JSON.parse(
           data
         );
+
       } catch {
+
         return null;
       }
     }
 
+
     return null;
 
+
   } catch {
+
     return null;
   }
 }
+
 
 /* =====================================================
    EXTRACT OPTION FEED
@@ -1237,21 +1617,26 @@ function parseUpstoxMessage(
 function extractOptionFeed(
   feed
 ) {
+
   if (!feed) {
     return {};
   }
+
 
   const ltpc =
     feed.ltpc ||
     {};
 
+
   const firstLevel =
     feed.firstLevelWithGreeks ||
     {};
 
+
   const firstDepth =
     feed.firstDepth ||
     {};
+
 
   const greeks =
     feed.optionGreeks ||
@@ -1259,20 +1644,24 @@ function extractOptionFeed(
     firstLevel.optionGreeks ||
     {};
 
+
   const volume =
     feed.vtt ??
     firstLevel.vtt ??
     null;
+
 
   const oi =
     feed.oi ??
     firstLevel.oi ??
     null;
 
+
   const previousOI =
     feed.poi ??
     firstLevel.poi ??
     null;
+
 
   const bid =
     firstDepth.bidP ??
@@ -1280,13 +1669,16 @@ function extractOptionFeed(
     firstLevel.bidP ??
     null;
 
+
   const ask =
     firstDepth.askP ??
     feed.askP ??
     firstLevel.askP ??
     null;
 
+
   return {
+
     ltp:
       ltpc.ltp ??
       null,
@@ -1312,8 +1704,10 @@ function extractOptionFeed(
     oiChange:
       oi !== null &&
       previousOI !== null
+
         ? Number(oi) -
           Number(previousOI)
+
         : null,
 
     bid,
@@ -1346,6 +1740,7 @@ function extractOptionFeed(
   };
 }
 
+
 /* =====================================================
    HANDLE LIVE MESSAGE
 ===================================================== */
@@ -1354,26 +1749,32 @@ function handleLiveOptionMessage(
   data,
   socketNumber
 ) {
+
   const decoded =
     parseUpstoxMessage(
       data
     );
 
+
   if (!decoded) {
     return;
   }
+
 
   const feeds =
     decoded.feeds ||
     decoded.data ||
     {};
 
+
   if (
     !feeds ||
     typeof feeds !== "object"
   ) {
+
     return;
   }
+
 
   for (
     const [
@@ -1384,24 +1785,29 @@ function handleLiveOptionMessage(
       feeds
     )
   ) {
+
     if (
-      instrumentKey ===
-      "currentTs"
+      instrumentKey === "currentTs"
     ) {
+
       continue;
     }
+
 
     if (
       !feed ||
       typeof feed !== "object"
     ) {
+
       continue;
     }
+
 
     const parsed =
       extractOptionFeed(
         feed
       );
+
 
     updateLiveOption(
       instrumentKey,
@@ -1409,19 +1815,25 @@ function handleLiveOptionMessage(
     );
   }
 
+
   const now =
     new Date().toISOString();
+
 
   if (
     socketNumber === 1
   ) {
+
     websocket1LastMessage =
       now;
+
   } else {
+
     websocket2LastMessage =
       now;
   }
 }
+
 
 /* =====================================================
    CREATE OPTION STREAMER
@@ -1431,13 +1843,17 @@ function createOptionStreamer(
   socketNumber,
   instrumentKeys
 ) {
+
   if (
     !instrumentKeys.length
   ) {
+
     return null;
   }
 
+
   configureUpstoxSDK();
+
 
   const streamer =
     new UpstoxClient.MarketDataStreamerV3(
@@ -1445,28 +1861,35 @@ function createOptionStreamer(
       "ltpc"
     );
 
+
   streamer.autoReconnect(
     true,
     10,
     999999
   );
 
+
   streamer.on(
     "open",
     () => {
+
       console.log(
         `[LIVE OPTIONS] WebSocket #${socketNumber} CONNECTED`
       );
 
+
       if (
         socketNumber === 1
       ) {
+
         websocket1Connected =
           true;
 
         websocket1Error =
           null;
+
       } else {
+
         websocket2Connected =
           true;
 
@@ -1474,25 +1897,33 @@ function createOptionStreamer(
           null;
       }
 
+
       try {
+
         streamer.subscribe(
           instrumentKeys,
           "ltpc"
         );
 
+
         if (
           socketNumber === 1
         ) {
+
           subscribedContracts1 =
             instrumentKeys.length;
+
         } else {
+
           subscribedContracts2 =
             instrumentKeys.length;
         }
 
+
         console.log(
           `[LIVE OPTIONS] WebSocket #${socketNumber} subscribed ${instrumentKeys.length} contracts`
         );
+
 
       } catch (error) {
 
@@ -1501,15 +1932,19 @@ function createOptionStreamer(
           error
         );
 
+
         if (
           socketNumber === 1
         ) {
+
           subscribedContracts1 =
             0;
 
           websocket1Error =
             error.message;
+
         } else {
+
           subscribedContracts2 =
             0;
 
@@ -1520,9 +1955,11 @@ function createOptionStreamer(
     }
   );
 
+
   streamer.on(
     "message",
     data => {
+
       handleLiveOptionMessage(
         data,
         socketNumber
@@ -1530,61 +1967,78 @@ function createOptionStreamer(
     }
   );
 
+
   streamer.on(
     "error",
     error => {
+
       console.error(
         `[LIVE OPTIONS] WebSocket #${socketNumber} ERROR:`,
         error
       );
 
+
       const message =
         error?.message ||
         String(error);
 
+
       if (
         socketNumber === 1
       ) {
+
         websocket1Error =
           message;
+
       } else {
+
         websocket2Error =
           message;
       }
     }
   );
 
+
   streamer.on(
     "close",
     () => {
+
       console.log(
         `[LIVE OPTIONS] WebSocket #${socketNumber} CLOSED`
       );
 
+
       if (
         socketNumber === 1
       ) {
+
         websocket1Connected =
           false;
+
       } else {
+
         websocket2Connected =
           false;
       }
     }
   );
 
+
   streamer.on(
     "reconnecting",
     () => {
+
       console.log(
         `[LIVE OPTIONS] WebSocket #${socketNumber} RECONNECTING...`
       );
     }
   );
 
+
   streamer.on(
     "autoReconnectStopped",
     data => {
+
       console.error(
         `[LIVE OPTIONS] WebSocket #${socketNumber} AUTO RECONNECT STOPPED:`,
         data
@@ -1592,23 +2046,29 @@ function createOptionStreamer(
     }
   );
 
+
   console.log(
     `[LIVE OPTIONS] Connecting WebSocket #${socketNumber}...`
   );
 
+
   streamer.connect();
+
 
   return streamer;
 }
+
 
 /* =====================================================
    START ALL OPTION WEBSOCKETS
 ===================================================== */
 
 async function startLiveOptionWebSocket() {
+
   if (
     liveOptionsInitializing
   ) {
+
     console.log(
       "[LIVE OPTIONS] Initialization already running."
     );
@@ -1616,50 +2076,68 @@ async function startLiveOptionWebSocket() {
     return;
   }
 
+
   liveOptionsInitializing =
     true;
 
+
   try {
+
     if (
       !process.env.UPSTOX_ACCESS_TOKEN
     ) {
+
       throw new Error(
         "UPSTOX_ACCESS_TOKEN is missing"
       );
     }
 
+
     configureUpstoxSDK();
+
 
     const contracts =
       await fetchAllLiveOptionContracts();
 
+
     const allKeys =
       [
         ...new Set(
+
           contracts
+
             .map(
               item =>
                 item.instrument_key
             )
+
             .filter(Boolean)
+
         )
       ];
 
-    if (!allKeys.length) {
+
+    if (
+      !allKeys.length
+    ) {
+
       throw new Error(
         "No option contracts discovered."
       );
     }
 
+
     console.log(
       `[LIVE OPTIONS] TOTAL CONTRACTS: ${allKeys.length}`
     );
+
 
     if (
       allKeys.length >
       LTPC_CONNECTION_LIMIT *
       MAX_WEBSOCKET_CONNECTIONS
     ) {
+
       console.warn(
         `[LIVE OPTIONS] WARNING: ${allKeys.length} contracts found but maximum normal capacity is ${
           LTPC_CONNECTION_LIMIT *
@@ -1668,11 +2146,13 @@ async function startLiveOptionWebSocket() {
       );
     }
 
+
     const socket1Keys =
       allKeys.slice(
         0,
         LTPC_CONNECTION_LIMIT
       );
+
 
     const socket2Keys =
       allKeys.slice(
@@ -1681,13 +2161,6 @@ async function startLiveOptionWebSocket() {
         MAX_WEBSOCKET_CONNECTIONS
       );
 
-    console.log(
-      `[LIVE OPTIONS] SOCKET #1 KEYS: ${socket1Keys.length}`
-    );
-
-    console.log(
-      `[LIVE OPTIONS] SOCKET #2 KEYS: ${socket2Keys.length}`
-    );
 
     websocket1Connected =
       false;
@@ -1713,24 +2186,34 @@ async function startLiveOptionWebSocket() {
     websocket2Error =
       null;
 
+
+    liveOptionData.clear();
+
+
     optionStreamer =
       createOptionStreamer(
         1,
         socket1Keys
       );
 
+
     if (
       socket2Keys.length
     ) {
+
       setTimeout(
         () => {
+
           try {
+
             optionStreamer2 =
               createOptionStreamer(
                 2,
                 socket2Keys
               );
+
           } catch (error) {
+
             console.error(
               "[LIVE OPTIONS] Socket #2 creation failed:",
               error
@@ -1739,17 +2222,21 @@ async function startLiveOptionWebSocket() {
             websocket2Error =
               error.message;
           }
+
         },
         1000
       );
     }
 
+
     liveOptionsInitialized =
       true;
 
+
     console.log(
-      "[LIVE OPTIONS] WebSocket initialization complete."
+      "[LIVE OPTIONS] WebSocket initialization started."
     );
+
 
   } catch (error) {
 
@@ -1758,14 +2245,18 @@ async function startLiveOptionWebSocket() {
       error
     );
 
+
     liveOptionsInitialized =
       false;
 
+
   } finally {
+
     liveOptionsInitializing =
       false;
   }
 }
+
 
 /* =====================================================
    LIVE OPTIONS STATUS
@@ -1774,19 +2265,24 @@ async function startLiveOptionWebSocket() {
 app.get(
   "/api/options/live-status",
   (req, res) => {
+
     const discovered =
       optionContracts.size;
+
 
     const subscribed =
       subscribedContracts1 +
       subscribedContracts2;
 
+
     const maximum =
       LTPC_CONNECTION_LIMIT *
       MAX_WEBSOCKET_CONNECTIONS;
 
+
     const coveragePercent =
       discovered > 0
+
         ? Number(
             (
               Math.min(
@@ -1797,9 +2293,12 @@ app.get(
               100
             ).toFixed(2)
           )
+
         : 0;
 
+
     res.json({
+
       success: true,
 
       websocket:
@@ -1849,6 +2348,7 @@ app.get(
   }
 );
 
+
 /* =====================================================
    LIVE OPTIONS API
 ===================================================== */
@@ -1856,34 +2356,45 @@ app.get(
 app.get(
   "/api/options/live",
   (req, res) => {
+
     try {
+
       const instrumentKey =
         req.query.instrument_key;
+
 
       if (
         instrumentKey
       ) {
+
         const contract =
           optionContracts.get(
             instrumentKey
           ) || {};
+
 
         const live =
           liveOptionData.get(
             instrumentKey
           ) || {};
 
+
         return res.json({
+
           success: true,
 
           data: {
+
             ...contract,
+
             ...live
           }
         });
       }
 
+
       const result = [];
+
 
       for (
         const [
@@ -1892,18 +2403,24 @@ app.get(
         ]
         of optionContracts
       ) {
+
         const live =
           liveOptionData.get(
             key
           ) || {};
 
+
         result.push({
+
           ...contract,
+
           ...live
         });
       }
 
+
       res.json({
+
         success: true,
 
         count:
@@ -1916,6 +2433,7 @@ app.get(
           result
       });
 
+
     } catch (error) {
 
       console.error(
@@ -1923,14 +2441,18 @@ app.get(
         error
       );
 
+
       res.status(500).json({
+
         success: false,
+
         error:
           error.message
       });
     }
   }
 );
+
 
 /* =====================================================
    OPTION CHAIN
@@ -1940,11 +2462,16 @@ async function getOptionChain(
   instrumentKey,
   expiry
 ) {
+
   const response =
     await axios.get(
+
       `${UPSTOX_BASE}/option/chain`,
+
       {
+
         params: {
+
           instrument_key:
             instrumentKey,
 
@@ -1960,35 +2487,44 @@ async function getOptionChain(
       }
     );
 
+
   const rows =
     response.data?.data ||
     [];
 
+
   if (
     !Array.isArray(rows)
   ) {
+
     return rows;
   }
 
+
   return rows.map(
     row => {
+
       const call =
         row.call_options ||
         {};
 
+
       const put =
         row.put_options ||
         {};
+
 
       const callKey =
         call.instrument_key ||
         call.instrumentKey ||
         null;
 
+
       const putKey =
         put.instrument_key ||
         put.instrumentKey ||
         null;
+
 
       const callLive =
         callKey
@@ -1997,6 +2533,7 @@ async function getOptionChain(
             )
           : null;
 
+
       const putLive =
         putKey
           ? liveOptionData.get(
@@ -2004,15 +2541,19 @@ async function getOptionChain(
             )
           : null;
 
+
       if (
         callLive &&
         callLive.ltp !== null &&
         callLive.ltp !== undefined
       ) {
+
         row.call_options = {
+
           ...call,
 
           market_data: {
+
             ...(call.market_data || {}),
 
             ltp:
@@ -2020,36 +2561,24 @@ async function getOptionChain(
 
             close_price:
               callLive.close ??
-              call.market_data
-                ?.close_price,
-
-            oi:
-              callLive.oi ??
-              call.market_data
-                ?.oi,
-
-            volume:
-              callLive.volume ??
-              call.market_data
-                ?.volume,
-
-            iv:
-              callLive.iv ??
-              call.market_data
-                ?.iv
+              call.market_data?.close_price
           }
         };
       }
+
 
       if (
         putLive &&
         putLive.ltp !== null &&
         putLive.ltp !== undefined
       ) {
+
         row.put_options = {
+
           ...put,
 
           market_data: {
+
             ...(put.market_data || {}),
 
             ltp:
@@ -2057,50 +2586,44 @@ async function getOptionChain(
 
             close_price:
               putLive.close ??
-              put.market_data
-                ?.close_price,
-
-            oi:
-              putLive.oi ??
-              put.market_data
-                ?.oi,
-
-            volume:
-              putLive.volume ??
-              put.market_data
-                ?.volume,
-
-            iv:
-              putLive.iv ??
-              put.market_data
-                ?.iv
+              put.market_data?.close_price
           }
         };
       }
+
 
       return row;
     }
   );
 }
 
+
 app.get(
   "/api/options/chain",
   async (req, res) => {
+
     try {
+
       const instrumentKey =
         req.query.instrument_key ||
         NIFTY_KEY;
 
+
       const expiry =
         req.query.expiry_date;
 
+
       if (!expiry) {
+
         return res.status(400).json({
+
           success: false,
+
           error:
             "expiry_date is required"
         });
       }
+
 
       const data =
         await getOptionChain(
@@ -2108,10 +2631,14 @@ app.get(
           expiry
         );
 
+
       res.json({
+
         success: true,
+
         data
       });
+
 
     } catch (error) {
 
@@ -2121,18 +2648,18 @@ app.get(
         error.message
       );
 
+
       res.status(500).json({
+
         success: false,
 
         error:
-          error.response?.data
-            ?.errors?.[0]?.message ||
-
           "Unable to fetch option chain"
       });
     }
   }
 );
+
 
 /* =====================================================
    NEAREST EXPIRY
@@ -2141,12 +2668,18 @@ app.get(
 async function getNearestExpiry(
   instrumentKey = NIFTY_KEY
 ) {
+
   try {
+
     const response =
       await axios.get(
+
         `${UPSTOX_BASE}/option/contract`,
+
         {
+
           params: {
+
             instrument_key:
               instrumentKey
           },
@@ -2159,35 +2692,45 @@ async function getNearestExpiry(
         }
       );
 
+
     const contracts =
       response.data?.data ||
       [];
 
+
     const today =
       getIndiaDate();
+
 
     const expiries =
       [
         ...new Set(
+
           contracts
+
             .map(
               x =>
                 x.expiry ||
                 x.expiry_date
             )
+
             .filter(
               x =>
                 x &&
                 x >= today
             )
+
         )
       ]
+
       .sort();
+
 
     return (
       expiries[0] ||
       null
     );
+
 
   } catch (error) {
 
@@ -2197,9 +2740,11 @@ async function getNearestExpiry(
       error.message
     );
 
+
     return null;
   }
 }
+
 
 /* =====================================================
    OPTION ANALYSIS
@@ -2208,19 +2753,26 @@ async function getNearestExpiry(
 async function getOptionAnalysis(
   instrumentKey = NIFTY_KEY
 ) {
+
   try {
+
     const expiry =
       await getNearestExpiry(
         instrumentKey
       );
 
+
     if (!expiry) {
+
       return {
+
         success: false,
+
         error:
           "No valid expiry found"
       };
     }
+
 
     const chain =
       await getOptionChain(
@@ -2228,16 +2780,21 @@ async function getOptionAnalysis(
         expiry
       );
 
+
     if (
       !Array.isArray(chain) ||
       !chain.length
     ) {
+
       return {
+
         success: false,
+
         error:
           "Option chain is empty"
       };
     }
+
 
     let totalCallOI = 0;
     let totalPutOI = 0;
@@ -2245,42 +2802,52 @@ async function getOptionAnalysis(
 
     const strikes = [];
 
+
     for (
       const row
       of chain
     ) {
+
       const strike =
         Number(
           row.strike_price
         );
+
 
       if (
         !Number.isFinite(
           strike
         )
       ) {
+
         continue;
       }
+
 
       strikes.push(
         strike
       );
 
+
       const call =
         row.call_options ||
         {};
+
 
       const put =
         row.put_options ||
         {};
 
+
       const callMarket =
         call.market_data ||
         {};
 
+
       const putMarket =
         put.market_data ||
         {};
+
 
       const callOI =
         Number(
@@ -2288,65 +2855,80 @@ async function getOptionAnalysis(
           0
         );
 
+
       const putOI =
         Number(
           putMarket.oi ||
           0
         );
 
+
       totalCallOI +=
         callOI;
+
 
       totalPutOI +=
         putOI;
     }
 
+
     const pcr =
       totalCallOI > 0
+
         ? totalPutOI /
           totalCallOI
+
         : null;
 
-    /* -----------------------------------------------
-       MAX PAIN
-    ------------------------------------------------ */
+
+    /* MAX PAIN */
 
     if (
       strikes.length
     ) {
+
       let lowestPain =
         Infinity;
+
 
       for (
         const testStrike
         of strikes
       ) {
+
         let pain = 0;
+
 
         for (
           const row
           of chain
         ) {
+
           const strike =
             Number(
               row.strike_price
             );
 
+
           const call =
             row.call_options ||
             {};
+
 
           const put =
             row.put_options ||
             {};
 
+
           const callMarket =
             call.market_data ||
             {};
 
+
           const putMarket =
             put.market_data ||
             {};
+
 
           const callOI =
             Number(
@@ -2354,16 +2936,19 @@ async function getOptionAnalysis(
               0
             );
 
+
           const putOI =
             Number(
               putMarket.oi ||
               0
             );
 
+
           if (
             testStrike >
             strike
           ) {
+
             pain +=
               (
                 testStrike -
@@ -2372,10 +2957,12 @@ async function getOptionAnalysis(
               callOI;
           }
 
+
           if (
             testStrike <
             strike
           ) {
+
             pain +=
               (
                 strike -
@@ -2385,10 +2972,12 @@ async function getOptionAnalysis(
           }
         }
 
+
         if (
           pain <
           lowestPain
         ) {
+
           lowestPain =
             pain;
 
@@ -2398,27 +2987,34 @@ async function getOptionAnalysis(
       }
     }
 
+
     let bias =
       "NEUTRAL";
+
 
     if (
       pcr !== null
     ) {
+
       if (
         pcr > 1.15
       ) {
+
         bias =
           "BULLISH";
 
       } else if (
         pcr < 0.85
       ) {
+
         bias =
           "BEARISH";
       }
     }
 
+
     return {
+
       success: true,
 
       instrumentKey,
@@ -2438,6 +3034,7 @@ async function getOptionAnalysis(
       strikes
     };
 
+
   } catch (error) {
 
     console.error(
@@ -2446,7 +3043,9 @@ async function getOptionAnalysis(
       error.message
     );
 
+
     return {
+
       success: false,
 
       error:
@@ -2455,17 +3054,20 @@ async function getOptionAnalysis(
   }
 }
 
+
 /* =====================================================
    COMPLETE ERA ANALYSIS
 ===================================================== */
 
 async function getEraAnalysis() {
+
   const [
     market,
     technical,
     options
   ] =
     await Promise.all([
+
       getLiveMarketData(),
 
       getTechnicalAnalysis(
@@ -2475,23 +3077,30 @@ async function getEraAnalysis() {
       getOptionAnalysis(
         NIFTY_KEY
       )
+
     ]);
+
 
   let direction =
     "WAIT";
 
+
   let confidence =
     0;
 
+
   const reasons = [];
+
 
   if (
     technical.success
   ) {
+
     if (
       technical.trend ===
       "BULLISH"
     ) {
+
       confidence +=
         30;
 
@@ -2503,6 +3112,7 @@ async function getEraAnalysis() {
       technical.trend ===
       "BEARISH"
     ) {
+
       confidence +=
         30;
 
@@ -2511,12 +3121,15 @@ async function getEraAnalysis() {
       );
     }
 
+
     if (
       technical.rsi !== null
     ) {
+
       if (
         technical.rsi > 55
       ) {
+
         confidence +=
           15;
 
@@ -2527,6 +3140,7 @@ async function getEraAnalysis() {
       } else if (
         technical.rsi < 45
       ) {
+
         confidence +=
           15;
 
@@ -2536,11 +3150,13 @@ async function getEraAnalysis() {
       }
     }
 
+
     if (
       technical.vwap &&
       technical.current >
       technical.vwap
     ) {
+
       confidence +=
         10;
 
@@ -2553,6 +3169,7 @@ async function getEraAnalysis() {
       technical.current <
       technical.vwap
     ) {
+
       confidence +=
         10;
 
@@ -2562,13 +3179,16 @@ async function getEraAnalysis() {
     }
   }
 
+
   if (
     options.success
   ) {
+
     if (
       options.bias ===
       "BULLISH"
     ) {
+
       confidence +=
         25;
 
@@ -2580,6 +3200,7 @@ async function getEraAnalysis() {
       options.bias ===
       "BEARISH"
     ) {
+
       confidence +=
         25;
 
@@ -2589,15 +3210,18 @@ async function getEraAnalysis() {
     }
   }
 
+
   const technicalTrend =
     technical.success
       ? technical.trend
       : "UNKNOWN";
 
+
   const optionBias =
     options.success
       ? options.bias
       : "UNKNOWN";
+
 
   if (
     technicalTrend ===
@@ -2605,6 +3229,7 @@ async function getEraAnalysis() {
     optionBias ===
       "BULLISH"
   ) {
+
     direction =
       "BUY";
 
@@ -2614,13 +3239,16 @@ async function getEraAnalysis() {
     optionBias ===
       "BEARISH"
   ) {
+
     direction =
       "SELL";
 
   } else {
+
     direction =
       "WAIT";
   }
+
 
   let entry = null;
   let stopLoss = null;
@@ -2628,27 +3256,33 @@ async function getEraAnalysis() {
   let target2 = null;
   let target3 = null;
 
+
   if (
     technical.success &&
     direction !== "WAIT"
   ) {
+
     entry =
       technical.current;
+
 
     if (
       direction === "BUY"
     ) {
+
       stopLoss =
         technical.support;
+
 
       const risk =
         entry -
         stopLoss;
 
+
       if (
-        Number.isFinite(risk) &&
         risk > 0
       ) {
+
         target1 =
           entry + risk;
 
@@ -2662,20 +3296,24 @@ async function getEraAnalysis() {
       }
     }
 
+
     if (
       direction === "SELL"
     ) {
+
       stopLoss =
         technical.resistance;
+
 
       const risk =
         stopLoss -
         entry;
 
+
       if (
-        Number.isFinite(risk) &&
         risk > 0
       ) {
+
         target1 =
           entry - risk;
 
@@ -2690,14 +3328,12 @@ async function getEraAnalysis() {
     }
   }
 
+
   const riskReward =
-    entry !== null &&
-    stopLoss !== null &&
-    target2 !== null &&
-    Math.abs(
-      entry -
-      stopLoss
-    ) > 0
+    entry &&
+    stopLoss &&
+    target2
+
       ? Math.abs(
           target2 -
           entry
@@ -2706,11 +3342,14 @@ async function getEraAnalysis() {
           entry -
           stopLoss
         )
+
       : null;
+
 
   if (
     confidence < 55
   ) {
+
     direction =
       "WAIT";
 
@@ -2721,13 +3360,16 @@ async function getEraAnalysis() {
     target3 = null;
   }
 
+
   return {
+
     success: true,
 
     timestamp:
       new Date().toISOString(),
 
     signal: {
+
       direction,
 
       confidence,
@@ -2754,13 +3396,19 @@ async function getEraAnalysis() {
     reasons,
 
     invalidation:
+
       direction === "BUY"
+
         ? "Bullish setup invalid if price loses key support and confirmation fails."
+
         : direction === "SELL"
+
           ? "Bearish setup invalid if price breaks key resistance and confirmation fails."
+
           : "No trade until technical and option confirmation align."
   };
 }
+
 
 /* =====================================================
    ANALYSIS API
@@ -2769,13 +3417,17 @@ async function getEraAnalysis() {
 app.get(
   "/api/analysis",
   async (req, res) => {
+
     try {
+
       const analysis =
         await getEraAnalysis();
+
 
       res.json(
         analysis
       );
+
 
     } catch (error) {
 
@@ -2784,7 +3436,9 @@ app.get(
         error
       );
 
+
       res.status(500).json({
+
         success: false,
 
         error:
@@ -2794,6 +3448,7 @@ app.get(
   }
 );
 
+
 /* =====================================================
    NEWS
 ===================================================== */
@@ -2801,12 +3456,17 @@ app.get(
 app.get(
   "/api/news",
   async (req, res) => {
+
     try {
+
       const apiKey =
         process.env.NEWS_API_KEY;
 
+
       if (!apiKey) {
+
         return res.json({
+
           success: true,
 
           data: [],
@@ -2816,11 +3476,16 @@ app.get(
         });
       }
 
+
       const response =
         await axios.get(
+
           "https://newsapi.org/v2/everything",
+
           {
+
             params: {
+
               q:
                 "Indian stock market OR Nifty OR Sensex OR NSE OR BSE",
 
@@ -2841,16 +3506,21 @@ app.get(
           }
         );
 
+
       const articles =
         Array.isArray(
           response.data?.articles
         )
+
           ? response.data.articles
+
           : [];
+
 
       const news =
         articles.map(
           article => ({
+
             title:
               article.title ||
               "",
@@ -2877,12 +3547,15 @@ app.get(
           })
         );
 
+
       res.json({
+
         success: true,
 
         data:
           news
       });
+
 
     } catch (error) {
 
@@ -2892,18 +3565,18 @@ app.get(
         error.message
       );
 
+
       res.status(500).json({
+
         success: false,
 
         error:
-          error.response?.data
-            ?.message ||
-
           "Unable to fetch news"
       });
     }
   }
 );
+
 
 /* =====================================================
    AI CHAT
@@ -2912,12 +3585,17 @@ app.get(
 app.post(
   "/api/chat",
   async (req, res) => {
+
     try {
+
       const apiKey =
         process.env.OPENROUTER_API_KEY;
 
+
       if (!apiKey) {
+
         return res.status(500).json({
+
           success: false,
 
           error:
@@ -2925,21 +3603,28 @@ app.post(
         });
       }
 
+
       const message =
         req.body?.message;
+
 
       const history =
         Array.isArray(
           req.body?.history
         )
+
           ? req.body.history
+
           : [];
+
 
       if (
         !message ||
         !String(message).trim()
       ) {
+
         return res.status(400).json({
+
           success: false,
 
           error:
@@ -2947,15 +3632,19 @@ app.post(
         });
       }
 
+
       const analysis =
         await getEraAnalysis();
+
 
       let analysisContext =
         "";
 
+
       if (
         analysis.success
       ) {
+
         analysisContext = `
 
 LIVE ERA ANALYSIS:
@@ -2987,6 +3676,15 @@ ${
     ? analysis.signal.riskReward.toFixed(2)
     : "N/A"
 }
+
+NIFTY LIVE PRICE:
+${analysis.market?.nifty?.lastPrice ?? "N/A"}
+
+GIFT NIFTY:
+${analysis.market?.giftNifty?.lastPrice ?? "N/A"}
+
+INDIA VIX:
+${analysis.market?.indiaVix?.lastPrice ?? "N/A"}
 
 TECHNICAL TREND:
 ${analysis.technical?.trend ?? "N/A"}
@@ -3030,8 +3728,11 @@ ${analysis.invalidation}
 `;
       }
 
+
       const systemMessage = {
-        role: "system",
+
+        role:
+          "system",
 
         content: `
 You are Era AI V5, a premium voice-controlled stock-market assistant.
@@ -3085,9 +3786,12 @@ ${analysisContext}
 `
       };
 
+
       const safeHistory =
         history
+
           .slice(-20)
+
           .filter(
             item =>
               item &&
@@ -3098,8 +3802,10 @@ ${analysisContext}
               typeof item.content ===
                 "string"
           )
+
           .map(
             item => ({
+
               role:
                 item.role,
 
@@ -3108,26 +3814,34 @@ ${analysisContext}
             })
           );
 
+
       const messages = [
+
         systemMessage,
 
         ...safeHistory,
 
         {
-          role: "user",
+
+          role:
+            "user",
 
           content:
             String(
               message
             ).trim()
         }
+
       ];
+
 
       const response =
         await axios.post(
+
           OPENROUTER_URL,
 
           {
+
             model:
               process.env.OPENROUTER_MODEL ||
               "openai/gpt-4o-mini",
@@ -3142,7 +3856,9 @@ ${analysisContext}
           },
 
           {
+
             headers: {
+
               Authorization:
                 `Bearer ${apiKey}`,
 
@@ -3161,13 +3877,17 @@ ${analysisContext}
           }
         );
 
+
       const answer =
         response.data
           ?.choices?.[0]
           ?.message?.content;
 
+
       if (!answer) {
+
         return res.status(500).json({
+
           success: false,
 
           error:
@@ -3175,7 +3895,9 @@ ${analysisContext}
         });
       }
 
+
       res.json({
+
         success: true,
 
         reply:
@@ -3187,6 +3909,7 @@ ${analysisContext}
             : null
       });
 
+
     } catch (error) {
 
       console.error(
@@ -3195,10 +3918,12 @@ ${analysisContext}
         error.message
       );
 
+
       res.status(
         error.response?.status ||
         500
       ).json({
+
         success: false,
 
         error:
@@ -3213,6 +3938,7 @@ ${analysisContext}
   }
 );
 
+
 /* =====================================================
    START SERVER
 ===================================================== */
@@ -3225,6 +3951,7 @@ app.listen(
       `Era AI V5 backend running on port ${PORT}`
     );
 
+
     console.log(
       `[ELEVENLABS] API key configured: ${
         Boolean(
@@ -3232,6 +3959,7 @@ app.listen(
         )
       }`
     );
+
 
     console.log(
       `[ELEVENLABS] Voice ID configured: ${
@@ -3241,15 +3969,22 @@ app.listen(
       }`
     );
 
+
     setTimeout(
       () => {
+
         startLiveOptionWebSocket()
-          .catch(error => {
-            console.error(
-              "[LIVE OPTIONS] Startup error:",
-              error
-            );
-          });
+
+          .catch(
+            error => {
+
+              console.error(
+                "[LIVE OPTIONS] Startup error:",
+                error
+              );
+            }
+          );
+
       },
       3000
     );
