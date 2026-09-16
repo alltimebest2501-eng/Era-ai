@@ -1,2675 +1,1575 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Era AI V3</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Era AI V3</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    body {
-      background: #07090d;
-      color: #fff;
-      min-height: 100vh;
-    }
-
-    .app {
-      max-width: 600px;
-      margin: auto;
-      min-height: 100vh;
-      padding-bottom: 85px;
-    }
-
-    header {
-      padding: 22px 18px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .logo {
-      font-size: 26px;
-      font-weight: 800;
-    }
-
-    .status {
-      font-size: 12px;
-      color: #8cffb0;
-    }
-
-    .screen {
-      display: none;
-      padding: 10px 15px;
-    }
-
-    .screen.active {
-      display: block;
-    }
-
-    .hero {
-      text-align: center;
-      padding: 25px 10px;
-    }
-
-    .orb {
-      width: 115px;
-      height: 115px;
-      margin: auto;
-      border-radius: 50%;
-      background: radial-gradient(
-        circle,
-        #ffffff 0%,
-        #8cffb0 8%,
-        #14251d 40%,
-        #08100c 70%
-      );
-      box-shadow: 0 0 35px rgba(100,255,160,.25);
-    }
-
-    .state {
-      margin-top: 15px;
-      color: #aaa;
-      font-size: 14px;
-    }
-
-    .mic {
-      margin-top: 20px;
-      width: 65px;
-      height: 65px;
-      border-radius: 50%;
-      border: 1px solid #27332c;
-      background: #101612;
-      color: white;
-      font-size: 25px;
-      cursor: pointer;
-    }
-
-    .mic.listening {
-      background: #183d28;
-      border-color: #65ff9a;
-      box-shadow: 0 0 25px rgba(101,255,154,.3);
-    }
-
-    .mic:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .voice-test {
-      display: block;
-      margin: 12px auto 0;
-      padding: 10px 18px;
-      border-radius: 10px;
-      background: #151a20;
-      color: #8cffb0;
-      border: 1px solid #26332b;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .language-box {
-      margin: 18px auto 0;
-      max-width: 260px;
-      text-align: left;
-    }
-
-    .language-label {
-      display: block;
-      font-size: 12px;
-      color: #777;
-      margin-bottom: 7px;
-    }
-
-    .input-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
-    }
-
-    input {
-      flex: 1;
-      background: #101318;
-      color: white;
-      border: 1px solid #252b33;
-      border-radius: 12px;
-      padding: 14px;
-      outline: none;
-    }
-
-    button {
-      border: 0;
-      cursor: pointer;
-    }
-
-    .send {
-      <div id="chatDebug" style="color:#00ff88;font-size:12px;margin-top:8px;"></div>
-      <button
-  id="sendBtn"
-  class="send"
-  type="button"
-  onclick="sendMessageFromButton()"
->
-  Send
-</button>
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .card {
-      background: #0e1116;
-      border: 1px solid #1c2229;
-      border-radius: 16px;
-      padding: 15px;
-    }
-
-    .card h3 {
-      font-size: 13px;
-      color: #999;
-      margin-bottom: 8px;
-    }
-
-    .value {
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .analysis,
-    .trade {
-      margin-top: 12px;
-      background: #0e1116;
-      border: 1px solid #1c2229;
-      border-radius: 16px;
-      padding: 16px;
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 12px;
-    }
-
-    .trade-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 9px 0;
-      border-bottom: 1px solid #1b2026;
-      font-size: 14px;
-    }
-
-    .trade-row:last-child {
-      border-bottom: 0;
-    }
-
-    .green {
-      color: #65ff9a;
-    }
-
-    .red {
-      color: #ff6666;
-    }
-
-    .yellow {
-      color: #ffd45c;
-    }
-
-    select {
-      width: 100%;
-      background: #101318;
-      color: white;
-      border: 1px solid #252b33;
-      border-radius: 12px;
-      padding: 13px;
-      margin-bottom: 10px;
-    }
-
-    .option-box {
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid #1c2229;
-    }
-
-    table {
-      width: 100%;
-      min-width: 850px;
-      border-collapse: collapse;
-      font-size: 11px;
-    }
-
-    th {
-      background: #15191f;
-      color: #aaa;
-      padding: 10px 5px;
-      position: sticky;
-      top: 0;
-    }
-
-    td {
-      padding: 9px 5px;
-      text-align: center;
-      border-top: 1px solid #1b2026;
-    }
-
-    .ce {
-      color: #ff7777;
-    }
-
-    .pe {
-      color: #68ff9e;
-    }
-
-    .loading {
-      padding: 25px;
-      text-align: center;
-      color: #aaa;
-    }
-
-    .message {
-      margin-top: 15px;
-      padding: 15px;
-      background: #0e1116;
-      border: 1px solid #1c2229;
-      border-radius: 14px;
-      line-height: 1.5;
-      color: #ddd;
-    }
-
-    /* =========================================
-       CHAT BOARD
-    ========================================= */
-
-    .chat-container {
-      margin-top: 15px;
-      background: #0b0e12;
-      border: 1px solid #1c2229;
-      border-radius: 16px;
-      overflow: hidden;
-    }
-
-    .chat-header {
-      padding: 12px 14px;
-      border-bottom: 1px solid #1c2229;
-      font-size: 13px;
-      font-weight: bold;
-      color: #ddd;
-    }
-
-    .chat-board {
-      height: 330px;
-      overflow-y: auto;
-      padding: 12px;
-    }
-
-    .chat-empty {
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      color: #666;
-      font-size: 13px;
-    }
-
-    .chat-message {
-      display: flex;
-      margin: 10px 0;
-    }
-
-    .chat-message.user {
-      justify-content: flex-end;
-    }
-
-    .chat-message.era {
-      justify-content: flex-start;
-    }
-
-    .chat-content {
-      max-width: 85%;
-    }
-
-    .chat-label {
-      font-size: 10px;
-      color: #666;
-      margin: 0 5px 4px;
-    }
-
-    .chat-bubble {
-      padding: 11px 13px;
-      border-radius: 15px;
-      font-size: 14px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .chat-message.user .chat-bubble {
-      background: #fff;
-      color: #000;
-      border-bottom-right-radius: 5px;
-    }
-
-    .chat-message.era .chat-bubble {
-      background: #151a20;
-      color: #eee;
-      border: 1px solid #242b33;
-      border-bottom-left-radius: 5px;
-    }
-
-    .chat-thinking {
-      color: #777;
-      font-size: 13px;
-      padding: 8px 4px;
-    }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 100%;
-      max-width: 600px;
-      background: #0b0e12;
-      border-top: 1px solid #1d2329;
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      padding: 9px 5px;
-      z-index: 10;
-    }
-
-    .nav-btn {
-      background: transparent;
-      color: #777;
-      padding: 7px 2px;
-      font-size: 11px;
-    }
-
-    .nav-btn.active {
-      color: white;
-    }
-
-    .nav-icon {
-      display: block;
-      font-size: 19px;
-      margin-bottom: 3px;
-    }
-
-    .empty {
-      text-align: center;
-      padding: 40px 15px;
-      color: #777;
-    }
-
-    @media (max-width: 380px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#07090d;color:#fff;min-height:100vh}
+.app{max-width:600px;margin:auto;min-height:100vh;padding-bottom:85px}
+header{padding:22px 18px 12px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:26px;font-weight:800}
+.status{font-size:12px;color:#8cffb0}
+.screen{display:none;padding:10px 15px}
+.screen.active{display:block}
+.hero{text-align:center;padding:25px 10px}
+.orb{width:115px;height:115px;margin:auto;border-radius:50%;background:radial-gradient(circle,#fff 0%,#8cffb0 8%,#14251d 40%,#08100c 70%);box-shadow:0 0 35px rgba(100,255,160,.25)}
+.state{margin-top:15px;color:#aaa;font-size:14px}
+.mic{margin-top:20px;width:65px;height:65px;border-radius:50%;border:1px solid #27332c;background:#101612;color:white;font-size:25px;cursor:pointer}
+.mic.listening{background:#183d28;border-color:#65ff9a;box-shadow:0 0 25px rgba(101,255,154,.3)}
+.mic:disabled{opacity:.5;cursor:not-allowed}
+.voice-test{display:block;margin:12px auto 0;padding:10px 18px;border-radius:10px;background:#151a20;color:#8cffb0;border:1px solid #26332b;font-size:12px;font-weight:bold}
+.language-box{margin:18px auto 0;max-width:260px;text-align:left}
+.language-label{display:block;font-size:12px;color:#777;margin-bottom:7px}
+.input-row{display:flex;gap:8px;margin-top:20px}
+input{flex:1;background:#101318;color:white;border:1px solid #252b33;border-radius:12px;padding:14px;outline:none}
+button{border:0;cursor:pointer}
+.send{background:#fff;color:#000;padding:0 17px;border-radius:12px;font-weight:bold}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.card{background:#0e1116;border:1px solid #1c2229;border-radius:16px;padding:15px}
+.card h3{font-size:13px;color:#999;margin-bottom:8px}
+.value{font-size:20px;font-weight:bold}
+.analysis,.trade{margin-top:12px;background:#0e1116;border:1px solid #1c2229;border-radius:16px;padding:16px}
+.section-title{font-size:18px;font-weight:bold;margin-bottom:12px}
+.trade-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #1b2026;font-size:14px}
+.trade-row:last-child{border-bottom:0}
+.green{color:#65ff9a}.red{color:#ff6666}.yellow{color:#ffd45c}
+select{width:100%;background:#101318;color:white;border:1px solid #252b33;border-radius:12px;padding:13px;margin-bottom:10px}
+.option-box{overflow-x:auto;border-radius:14px;border:1px solid #1c2229}
+table{width:100%;min-width:850px;border-collapse:collapse;font-size:11px}
+th{background:#15191f;color:#aaa;padding:10px 5px;position:sticky;top:0}
+td{padding:9px 5px;text-align:center;border-top:1px solid #1b2026}
+.ce{color:#ff7777}.pe{color:#68ff9e}
+.loading{padding:25px;text-align:center;color:#aaa}
+.message{margin-top:15px;padding:15px;background:#0e1116;border:1px solid #1c2229;border-radius:14px;line-height:1.5;color:#ddd}
+.chat-container{margin-top:15px;background:#0b0e12;border:1px solid #1c2229;border-radius:16px;overflow:hidden}
+.chat-header{padding:12px 14px;border-bottom:1px solid #1c2229;font-size:13px;font-weight:bold;color:#ddd}
+.chat-board{height:330px;overflow-y:auto;padding:12px}
+.chat-empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:#666;font-size:13px}
+.chat-message{display:flex;margin:10px 0}
+.chat-message.user{justify-content:flex-end}
+.chat-message.era{justify-content:flex-start}
+.chat-content{max-width:85%}
+.chat-label{font-size:10px;color:#666;margin:0 5px 4px}
+.chat-bubble{padding:11px 13px;border-radius:15px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.chat-message.user .chat-bubble{background:#fff;color:#000;border-bottom-right-radius:5px}
+.chat-message.era .chat-bubble{background:#151a20;color:#eee;border:1px solid #242b33;border-bottom-left-radius:5px}
+.chat-thinking{color:#777;font-size:13px;padding:8px 4px}
+.news-item{margin-top:10px;padding:12px;border:1px solid #1c2229;border-radius:12px;background:#101318}
+.news-item a{color:#8cffb0;text-decoration:none;font-weight:bold}
+.news-meta{font-size:10px;color:#777;margin-top:5px}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:600px;background:#0b0e12;border-top:1px solid #1d2329;display:grid;grid-template-columns:repeat(5,1fr);padding:9px 5px;z-index:10}
+.nav-btn{background:transparent;color:#777;padding:7px 2px;font-size:11px}
+.nav-btn.active{color:white}
+.nav-icon{display:block;font-size:19px;margin-bottom:3px}
+.empty{text-align:center;padding:40px 15px;color:#777}
+@media(max-width:380px){.grid{grid-template-columns:1fr}}
+</style>
 </head>
 
 <body>
 
 <div class="app">
 
-  <header>
-    <div class="logo">Era AI</div>
-    <div id="status" class="status">● Ready</div>
-  </header>
+<header>
+<div class="logo">Era AI</div>
+<div id="status" class="status">● Ready</div>
+</header>
 
+<section id="home" class="screen active">
 
-  <!-- HOME -->
-  <section id="home" class="screen active">
+<div class="hero">
 
-    <div class="hero">
+<div class="orb"></div>
 
-      <div class="orb"></div>
+<div id="state" class="state">Say "Era" to start</div>
 
-      <div id="state" class="state">
-        Say "Era" to start
-      </div>
+<button id="micBtn" class="mic" type="button">🎙️</button>
 
-      <button id="micBtn" class="mic">
-        🎙️
-      </button>
+<button id="voiceTestBtn" class="voice-test" type="button">
+🔊 Test Era Voice
+</button>
 
-      <button
-        id="voiceTestBtn"
-        class="voice-test"
-      >
-        🔊 Test Era Voice
-      </button>
+<div class="language-box">
+<label class="language-label">Era Language</label>
 
+<select id="languageSelect">
+<option value="hi-IN">🇮🇳 Hindi</option>
+<option value="gu-IN">🟢 Gujarati</option>
+<option value="en-IN">🇬🇧 English</option>
+</select>
+</div>
 
-      <!-- LANGUAGE SELECTOR -->
+<div class="input-row">
 
-      <div class="language-box">
+<input id="textInput" type="text" placeholder="Ask Era anything...">
 
-        <label class="language-label">
-          Era Language
-        </label>
+<button id="sendBtn" class="send" type="button">
+Send
+</button>
 
-        <select id="languageSelect">
+</div>
 
-          <option value="hi-IN">
-            🇮🇳 Hindi
-          </option>
+</div>
 
-          <option value="gu-IN">
-            🟢 Gujarati
-          </option>
+<div class="chat-container">
 
-          <option value="en-IN">
-            🇬🇧 English
-          </option>
+<div class="chat-header">💬 Era Chat</div>
 
-        </select>
+<div id="chatBoard" class="chat-board">
 
-      </div>
+<div id="chatEmpty" class="chat-empty">
+Era is ready.<br>
+Ask me anything.
+</div>
 
+</div>
+</div>
 
-      <div class="input-row">
+<div class="grid">
 
-        <input
-          id="textInput"
-          type="text"
-          placeholder="Ask Era anything..."
-        >
+<div class="card">
+<h3>NIFTY 50</h3>
+<div class="value" id="niftyValue">--</div>
+</div>
 
-        <button
-          id="sendBtn"
-          class="send"
-        >
-          Send
-        </button>
+<div class="card">
+<h3>BANKNIFTY</h3>
+<div class="value" id="bankValue">--</div>
+</div>
 
-      </div>
+<div class="card">
+<h3>FINNIFTY</h3>
+<div class="value" id="finValue">--</div>
+</div>
 
-    </div>
+<div class="card">
+<h3>SENSEX</h3>
+<div class="value" id="sensexValue">--</div>
+</div>
 
+</div>
 
-    <!-- CHAT BOARD -->
+<div class="analysis">
+<div class="section-title">Era Analysis</div>
+<div id="analysisText">Live market analysis will appear here.</div>
+</div>
 
-    <div class="chat-container">
+<div class="trade">
 
-      <div class="chat-header">
-        💬 Era Chat
-      </div>
+<div class="section-title">Trade Setup</div>
 
-      <div
-        id="chatBoard"
-        class="chat-board"
-      >
+<div class="trade-row">
+<span>Direction</span>
+<strong id="direction" class="yellow">WAIT</strong>
+</div>
 
-        <div
-          id="chatEmpty"
-          class="chat-empty"
-        >
-          Era is ready.<br>
-          Ask me anything.
-        </div>
+<div class="trade-row">
+<span>Entry</span>
+<strong id="entry">--</strong>
+</div>
 
-      </div>
+<div class="trade-row">
+<span>Stop Loss</span>
+<strong id="sl">--</strong>
+</div>
 
-    </div>
+<div class="trade-row">
+<span>Target 1</span>
+<strong id="target1">--</strong>
+</div>
 
+<div class="trade-row">
+<span>Target 2</span>
+<strong id="target2">--</strong>
+</div>
 
-    <!-- MARKET CARDS -->
-
-    <div class="grid">
-
-      <div class="card">
-        <h3>NIFTY 50</h3>
-        <div
-          class="value"
-          id="niftyValue"
-        >
-          --
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>BANKNIFTY</h3>
-        <div
-          class="value"
-          id="bankValue"
-        >
-          --
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>FINNIFTY</h3>
-        <div
-          class="value"
-          id="finValue"
-        >
-          --
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>SENSEX</h3>
-        <div
-          class="value"
-          id="sensexValue"
-        >
-          --
-        </div>
-      </div>
-
-    </div>
-
-
-    <!-- ANALYSIS -->
-
-    <div class="analysis">
-
-      <div class="section-title">
-        Era Analysis
-      </div>
-
-      <div id="analysisText">
-        Live market analysis will appear here.
-      </div>
-
-    </div>
-
-
-    <!-- TRADE SETUP -->
-
-    <div class="trade">
-
-      <div class="section-title">
-        Trade Setup
-      </div>
+<div class="trade-row">
+<span>R:R</span>
+<strong id="rr">--</strong>
+</div>
 
-      <div class="trade-row">
-        <span>Direction</span>
-        <strong
-          id="direction"
-          class="yellow"
-        >
-          WAIT
-        </strong>
-      </div>
+<div class="trade-row">
+<span>Status</span>
+<strong id="tradeStatus" class="yellow">NO TRADE</strong>
+</div>
 
-      <div class="trade-row">
-        <span>Entry</span>
-        <strong id="entry">
-          --
-        </strong>
-      </div>
+</div>
 
-      <div class="trade-row">
-        <span>Stop Loss</span>
-        <strong id="sl">
-          --
-        </strong>
-      </div>
+<div id="chatOutput" class="message" style="display:none;">
+Era is ready.
+</div>
 
-      <div class="trade-row">
-        <span>Target 1</span>
-        <strong id="target1">
-          --
-        </strong>
-      </div>
+</section>
 
-      <div class="trade-row">
-        <span>Target 2</span>
-        <strong id="target2">
-          --
-        </strong>
-      </div>
 
-      <div class="trade-row">
-        <span>R:R</span>
-        <strong id="rr">
-          --
-        </strong>
-      </div>
+<!-- NEWS -->
 
-      <div class="trade-row">
-        <span>Status</span>
-        <strong
-          id="tradeStatus"
-          class="yellow"
-        >
-          NO TRADE
-        </strong>
-      </div>
+<section id="news" class="screen">
 
-    </div>
+<div class="section-title">📰 NEWS</div>
 
+<div id="newsContainer">
 
-    <div
-      id="chatOutput"
-      class="message"
-      style="display:none;"
-    >
-      Era is ready.
-    </div>
+<div class="empty">
+Loading market news...
+</div>
 
-  </section>
+</div>
 
+</section>
 
-  <!-- NEWS -->
 
-  <section id="news" class="screen">
+<!-- OPTIONS -->
 
-    <div class="section-title">
-      📰 NEWS
-    </div>
+<section id="options" class="screen">
 
-    <div class="grid">
+<div class="section-title">📊 LIVE OPTION CHAIN</div>
 
-      <div class="card">
+<select id="indexSelect">
 
-        🇮🇳 INDIA
+<option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
+<option value="NSE_INDEX|Nifty Bank">BANKNIFTY</option>
+<option value="NSE_INDEX|Nifty Fin Service">FINNIFTY</option>
+<option value="BSE_INDEX|SENSEX">SENSEX</option>
 
-        <p style="color:#777;margin-top:8px;">
-          Live news connection pending.
-        </p>
+</select>
 
-      </div>
+<select id="expirySelect">
 
-      <div class="card">
+<option value="">Select Expiry</option>
 
-        🌎 GLOBAL
+</select>
 
-        <p style="color:#777;margin-top:8px;">
-          Live news connection pending.
-        </p>
+<button id="loadOptionsBtn"
+style="width:100%;padding:13px;border-radius:12px;background:#fff;color:#000;font-weight:bold;margin-bottom:12px;"
+type="button">
+Load Live Option Chain
+</button>
 
-      </div>
+<div id="optionStatus" class="message">
+Select expiry to load option chain.
+</div>
 
-    </div>
+<div class="option-box" style="margin-top:12px;">
 
-    <div class="empty">
-      News API connect hone ke baad
-      market-moving news yahan dikhegi.
-    </div>
+<table>
 
-  </section>
+<thead>
 
+<tr>
+<th colspan="5" class="ce">CALL / CE</th>
+<th>STRIKE</th>
+<th colspan="5" class="pe">PUT / PE</th>
+</tr>
 
-  <!-- OPTIONS -->
+<tr>
+<th>OI</th>
+<th>ΔOI</th>
+<th>VOL</th>
+<th>IV</th>
+<th>LTP</th>
+<th>STRIKE</th>
+<th>LTP</th>
+<th>IV</th>
+<th>VOL</th>
+<th>ΔOI</th>
+<th>OI</th>
+</tr>
 
-  <section id="options" class="screen">
+</thead>
 
-    <div class="section-title">
-      📊 LIVE OPTION CHAIN
-    </div>
+<tbody id="optionBody">
 
-    <select id="indexSelect">
+<tr>
+<td colspan="11" class="loading">
+No data loaded
+</td>
+</tr>
 
-      <option value="NSE_INDEX|Nifty 50">
-        NIFTY 50
-      </option>
+</tbody>
 
-      <option value="NSE_INDEX|Nifty Bank">
-        BANKNIFTY
-      </option>
+</table>
 
-      <option value="NSE_INDEX|Nifty Fin Service">
-        FINNIFTY
-      </option>
+</div>
 
-      <option value="BSE_INDEX|SENSEX">
-        SENSEX
-      </option>
+</section>
 
-    </select>
 
+<!-- HISTORY -->
 
-    <select id="expirySelect">
+<section id="history" class="screen">
 
-      <option value="">
-        Select Expiry
-      </option>
+<div class="section-title">📚 HISTORY</div>
 
-    </select>
+<div class="card">
 
+<h3>💬 CHAT HISTORY</h3>
 
-    <button
-      id="loadOptionsBtn"
-      style="
-        width:100%;
-        padding:13px;
-        border-radius:12px;
-        background:#fff;
-        color:#000;
-        font-weight:bold;
-        margin-bottom:12px;
-      "
-    >
-      Load Live Option Chain
-    </button>
+<div id="chatHistory">
+<div class="empty">No chat history yet.</div>
+</div>
 
+</div>
 
-    <div
-      id="optionStatus"
-      class="message"
-    >
-      Select expiry to load option chain.
-    </div>
+<div class="card" style="margin-top:12px;">
 
+<h3>📈 TRADE HISTORY</h3>
 
-    <div
-      class="option-box"
-      style="margin-top:12px;"
-    >
+<div id="tradeHistory">
+<div class="empty">No trade history yet.</div>
+</div>
 
-      <table>
+</div>
 
-        <thead>
+</section>
 
-          <tr>
 
-            <th
-              colspan="5"
-              class="ce"
-            >
-              CALL / CE
-            </th>
+<!-- PERFORMANCE -->
 
-            <th>
-              STRIKE
-            </th>
+<section id="performance" class="screen">
 
-            <th
-              colspan="5"
-              class="pe"
-            >
-              PUT / PE
-            </th>
+<div class="section-title">📊 PERFORMANCE</div>
 
-          </tr>
+<div class="grid">
 
+<div class="card">
+<h3>WEEKLY</h3>
+<div class="value">--</div>
+</div>
 
-          <tr>
+<div class="card">
+<h3>MONTHLY</h3>
+<div class="value">--</div>
+</div>
 
-            <th>OI</th>
-            <th>ΔOI</th>
-            <th>VOL</th>
-            <th>IV</th>
-            <th>LTP</th>
+<div class="card">
+<h3>ERA SETUPS</h3>
+<div class="value">0</div>
+</div>
 
-            <th>STRIKE</th>
+<div class="card">
+<h3>MY TRADES</h3>
+<div class="value">0</div>
+</div>
 
-            <th>LTP</th>
-            <th>IV</th>
-            <th>VOL</th>
-            <th>ΔOI</th>
-            <th>OI</th>
+</div>
 
-          </tr>
+<div class="empty">
+Performance tracking backend connect hone ke baad automatically update hoga.
+</div>
 
-        </thead>
-
-
-        <tbody id="optionBody">
-
-          <tr>
-
-            <td
-              colspan="11"
-              class="loading"
-            >
-              No data loaded
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </section>
-
-
-  <!-- HISTORY -->
-
-  <section id="history" class="screen">
-
-    <div class="section-title">
-      📚 HISTORY
-    </div>
-
-
-    <div class="card">
-
-      <h3>
-        💬 CHAT HISTORY
-      </h3>
-
-      <div id="chatHistory">
-
-        <div class="empty">
-          No chat history yet.
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div
-      class="card"
-      style="margin-top:12px;"
-    >
-
-      <h3>
-        📈 TRADE HISTORY
-      </h3>
-
-      <div id="tradeHistory">
-
-        <div class="empty">
-          No trade history yet.
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- PERFORMANCE -->
-
-  <section id="performance" class="screen">
-
-    <div class="section-title">
-      📊 PERFORMANCE
-    </div>
-
-
-    <div class="grid">
-
-      <div class="card">
-
-        <h3>WEEKLY</h3>
-
-        <div class="value">
-          --
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <h3>MONTHLY</h3>
-
-        <div class="value">
-          --
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <h3>ERA SETUPS</h3>
-
-        <div class="value">
-          0
-        </div>
-
-      </div>
-
-
-      <div class="card">
-
-        <h3>MY TRADES</h3>
-
-        <div class="value">
-          0
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="empty">
-      Performance tracking backend connect
-      hone ke baad automatically update hoga.
-    </div>
-
-  </section>
+</section>
 
 </div>
 
 
-<!-- BOTTOM NAV -->
-
 <nav class="bottom-nav">
 
-  <button
-    class="nav-btn active"
-    data-screen="home"
-  >
-    <span class="nav-icon">⌂</span>
-    Home
-  </button>
+<button class="nav-btn active" data-screen="home" type="button">
+<span class="nav-icon">⌂</span>
+Home
+</button>
 
+<button class="nav-btn" data-screen="news" type="button">
+<span class="nav-icon">📰</span>
+News
+</button>
 
-  <button
-    class="nav-btn"
-    data-screen="news"
-  >
-    <span class="nav-icon">📰</span>
-    News
-  </button>
+<button class="nav-btn" data-screen="options" type="button">
+<span class="nav-icon">📊</span>
+Options
+</button>
 
+<button class="nav-btn" data-screen="history" type="button">
+<span class="nav-icon">📚</span>
+History
+</button>
 
-  <button
-    class="nav-btn"
-    data-screen="options"
-  >
-    <span class="nav-icon">📊</span>
-    Options
-  </button>
-
-
-  <button
-    class="nav-btn"
-    data-screen="history"
-  >
-    <span class="nav-icon">📚</span>
-    History
-  </button>
-
-
-  <button
-    class="nav-btn"
-    data-screen="performance"
-  >
-    <span class="nav-icon">📈</span>
-    Performance
-  </button>
+<button class="nav-btn" data-screen="performance" type="button">
+<span class="nav-icon">📈</span>
+Performance
+</button>
 
 </nav>
 
 
 <script>
 
-  /* =========================================
-     ERA BACKEND
-  ========================================= */
-function sendMessageFromButton() {
-  const input = document.getElementById("textInput");
-  const debug = document.getElementById("chatDebug");
+"use strict";
 
-  const text = input.value.trim();
 
-  if (debug) {
-    debug.textContent = "Send button working...";
-  }
+/* =========================================
+   BACKEND
+========================================= */
 
-  if (!text) {
-    return;
-  }
+const BACKEND_URL = "https://era-ai.onrender.com";
 
-  input.value = "";
 
-  handleUserMessage(text);
+/* =========================================
+   BASIC ELEMENTS
+========================================= */
+
+const state = document.getElementById("state");
+const status = document.getElementById("status");
+const textInput = document.getElementById("textInput");
+const sendBtn = document.getElementById("sendBtn");
+const chatOutput = document.getElementById("chatOutput");
+const chatBoard = document.getElementById("chatBoard");
+const chatEmpty = document.getElementById("chatEmpty");
+const languageSelect = document.getElementById("languageSelect");
+
+
+/* =========================================
+   NAVIGATION
+========================================= */
+
+const navButtons = document.querySelectorAll(".nav-btn");
+const screens = document.querySelectorAll(".screen");
+
+navButtons.forEach(button => {
+
+button.addEventListener("click", () => {
+
+const screenName = button.dataset.screen;
+
+screens.forEach(screen => {
+screen.classList.remove("active");
+});
+
+const targetScreen = document.getElementById(screenName);
+
+if (targetScreen) {
+targetScreen.classList.add("active");
 }
-  const BACKEND_URL =
-    "https://era-ai.onrender.com";
 
+navButtons.forEach(btn => {
+btn.classList.remove("active");
+});
 
-  /* =========================================
-     NAVIGATION
-  ========================================= */
+button.classList.add("active");
 
-  const navButtons =
-    document.querySelectorAll(".nav-btn");
+if (screenName === "options") {
+loadExpiries();
+}
 
-  const screens =
-    document.querySelectorAll(".screen");
+if (screenName === "news") {
+loadNews();
+}
 
+});
 
-  navButtons.forEach(button => {
+});
 
-    button.addEventListener("click", () => {
 
-      const screenName =
-        button.dataset.screen;
+/* =========================================
+   OPTION CHAIN
+   ORIGINAL LOGIC PRESERVED
+========================================= */
 
+const indexSelect = document.getElementById("indexSelect");
+const expirySelect = document.getElementById("expirySelect");
+const optionBody = document.getElementById("optionBody");
+const optionStatus = document.getElementById("optionStatus");
 
-      screens.forEach(screen => {
+async function loadExpiries() {
 
-        screen.classList.remove("active");
+const instrumentKey = indexSelect.value;
 
-      });
+optionStatus.textContent = "Loading expiry dates...";
 
+expirySelect.innerHTML =
+'<option value="">Loading...</option>';
 
-      document
-        .getElementById(screenName)
-        .classList.add("active");
+try {
 
+const url =
+`${BACKEND_URL}/api/options/contracts` +
+`?instrument_key=${encodeURIComponent(instrumentKey)}`;
 
-      navButtons.forEach(btn => {
+const response = await fetch(url);
+const result = await response.json();
 
-        btn.classList.remove("active");
+if (!response.ok || !result.success) {
+throw new Error(result.error || "Unable to load contracts");
+}
 
-      });
+const contracts =
+Array.isArray(result.data) ? result.data : [];
 
+const expiries = [
+...new Set(
+contracts
+.map(item => item.expiry || item.expiry_date)
+.filter(Boolean)
+)
+].sort();
 
-      button.classList.add("active");
+expirySelect.innerHTML =
+'<option value="">Select Expiry</option>';
 
+expiries.forEach(expiry => {
 
-      if (screenName === "options") {
+const option = document.createElement("option");
 
-        loadExpiries();
+option.value = expiry;
+option.textContent = expiry;
 
-      }
+expirySelect.appendChild(option);
 
-    });
+});
 
-  });
+optionStatus.textContent =
+expiries.length
+? "Expiry loaded. Select expiry and load option chain."
+: "No expiry data returned.";
 
+} catch (error) {
 
-  /* =========================================
-     OPTION CHAIN
-     ORIGINAL LOGIC PRESERVED
-  ========================================= */
+console.error("Expiry error:", error);
 
-  const indexSelect =
-    document.getElementById("indexSelect");
+expirySelect.innerHTML =
+'<option value="">Unable to load</option>';
 
-  const expirySelect =
-    document.getElementById("expirySelect");
+optionStatus.textContent =
+"Option data load nahi ho pa raha: " +
+error.message;
 
-  const optionBody =
-    document.getElementById("optionBody");
+}
 
-  const optionStatus =
-    document.getElementById("optionStatus");
+}
 
 
-  async function loadExpiries() {
+async function loadOptionChain() {
 
-    const instrumentKey =
-      indexSelect.value;
+const instrumentKey = indexSelect.value;
+const expiry = expirySelect.value;
 
+if (!expiry) {
 
-    optionStatus.textContent =
-      "Loading expiry dates...";
+optionStatus.textContent =
+"Pehle expiry select kijiye.";
 
+return;
 
-    expirySelect.innerHTML =
-      '<option value="">Loading...</option>';
+}
 
+optionStatus.textContent =
+"Loading live option chain...";
 
-    try {
+optionBody.innerHTML =
+`<tr>
+<td colspan="11" class="loading">
+Loading...
+</td>
+</tr>`;
 
-      const url =
-        `${BACKEND_URL}/api/options/contracts` +
-        `?instrument_key=${encodeURIComponent(instrumentKey)}`;
+try {
 
+const url =
+`${BACKEND_URL}/api/options/chain` +
+`?instrument_key=${encodeURIComponent(instrumentKey)}` +
+`&expiry_date=${encodeURIComponent(expiry)}`;
 
-      const response =
-        await fetch(url);
+const response = await fetch(url);
+const result = await response.json();
 
+if (!response.ok || !result.success) {
+throw new Error(result.error || "Unable to load option chain");
+}
 
-      const result =
-        await response.json();
+renderOptionChain(result.data);
 
+optionStatus.textContent =
+"Live option-chain data loaded.";
 
-      if (
-        !response.ok ||
-        !result.success
-      ) {
+} catch (error) {
 
-        throw new Error(
-          result.error ||
-          "Unable to load contracts"
-        );
+console.error("Option chain error:", error);
 
-      }
+optionBody.innerHTML =
+`<tr>
+<td colspan="11" class="loading">
+Live data unavailable
+</td>
+</tr>`;
 
+optionStatus.textContent =
+"Option chain error: " +
+error.message;
 
-      const contracts =
-        Array.isArray(result.data)
-          ? result.data
-          : [];
+}
 
+}
 
-      const expiries = [
-        ...new Set(
-          contracts
-            .map(item =>
-              item.expiry ||
-              item.expiry_date
-            )
-            .filter(Boolean)
-        )
-      ].sort();
 
+function renderOptionChain(data) {
 
-      expirySelect.innerHTML =
-        '<option value="">Select Expiry</option>';
+optionBody.innerHTML = "";
 
+let rows = [];
 
-      expiries.forEach(expiry => {
+if (Array.isArray(data)) {
 
-        const option =
-          document.createElement("option");
+rows = data;
 
+} else if (data && Array.isArray(data.option_chain)) {
 
-        option.value =
-          expiry;
+rows = data.option_chain;
 
+} else if (data && Array.isArray(data.data)) {
 
-        option.textContent =
-          expiry;
+rows = data.data;
 
+}
 
-        expirySelect.appendChild(
-          option
-        );
+if (!rows.length) {
 
-      });
+optionBody.innerHTML =
+`<tr>
+<td colspan="11" class="loading">
+API ne option-chain rows return nahi kiye.
+</td>
+</tr>`;
 
+return;
 
-      optionStatus.textContent =
-        expiries.length
-          ? "Expiry loaded. Select expiry and load option chain."
-          : "No expiry data returned.";
+}
 
+rows.forEach(row => {
 
-    } catch (error) {
+const strike =
+row.strike_price ??
+row.strike ??
+"--";
 
-      console.error(error);
+const call =
+row.call_options ||
+row.CE ||
+row.ce ||
+{};
 
+const put =
+row.put_options ||
+row.PE ||
+row.pe ||
+{};
 
-      expirySelect.innerHTML =
-        '<option value="">Unable to load</option>';
+const callMarket =
+call.market_data ||
+call.marketData ||
+{};
 
+const putMarket =
+put.market_data ||
+put.marketData ||
+{};
 
-      optionStatus.textContent =
-        "Option data load nahi ho pa raha: " +
-        error.message;
+const callGreeks =
+call.option_greeks ||
+call.greeks ||
+{};
 
-    }
+const putGreeks =
+put.option_greeks ||
+put.greeks ||
+{};
 
-  }
+const tr = document.createElement("tr");
 
+tr.innerHTML = `
 
-  async function loadOptionChain() {
+<td class="ce">
+${formatNumber(callMarket.oi)}
+</td>
 
-    const instrumentKey =
-      indexSelect.value;
+<td class="ce">
+${formatNumber(
+callMarket.oi_change ??
+callMarket.change_in_oi
+)}
+</td>
 
+<td class="ce">
+${formatNumber(callMarket.volume)}
+</td>
 
-    const expiry =
-      expirySelect.value;
+<td class="ce">
+${formatNumber(
+callGreeks.iv ??
+callMarket.iv
+)}
+</td>
 
+<td class="ce">
+${formatNumber(callMarket.ltp)}
+</td>
 
-    if (!expiry) {
+<td>
+<strong>
+${formatNumber(strike)}
+</strong>
+</td>
 
-      optionStatus.textContent =
-        "Pehle expiry select kijiye.";
+<td class="pe">
+${formatNumber(putMarket.ltp)}
+</td>
 
-      return;
+<td class="pe">
+${formatNumber(
+putGreeks.iv ??
+putMarket.iv
+)}
+</td>
 
-    }
+<td class="pe">
+${formatNumber(putMarket.volume)}
+</td>
 
+<td class="pe">
+${formatNumber(
+putMarket.oi_change ??
+putMarket.change_in_oi
+)}
+</td>
 
-    optionStatus.textContent =
-      "Loading live option chain...";
+<td class="pe">
+${formatNumber(putMarket.oi)}
+</td>
 
+`;
 
-    optionBody.innerHTML =
-      `<tr>
-        <td colspan="11" class="loading">
-          Loading...
-        </td>
-      </tr>`;
+optionBody.appendChild(tr);
 
+});
 
-    try {
+}
 
-      const url =
-        `${BACKEND_URL}/api/options/chain` +
-        `?instrument_key=${encodeURIComponent(instrumentKey)}` +
-        `&expiry_date=${encodeURIComponent(expiry)}`;
 
+function formatNumber(value) {
 
-      const response =
-        await fetch(url);
+if (
+value === null ||
+value === undefined ||
+value === ""
+) {
+return "--";
+}
 
+if (typeof value === "number") {
 
-      const result =
-        await response.json();
+return Number.isInteger(value)
+? value.toLocaleString("en-IN")
+: value.toFixed(2);
 
+}
 
-      if (
-        !response.ok ||
-        !result.success
-      ) {
+return value;
 
-        throw new Error(
-          result.error ||
-          "Unable to load option chain"
-        );
+}
 
-      }
+indexSelect.addEventListener("change", loadExpiries);
 
+document
+.getElementById("loadOptionsBtn")
+.addEventListener("click", loadOptionChain);
 
-      renderOptionChain(
-        result.data
-      );
 
+/* =========================================
+   LANGUAGE
+========================================= */
 
-      optionStatus.textContent =
-        "Live option-chain data loaded.";
+function getSelectedLanguage() {
+return languageSelect.value;
+}
 
 
-    } catch (error) {
+/* =========================================
+   CHAT
+========================================= */
 
-      console.error(error);
+let chatConversation = [];
 
 
-      optionBody.innerHTML =
-        `<tr>
-          <td colspan="11" class="loading">
-            Live data unavailable
-          </td>
-        </tr>`;
+function addChatMessage(sender, text) {
 
+if (chatEmpty) {
+chatEmpty.style.display = "none";
+}
 
-      optionStatus.textContent =
-        "Option chain error: " +
-        error.message;
+const wrapper = document.createElement("div");
+wrapper.className = "chat-message " + sender;
 
-    }
+const content = document.createElement("div");
+content.className = "chat-content";
 
-  }
+const label = document.createElement("div");
+label.className = "chat-label";
+label.textContent = sender === "user" ? "You" : "Era";
 
+const bubble = document.createElement("div");
+bubble.className = "chat-bubble";
+bubble.textContent = text;
 
-  function renderOptionChain(data) {
+content.appendChild(label);
+content.appendChild(bubble);
 
-    optionBody.innerHTML = "";
+wrapper.appendChild(content);
+chatBoard.appendChild(wrapper);
 
+chatBoard.scrollTop = chatBoard.scrollHeight;
 
-    let rows = [];
+}
 
 
-    if (Array.isArray(data)) {
+function addThinking() {
 
-      rows = data;
+if (chatEmpty) {
+chatEmpty.style.display = "none";
+}
 
-    } else if (
-      data &&
-      Array.isArray(data.option_chain)
-    ) {
+removeThinking();
 
-      rows = data.option_chain;
+const wrapper = document.createElement("div");
+wrapper.id = "thinkingMessage";
+wrapper.className = "chat-message era";
 
-    } else if (
-      data &&
-      Array.isArray(data.data)
-    ) {
+const content = document.createElement("div");
+content.className = "chat-content";
 
-      rows = data.data;
+const label = document.createElement("div");
+label.className = "chat-label";
+label.textContent = "Era";
 
-    }
+const bubble = document.createElement("div");
+bubble.className = "chat-bubble";
 
+bubble.innerHTML =
+'<span class="chat-thinking">Thinking...</span>';
 
-    if (!rows.length) {
+content.appendChild(label);
+content.appendChild(bubble);
 
-      optionBody.innerHTML =
-        `<tr>
-          <td colspan="11" class="loading">
-            API ne option-chain rows return nahi kiye.
-          </td>
-        </tr>`;
+wrapper.appendChild(content);
+chatBoard.appendChild(wrapper);
 
-      return;
+chatBoard.scrollTop = chatBoard.scrollHeight;
 
-    }
+}
 
 
-    rows.forEach(row => {
+function removeThinking() {
 
-      const strike =
-        row.strike_price ??
-        row.strike ??
-        "--";
+const thinking =
+document.getElementById("thinkingMessage");
 
+if (thinking) {
+thinking.remove();
+}
 
-      const call =
-        row.call_options ||
-        row.CE ||
-        row.ce ||
-        {};
+}
 
 
-      const put =
-        row.put_options ||
-        row.PE ||
-        row.pe ||
-        {};
+function getAnswerFromResponse(result) {
 
+if (!result) {
+return "";
+}
 
-      const callMarket =
-        call.market_data ||
-        call.marketData ||
-        {};
+if (typeof result === "string") {
+return result;
+}
 
+return (
+result.reply ||
+result.response ||
+result.answer ||
+result.message ||
+result.text ||
+result.content ||
+result.data?.reply ||
+result.data?.response ||
+result.data?.answer ||
+result.data?.message ||
+result.data?.text ||
+result.data?.content ||
+""
+);
 
-      const putMarket =
-        put.market_data ||
-        put.marketData ||
-        {};
+}
 
 
-      const callGreeks =
-        call.option_greeks ||
-        call.greeks ||
-        {};
+/* =========================================
+   MAIN CHAT FUNCTION
+========================================= */
 
+async function handleUserMessage(text) {
 
-      const putGreeks =
-        put.option_greeks ||
-        put.greeks ||
-        {};
+const cleanText =
+String(text || "").trim();
 
+if (!cleanText) {
+return;
+}
 
-      const tr =
-        document.createElement("tr");
+console.log("ERA CHAT:", cleanText);
 
+addChatMessage("user", cleanText);
 
-      tr.innerHTML = `
+saveChat(cleanText);
 
-        <td class="ce">
-          ${formatNumber(callMarket.oi)}
-        </td>
+chatConversation.push({
+role: "user",
+content: cleanText
+});
 
-        <td class="ce">
-          ${formatNumber(
-            callMarket.oi_change ??
-            callMarket.change_in_oi
-          )}
-        </td>
+addThinking();
 
-        <td class="ce">
-          ${formatNumber(
-            callMarket.volume
-          )}
-        </td>
+state.textContent = "Thinking...";
+status.textContent = "● Thinking";
 
-        <td class="ce">
-          ${formatNumber(
-            callGreeks.iv ??
-            callMarket.iv
-          )}
-        </td>
 
-        <td class="ce">
-          ${formatNumber(
-            callMarket.ltp
-          )}
-        </td>
+try {
 
-        <td>
-          <strong>
-            ${formatNumber(strike)}
-          </strong>
-        </td>
+const response =
+await fetch(
+`${BACKEND_URL}/api/chat`,
+{
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+message: cleanText,
+language: getSelectedLanguage(),
+history: chatConversation.slice(-10)
+})
+}
+);
 
-        <td class="pe">
-          ${formatNumber(
-            putMarket.ltp
-          )}
-        </td>
+let result = null;
 
-        <td class="pe">
-          ${formatNumber(
-            putGreeks.iv ??
-            putMarket.iv
-          )}
-        </td>
+try {
+result = await response.json();
+} catch {
+result = null;
+}
 
-        <td class="pe">
-          ${formatNumber(
-            putMarket.volume
-          )}
-        </td>
+if (!response.ok) {
 
-        <td class="pe">
-          ${formatNumber(
-            putMarket.oi_change ??
-            putMarket.change_in_oi
-          )}
-        </td>
+throw new Error(
+result?.error ||
+result?.message ||
+"Chat server error"
+);
 
-        <td class="pe">
-          ${formatNumber(
-            putMarket.oi
-          )}
-        </td>
+}
 
-      `;
+const answer =
+getAnswerFromResponse(result);
 
+if (!answer) {
+throw new Error("Empty response from Era");
+}
 
-      optionBody.appendChild(tr);
+removeThinking();
 
-    });
+addChatMessage("era", answer);
 
-  }
+chatConversation.push({
+role: "assistant",
+content: answer
+});
 
+chatOutput.textContent = answer;
+chatOutput.style.display = "block";
 
-  function formatNumber(value) {
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-    if (
-      value === null ||
-      value === undefined ||
-      value === ""
-    ) {
+speak(answer);
 
-      return "--";
+} catch (error) {
 
-    }
+console.error("Era chat error:", error);
 
+removeThinking();
 
-    if (typeof value === "number") {
+const errorMessage =
+"Era se connection nahi ho pa raha: " +
+(error.message || "Unknown error");
 
-      return Number.isInteger(value)
-        ? value.toLocaleString("en-IN")
-        : value.toFixed(2);
+addChatMessage("era", errorMessage);
 
-    }
+chatOutput.textContent = errorMessage;
+chatOutput.style.display = "block";
 
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-    return value;
+}
 
-  }
+}
 
 
-  indexSelect.addEventListener(
-    "change",
-    loadExpiries
-  );
+/* =========================================
+   SEND BUTTON
+========================================= */
 
+sendBtn.addEventListener("click", () => {
 
-  document
-    .getElementById("loadOptionsBtn")
-    .addEventListener(
-      "click",
-      loadOptionChain
-    );
+const text = textInput.value.trim();
 
+if (!text) {
+return;
+}
 
-  /* =========================================
-     LANGUAGE
-  ========================================= */
+textInput.value = "";
 
-  const languageSelect =
-    document.getElementById(
-      "languageSelect"
-    );
+handleUserMessage(text);
 
+});
 
-  function getSelectedLanguage() {
 
-    return languageSelect.value;
+textInput.addEventListener("keydown", event => {
 
-  }
+if (event.key === "Enter") {
 
+event.preventDefault();
 
-  languageSelect.addEventListener(
-    "change",
-    () => {
+const text = textInput.value.trim();
 
-      if (recognition) {
+if (!text) {
+return;
+}
 
-        recognition.lang =
-          getSelectedLanguage();
+textInput.value = "";
 
-      }
+handleUserMessage(text);
 
+}
 
-      const names = {
+});
 
-        "hi-IN":
-          "Hindi selected",
 
-        "gu-IN":
-          "Gujarati selected",
+/* =========================================
+   SPEECH RECOGNITION
+========================================= */
 
-        "en-IN":
-          "English selected"
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
 
-      };
+let recognition = null;
+let listening = false;
 
+const micBtn =
+document.getElementById("micBtn");
 
-      state.textContent =
-        names[
-          getSelectedLanguage()
-        ];
 
-    }
-  );
+if (SpeechRecognition) {
 
+recognition = new SpeechRecognition();
 
-  /* =========================================
-     CHAT BOARD
-  ========================================= */
+recognition.continuous = false;
+recognition.interimResults = false;
+recognition.lang = getSelectedLanguage();
 
-  const textInput =
-    document.getElementById(
-      "textInput"
-    );
+recognition.onstart = () => {
 
+listening = true;
 
-  const sendBtn =
-    document.getElementById(
-      "sendBtn"
-    );
+micBtn.classList.add("listening");
 
+state.textContent = "Listening...";
+status.textContent = "● Listening";
 
-  const chatOutput =
-    document.getElementById(
-      "chatOutput"
-    );
+};
 
+recognition.onresult = event => {
 
-  const chatBoard =
-    document.getElementById(
-      "chatBoard"
-    );
+const text =
+event.results[0][0].transcript;
 
+textInput.value = text;
 
-  const chatEmpty =
-    document.getElementById(
-      "chatEmpty"
-    );
+handleUserMessage(text);
 
+};
 
-  let chatConversation = [];
+recognition.onerror = event => {
 
+console.log("Speech error:", event.error);
 
-  function addChatMessage(
-    sender,
-    text
-  ) {
+listening = false;
 
-    chatEmpty.style.display =
-      "none";
+micBtn.classList.remove("listening");
 
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-    const wrapper =
-      document.createElement("div");
+};
 
+recognition.onend = () => {
 
-    wrapper.className =
-      "chat-message " +
-      sender;
+listening = false;
 
+micBtn.classList.remove("listening");
 
-    const content =
-      document.createElement("div");
+if (
+status.textContent !== "● Thinking" &&
+status.textContent !== "● Speaking"
+) {
 
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-    content.className =
-      "chat-content";
+}
 
+};
 
-    const label =
-      document.createElement("div");
+micBtn.addEventListener("click", () => {
 
+if (listening) {
 
-    label.className =
-      "chat-label";
+recognition.stop();
 
+return;
 
-    label.textContent =
-      sender === "user"
-        ? "You"
-        : "Era";
+}
 
+recognition.lang = getSelectedLanguage();
 
-    const bubble =
-      document.createElement("div");
+try {
+recognition.start();
+} catch (error) {
+console.log(error);
+}
 
+});
 
-    bubble.className =
-      "chat-bubble";
+} else {
 
+micBtn.disabled = true;
+state.textContent =
+"Voice recognition not supported";
 
-    bubble.textContent =
-      text;
+}
 
 
-    content.appendChild(label);
-    content.appendChild(bubble);
+/* =========================================
+   LANGUAGE CHANGE
+========================================= */
 
-    wrapper.appendChild(content);
+languageSelect.addEventListener("change", () => {
 
-    chatBoard.appendChild(wrapper);
+if (recognition) {
+recognition.lang = getSelectedLanguage();
+}
 
+const names = {
+"hi-IN": "Hindi selected",
+"gu-IN": "Gujarati selected",
+"en-IN": "English selected"
+};
 
-    chatBoard.scrollTop =
-      chatBoard.scrollHeight;
+state.textContent =
+names[getSelectedLanguage()] ||
+"Language selected";
 
-  }
+});
 
 
-  function addThinking() {
+/* =========================================
+   VOICE
+========================================= */
 
-    chatEmpty.style.display =
-      "none";
+let availableVoices = [];
 
+function loadVoices() {
 
-    const wrapper =
-      document.createElement("div");
+if (!("speechSynthesis" in window)) {
+return;
+}
 
+availableVoices =
+window.speechSynthesis.getVoices();
 
-    wrapper.id =
-      "thinkingMessage";
+}
 
+loadVoices();
 
-    wrapper.className =
-      "chat-message era";
+if ("speechSynthesis" in window) {
 
+window.speechSynthesis.onvoiceschanged =
+loadVoices;
 
-    const content =
-      document.createElement("div");
+}
 
 
-    content.className =
-      "chat-content";
+function getBestVoice(language) {
 
+const languageCode =
+language.split("-")[0].toLowerCase();
 
-    const label =
-      document.createElement("div");
+const matching =
+availableVoices.filter(
+voice =>
+voice.lang &&
+voice.lang.toLowerCase().startsWith(languageCode)
+);
 
+if (!matching.length) {
+return null;
+}
 
-    label.className =
-      "chat-label";
+const femalePriority =
+matching.find(voice => {
 
+const name =
+voice.name.toLowerCase();
 
-    label.textContent =
-      "Era";
+return (
+name.includes("female") ||
+name.includes("woman") ||
+name.includes("girl") ||
+name.includes("natural") ||
+name.includes("samantha") ||
+name.includes("zira") ||
+name.includes("google")
+);
 
+});
 
-    const bubble =
-      document.createElement("div");
+return femalePriority || matching[0];
 
+}
 
-    bubble.className =
-      "chat-bubble";
 
+function speak(text) {
 
-    bubble.innerHTML =
-      '<span class="chat-thinking">Thinking...</span>';
+if (!("speechSynthesis" in window)) {
+return;
+}
 
+if (!text) {
+return;
+}
 
-    content.appendChild(label);
-    content.appendChild(bubble);
+window.speechSynthesis.cancel();
 
-    wrapper.appendChild(content);
+const language =
+getSelectedLanguage();
 
-    chatBoard.appendChild(wrapper);
+const utterance =
+new SpeechSynthesisUtterance(text);
 
+utterance.lang = language;
 
-    chatBoard.scrollTop =
-      chatBoard.scrollHeight;
+const voice =
+getBestVoice(language);
 
-  }
+if (voice) {
+utterance.voice = voice;
+}
 
+utterance.rate = 0.95;
+utterance.pitch = 1.08;
 
-  function removeThinking() {
+utterance.onstart = () => {
 
-    const thinking =
-      document.getElementById(
-        "thinkingMessage"
-      );
+state.textContent = "Speaking...";
+status.textContent = "● Speaking";
 
+};
 
-    if (thinking) {
+utterance.onend = () => {
 
-      thinking.remove();
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-    }
+};
 
-  }
+utterance.onerror = () => {
 
+state.textContent = "Ready";
+status.textContent = "● Ready";
 
-  function getAnswerFromResponse(result) {
+};
 
-    if (!result) {
+window.speechSynthesis.speak(utterance);
 
-      return "";
+}
 
-    }
 
+/* =========================================
+   VOICE TEST
+========================================= */
 
-    if (typeof result === "string") {
+document
+.getElementById("voiceTestBtn")
+.addEventListener("click", () => {
 
-      return result;
+const testMessages = {
 
-    }
+"hi-IN":
+"Namaste, main Era AI hoon. Voice system ready hai.",
 
+"gu-IN":
+"Namaste, hu Era AI chu. Voice system ready che.",
 
-    if (
-      result.reply
-    ) {
+"en-IN":
+"Hello, I am Era AI. The voice system is ready."
 
-      return result.reply;
+};
 
-    }
+speak(
+testMessages[getSelectedLanguage()]
+);
 
+});
 
-    if (
-      result.response
-    ) {
 
-      return result.response;
+/* =========================================
+   NEWS
+========================================= */
 
-    }
+async function loadNews() {
 
+const container =
+document.getElementById("newsContainer");
 
-    if (
-      result.answer
-    ) {
+container.innerHTML =
+'<div class="empty">Loading market news...</div>';
 
-      return result.answer;
+try {
 
-    }
+const response =
+await fetch(`${BACKEND_URL}/api/news`);
 
+let result = null;
 
-    if (
-      result.message
-    ) {
+try {
+result = await response.json();
+} catch {
+result = null;
+}
 
-      return result.message;
+if (!response.ok) {
+throw new Error(
+result?.error ||
+"Unable to load news"
+);
+}
 
-    }
+const articles =
+Array.isArray(result?.data)
+? result.data
+: [];
 
+if (!articles.length) {
 
-    if (
-      result.text
-    ) {
+container.innerHTML =
+`
+<div class="card">
+<h3>📰 MARKET NEWS</h3>
+<p style="color:#777;margin-top:8px;">
+No live news available right now.
+</p>
+</div>
+`;
 
-      return result.text;
+return;
 
-    }
+}
 
+container.innerHTML = "";
 
-    if (
-      result.content
-    ) {
+articles.forEach(article => {
 
-      return result.content;
+const item =
+document.createElement("div");
 
-    }
+item.className = "news-item";
 
+const title =
+document.createElement("div");
 
-    if (
-      result.data
-    ) {
+title.style.fontWeight = "bold";
+title.textContent =
+article.title || "Untitled";
 
-      return (
-        result.data.reply ||
-        result.data.response ||
-        result.data.answer ||
-        result.data.message ||
-        result.data.text ||
-        result.data.content ||
-        ""
-      );
+item.appendChild(title);
 
-    }
+if (article.description) {
 
+const description =
+document.createElement("div");
 
-    return "";
+description.style.cssText =
+"color:#aaa;font-size:12px;margin-top:7px;";
 
-  }
+description.textContent =
+article.description;
 
+item.appendChild(description);
 
-  async function handleUserMessage(text) {document.getElementById("chatDebug").textContent = "Message function chal raha hai...";
+}
 
-    text =
-      text.trim();
+if (article.source || article.publishedAt) {
 
+const meta =
+document.createElement("div");
 
-    if (!text) {
+meta.className = "news-meta";
 
-      return;
+meta.textContent =
+`${article.source || ""}${article.source && article.publishedAt ? " • " : ""}${article.publishedAt ? new Date(article.publishedAt).toLocaleString("en-IN") : ""}`;
 
-    }
+item.appendChild(meta);
 
+}
 
-    addChatMessage(
-      "user",
-      text
-    );
+if (article.url) {
 
+const link =
+document.createElement("a");
 
-    saveChat(text);
+link.href = article.url;
+link.target = "_blank";
+link.rel = "noopener noreferrer";
+link.textContent = "Read full news →";
 
+link.style.display = "block";
+link.style.marginTop = "9px";
 
-    const lowerText =
-      text.toLowerCase();
+item.appendChild(link);
 
+}
 
-    if (
-      lowerText.includes("option") ||
-      lowerText.includes("option chain")
-    ) {
+container.appendChild(item);
 
-      document
-        .querySelector(
-          '[data-screen="options"]'
-        )
-        .click();
+});
 
-    }
+} catch (error) {
 
+console.error("News error:", error);
 
-    chatConversation.push({
+container.innerHTML =
+`
+<div class="card">
+<h3>📰 NEWS</h3>
+<p style="color:#ff7777;margin-top:8px;">
+News load nahi ho pa rahi.
+</p>
+<p style="color:#777;margin-top:6px;font-size:12px;">
+${escapeHTML(error.message || "Unknown error")}
+</p>
+</div>
+`;
 
-      role:
-        "user",
+}
 
-      content:
-        text
+}
 
-    });
 
+/* =========================================
+   LOCAL CHAT HISTORY
+========================================= */
 
-    addThinking();
+function saveChat(message) {
 
+const history =
+JSON.parse(
+localStorage.getItem("era_chat_history") || "[]"
+);
 
-    state.textContent =
-      "Thinking...";
+history.push({
 
+time:
+new Date().toLocaleString("en-IN"),
 
-    status.textContent =
-      "● Thinking";
+message
 
+});
 
-    try {
+localStorage.setItem(
+"era_chat_history",
+JSON.stringify(history)
+);
 
-      const response =
-        await fetch(
-          `${BACKEND_URL}/api/chat`,
-          {
-            method:
-              "POST",
+renderChatHistory();
 
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
+}
 
-            body:
-              JSON.stringify({
 
-                message:
-                  text,
+function renderChatHistory() {
 
-                language:
-                  getSelectedLanguage(),
+const container =
+document.getElementById("chatHistory");
 
-                history:
-                  chatConversation.slice(-10)
+const history =
+JSON.parse(
+localStorage.getItem("era_chat_history") || "[]"
+);
 
-              })
+if (!history.length) {
 
-          }
-        );
+container.innerHTML =
+'<div class="empty">No chat history yet.</div>';
 
+return;
 
-      let result = null;
+}
 
+container.innerHTML =
+history
+.slice()
+.reverse()
+.map(item => `
 
-      try {
+<div style="
+padding:10px 0;
+border-bottom:1px solid #1b2026;
+">
 
-        result =
-          await response.json();
+<small style="color:#777;">
+${escapeHTML(item.time)}
+</small>
 
-      } catch {
+<div style="margin-top:5px;">
+${escapeHTML(item.message)}
+</div>
 
-        result = null;
+</div>
 
-      }
+`)
+.join("");
 
+}
 
-      if (!response.ok) {
 
-        throw new Error(
-          (
-            result &&
-            (
-              result.error ||
-              result.message
-            )
-          ) ||
-          "Chat server error"
-        );
+function escapeHTML(text) {
 
-      }
+return String(text)
+.replaceAll("&","&amp;")
+.replaceAll("<","&lt;")
+.replaceAll(">","&gt;")
+.replaceAll('"',"&quot;")
+.replaceAll("'","&#039;");
 
+}
 
-      const answer =
-        getAnswerFromResponse(
-          result
-        );
 
+/* =========================================
+   START
+========================================= */
 
-      if (!answer) {
+renderChatHistory();
 
-        throw new Error(
-          "Empty response from Era"
-        );
-
-      }
-
-
-      removeThinking();
-
-
-      addChatMessage(
-        "era",
-        answer
-      );
-
-
-      chatConversation.push({
-
-        role:
-          "assistant",
-
-        content:
-          answer
-
-      });
-
-
-      chatOutput.textContent =
-        answer;
-
-
-      state.textContent =
-        "Ready";
-
-
-      status.textContent =
-        "● Ready";
-
-
-      speak(answer);
-
-    } catch (error) {
-
-      console.error(
-        "Era chat error:",
-        error
-      );
-
-
-      removeThinking();
-
-
-      const errorMessage =
-        "Era se connection nahi ho pa raha. Please try again.";
-
-
-      addChatMessage(
-        "era",
-        errorMessage
-      );
-
-
-      chatOutput.textContent =
-        errorMessage;
-
-
-      state.textContent =
-        "Ready";
-
-
-      status.textContent =
-        "● Ready";
-
-    }
-
-  }
-
-
-  sendBtn.addEventListener(
-    "click",
-    () => {
-
-      const text =
-        textInput.value;
-
-
-      textInput.value =
-        "";
-
-
-      handleUserMessage(
-        text
-      );
-
-    }
-  );
-
-
-  textInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-
-        const text =
-          textInput.value;
-
-
-        textInput.value =
-          "";
-
-
-        handleUserMessage(
-          text
-        );
-
-      }
-
-    }
-  );
-
-
-  /* =========================================
-     SPEECH RECOGNITION
-  ========================================= */
-
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-
-  let recognition = null;
-  let listening = false;
-
-
-  const micBtn =
-    document.getElementById(
-      "micBtn"
-    );
-
-
-  const state =
-    document.getElementById(
-      "state"
-    );
-
-
-  const status =
-    document.getElementById(
-      "status"
-    );
-
-
-  if (SpeechRecognition) {
-
-    recognition =
-      new SpeechRecognition();
-
-
-    recognition.continuous =
-      false;
-
-
-    recognition.interimResults =
-      false;
-
-
-    recognition.lang =
-      getSelectedLanguage();
-
-
-    recognition.onstart =
-      () => {
-
-        listening = true;
-
-
-        micBtn.classList.add(
-          "listening"
-        );
-
-
-        state.textContent =
-          "Listening...";
-
-
-        status.textContent =
-          "● Listening";
-
-      };
-
-
-    recognition.onresult =
-      event => {
-
-        const text =
-          event.results[0][0]
-            .transcript;
-
-
-        textInput.value =
-          text;
-
-
-        handleUserMessage(
-          text
-        );
-
-      };
-
-
-    recognition.onerror =
-      event => {
-
-        console.log(
-          "Speech error:",
-          event.error
-        );
-
-
-        listening = false;
-
-
-        micBtn.classList.remove(
-          "listening"
-        );
-
-
-        state.textContent =
-          "Ready";
-
-
-        status.textContent =
-          "● Ready";
-
-      };
-
-
-    recognition.onend =
-      () => {
-
-        listening = false;
-
-
-        micBtn.classList.remove(
-          "listening"
-        );
-
-
-        if (
-          status.textContent !==
-          "● Thinking" &&
-          status.textContent !==
-          "● Speaking"
-        ) {
-
-          state.textContent =
-            "Ready";
-
-
-          status.textContent =
-            "● Ready";
-
-        }
-
-      };
-
-
-    micBtn.addEventListener(
-      "click",
-      () => {
-
-        if (listening) {
-
-          recognition.stop();
-
-          return;
-
-        }
-
-
-        recognition.lang =
-          getSelectedLanguage();
-
-
-        try {
-
-          recognition.start();
-
-        } catch (error) {
-
-          console.log(error);
-
-        }
-
-      }
-    );
-
-
-  } else {
-
-    micBtn.disabled = true;
-
-
-    state.textContent =
-      "Voice recognition not supported";
-
-  }
-
-
-  /* =========================================
-     FEMALE PRIORITY VOICE
-  ========================================= */
-
-  let availableVoices = [];
-
-
-  function loadVoices() {
-
-    if (
-      !("speechSynthesis" in window)
-    ) {
-
-      return;
-
-    }
-
-
-    availableVoices =
-      window.speechSynthesis
-        .getVoices();
-
-  }
-
-
-  loadVoices();
-
-
-  if (
-    "speechSynthesis" in window
-  ) {
-
-    window.speechSynthesis
-      .onvoiceschanged =
-      loadVoices;
-
-  }
-
-
-  function getBestVoice(language) {
-
-    const languageCode =
-      language
-        .split("-")[0]
-        .toLowerCase();
-
-
-    let matching =
-      availableVoices.filter(
-        voice =>
-          voice.lang &&
-          voice.lang
-            .toLowerCase()
-            .startsWith(
-              languageCode
-            )
-      );
-
-
-    if (!matching.length) {
-
-      matching =
-        availableVoices.filter(
-          voice =>
-            voice.lang &&
-            voice.lang
-              .toLowerCase()
-              .includes(
-                languageCode
-              )
-        );
-
-    }
-
-
-    if (!matching.length) {
-
-      return null;
-
-    }
-
-
-    const femalePriority =
-      matching.find(voice => {
-
-        const name =
-          voice.name
-            .toLowerCase();
-
-
-        return (
-          name.includes("female") ||
-          name.includes("woman") ||
-          name.includes("girl") ||
-          name.includes("natural") ||
-          name.includes("samantha") ||
-          name.includes("zira") ||
-          name.includes("google")
-        );
-
-      });
-
-
-    return (
-      femalePriority ||
-      matching[0]
-    );
-
-  }
-
-
-  function speak(text) {
-
-    if (
-      !("speechSynthesis" in window)
-    ) {
-
-      return;
-
-    }
-
-
-    if (!text) {
-
-      return;
-
-    }
-
-
-    window.speechSynthesis.cancel();
-
-
-    const language =
-      getSelectedLanguage();
-
-
-    const utterance =
-      new SpeechSynthesisUtterance(
-        text
-      );
-
-
-    utterance.lang =
-      language;
-
-
-    const voice =
-      getBestVoice(
-        language
-      );
-
-
-    if (voice) {
-
-      utterance.voice =
-        voice;
-
-    }
-
-
-    utterance.rate =
-      0.95;
-
-
-    utterance.pitch =
-      1.08;
-
-
-    utterance.onstart =
-      () => {
-
-        state.textContent =
-          "Speaking...";
-
-
-        status.textContent =
-          "● Speaking";
-
-      };
-
-
-    utterance.onend =
-      () => {
-
-        state.textContent =
-          "Ready";
-
-
-        status.textContent =
-          "● Ready";
-
-      };
-
-
-    utterance.onerror =
-      () => {
-
-        state.textContent =
-          "Ready";
-
-
-        status.textContent =
-          "● Ready";
-
-      };
-
-
-    window.speechSynthesis
-      .speak(
-        utterance
-      );
-
-  }
-
-
-  /* =========================================
-     VOICE TEST
-  ========================================= */
-
-  const voiceTestBtn =
-    document.getElementById(
-      "voiceTestBtn"
-    );
-
-
-  voiceTestBtn.addEventListener(
-    "click",
-    () => {
-
-      const testMessages = {
-
-        "hi-IN":
-          "Namaste, main Era AI hoon. Voice system ready hai.",
-
-        "gu-IN":
-          "Namaste, hu Era AI chu. Voice system ready che.",
-
-        "en-IN":
-          "Hello, I am Era AI. The voice system is ready."
-
-      };
-
-
-      speak(
-        testMessages[
-          getSelectedLanguage()
-        ]
-      );
-
-    }
-  );
-
-
-  /* =========================================
-     LOCAL CHAT HISTORY
-  ========================================= */
-
-  function saveChat(message) {
-
-    const history =
-      JSON.parse(
-        localStorage.getItem(
-          "era_chat_history"
-        ) || "[]"
-      );
-
-
-    history.push({
-
-      time:
-        new Date()
-          .toLocaleString(
-            "en-IN"
-          ),
-
-      message
-
-    });
-
-
-    localStorage.setItem(
-      "era_chat_history",
-      JSON.stringify(history)
-    );
-
-
-    renderChatHistory();
-
-  }
-
-
-  function renderChatHistory() {
-
-    const container =
-      document.getElementById(
-        "chatHistory"
-      );
-
-
-    const history =
-      JSON.parse(
-        localStorage.getItem(
-          "era_chat_history"
-        ) || "[]"
-      );
-
-
-    if (!history.length) {
-
-      container.innerHTML =
-        '<div class="empty">No chat history yet.</div>';
-
-      return;
-
-    }
-
-
-    container.innerHTML =
-      history
-        .slice()
-        .reverse()
-        .map(item => `
-
-          <div style="
-            padding:10px 0;
-            border-bottom:1px solid #1b2026;
-          ">
-
-            <small style="
-              color:#777;
-            ">
-              ${item.time}
-            </small>
-
-            <div style="
-              margin-top:5px;
-            ">
-              ${escapeHTML(
-                item.message
-              )}
-            </div>
-
-          </div>
-
-        `)
-        .join("");
-
-  }
-
-
-  function escapeHTML(text) {
-
-    return text
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      )
-      .replaceAll(
-        "'",
-        "&#039;"
-      );
-
-  }
-
-
-  /* =========================================
-     START
-  ========================================= */
-
-  renderChatHistory();
+console.log("Era AI V3 frontend loaded successfully.");
 
 </script>
 
