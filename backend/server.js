@@ -11,19 +11,21 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-const UPSTOX_BASE =
-  "https://api.upstox.com";
-
+const UPSTOX_BASE = "https://api.upstox.com/v2";
+const UPSTOX_V3 = "https://api.upstox.com/v3";
 const OPENROUTER_URL =
   "https://openrouter.ai/api/v1/chat/completions";
 
+const NIFTY_KEY = "NSE_INDEX|Nifty 50";
+const VIX_KEY = "NSE_INDEX|India VIX";
+const GIFT_KEY = "GLOBAL_INDEX|SGX NIFTY";
+
 
 /* =====================================================
-   UPSTOX AUTH
+   AUTH
 ===================================================== */
 
 function authHeaders() {
-
   if (!process.env.UPSTOX_ACCESS_TOKEN) {
     throw new Error("UPSTOX_ACCESS_TOKEN is missing");
   }
@@ -42,681 +44,595 @@ function authHeaders() {
 ===================================================== */
 
 app.get("/", (req, res) => {
-
   res.json({
-    app: "Era AI",
+    app: "Era AI V4",
     status: "online",
-    message: "Era AI backend is running"
+    message: "Era AI V4 backend is running"
   });
-
 });
 
 
 /* =====================================================
-   LIVE MARKET DATA
+   QUOTE HELPER
+===================================================== */
+
+function findQuote(data, instrumentKey) {
+  if (!data || typeof data !== "object") {
+    return {};
+  }
+
+  if (data[instrumentKey]) {
+    return data[instrumentKey];
+  }
+
+  const encoded =
+    instrumentKey.replace("|", "%7C");
+
+  if (data[encoded]) {
+    return data[encoded];
+  }
+
+  const shortName =
+    instrumentKey.split("|")[1];
+
+  for (const key of Object.keys(data)) {
+    if (
+      key.includes(shortName) ||
+      key.includes(encoded)
+    ) {
+      return data[key];
+    }
+  }
+
+  return {};
+}
+
+
+/* =====================================================
+   LIVE MARKET
 ===================================================== */
 
 async function getLiveMarketData() {
-
   try {
 
-    const instrumentKeys = [
-      "NSE_INDEX|Nifty 50",
-      "NSE_INDEX|India VIX",
-      "GLOBAL_INDEX|SGX NIFTY"
-    ].join(",");
+    const keys =
+      [
+        NIFTY_KEY,
+        VIX_KEY,
+        GIFT_KEY
+      ].join(",");
 
-
-    const response = await axios.get(
-      `${UPSTOX_BASE}/v3/market-quote/quotes`,
-      {
-        params: {
-          instrument_key: instrumentKeys
-        },
-
-        headers: authHeaders(),
-
-        timeout: 15000
-      }
-    );
-
+    const response =
+      await axios.get(
+        `${UPSTOX_BASE}/market-quote/quotes`,
+        {
+          params: {
+            instrument_key: keys
+          },
+          headers: authHeaders(),
+          timeout: 15000
+        }
+      );
 
     const data =
       response.data?.data || {};
 
-
     const nifty =
-      data["NSE_INDEX:Nifty 50"] || {};
+      findQuote(data, NIFTY_KEY);
 
     const vix =
-      data["NSE_INDEX:India VIX"] || {};
+      findQuote(data, VIX_KEY);
 
     const gift =
-      data["GLOBAL_INDEX:SGX NIFTY"] || {};
+      findQuote(data, GIFT_KEY);
+
+
+    function normalize(q) {
+
+      const ohlc =
+        q.ohlc || {};
+
+      return {
+        lastPrice:
+          q.last_price ?? null,
+
+        netChange:
+          q.net_change ?? null,
+
+        previousClose:
+          q.prev_close_price ??
+          ohlc.close ??
+          null,
+
+        open:
+          q.open ??
+          ohlc.open ??
+          null,
+
+        high:
+          q.high ??
+          ohlc.high ??
+          null,
+
+        low:
+          q.low ??
+          ohlc.low ??
+          null,
+
+        close:
+          q.close ??
+          ohlc.close ??
+          null,
+
+        volume:
+          q.volume ??
+          ohlc.volume ??
+          null
+      };
+    }
 
 
     return {
-
       success: true,
 
       timestamp:
         new Date().toISOString(),
 
-      nifty: {
+      nifty:
+        normalize(nifty),
 
-        lastPrice:
-          nifty.last_price ?? null,
+      indiaVix:
+        normalize(vix),
 
-        netChange:
-          nifty.net_change ?? null,
-
-        ohlc:
-          nifty.ohlc || {},
-
-        previousClose:
-          nifty.prev_close_price ??
-          nifty.ohlc?.close ??
-          null,
-
-        volume:
-          nifty.volume ?? null
-
-      },
-
-      indiaVix: {
-
-        lastPrice:
-          vix.last_price ?? null,
-
-        netChange:
-          vix.net_change ?? null,
-
-        previousClose:
-          vix.prev_close_price ??
-          vix.ohlc?.close ??
-          null
-
-      },
-
-      giftNifty: {
-
-        lastPrice:
-          gift.last_price ?? null,
-
-        netChange:
-          gift.net_change ?? null,
-
-        previousClose:
-          gift.prev_close_price ??
-          gift.ohlc?.close ??
-          null
-
-      }
-
+      giftNifty:
+        normalize(gift)
     };
-
 
   } catch (error) {
 
     console.error(
-      "Live market data error:",
+      "LIVE MARKET ERROR:",
       error.response?.data ||
       error.message
     );
 
-
     return {
-
       success: false,
 
       error:
         error.response?.data?.errors?.[0]?.message ||
         error.response?.data?.message ||
-        error.message ||
-        "Unable to fetch live market data"
-
+        error.message
     };
+  }
+}
 
+
+app.get("/api/market", async (req, res) => {
+
+  const data =
+    await getLiveMarketData();
+
+  if (!data.success) {
+    return res.status(500).json(data);
   }
 
+  res.json(data);
+});
+
+
+/* =====================================================
+   DATE HELPER
+===================================================== */
+
+function getIndiaDate() {
+
+  const now =
+    new Date();
+
+  const parts =
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone:
+          "Asia/Kolkata",
+
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }
+    ).formatToParts(now);
+
+  const map = {};
+
+  parts.forEach(p => {
+    map[p.type] = p.value;
+  });
+
+  return `${map.year}-${map.month}-${map.day}`;
 }
 
 
 /* =====================================================
-   MARKET DATA API
+   INTRADAY CANDLES
 ===================================================== */
 
-app.get("/api/market", async (req, res) => {
+async function getIntradayCandles(
+  instrumentKey = NIFTY_KEY,
+  interval = 5
+) {
 
   try {
 
-    const market =
-      await getLiveMarketData();
-
-
-    if (!market.success) {
-
-      return res.status(500).json(
-        market
+    const encoded =
+      encodeURIComponent(
+        instrumentKey
       );
-
-    }
-
-
-    res.json(market);
-
-
-  } catch (error) {
-
-    console.error(
-      "Market route error:",
-      error.message
-    );
-
-
-    res.status(500).json({
-
-      success: false,
-
-      error:
-        error.message ||
-        "Market data failed"
-
-    });
-
-  }
-
-});
-
-
-/* =====================================================
-   AI CHAT
-===================================================== */
-
-app.post("/api/chat", async (req, res) => {
-
-  try {
-
-    const apiKey =
-      process.env.OPENROUTER_API_KEY;
-
-
-    if (!apiKey) {
-
-      return res.status(500).json({
-
-        success: false,
-
-        error:
-          "OPENROUTER_API_KEY is missing"
-
-      });
-
-    }
-
-
-    const message =
-      req.body?.message;
-
-
-    const history =
-      Array.isArray(req.body?.history)
-        ? req.body.history
-        : [];
-
-
-    if (
-      !message ||
-      !String(message).trim()
-    ) {
-
-      return res.status(400).json({
-
-        success: false,
-
-        error:
-          "Message is required"
-
-      });
-
-    }
-
-
-    /* =================================================
-       FETCH LIVE MARKET DATA BEFORE AI
-    ================================================= */
-
-    const market =
-      await getLiveMarketData();
-
-
-    let marketContext = "";
-
-
-    if (market.success) {
-
-      marketContext = `
-
-LIVE MARKET DATA:
-
-NIFTY 50
-- Current Price: ${market.nifty.lastPrice ?? "N/A"}
-- Change: ${market.nifty.netChange ?? "N/A"}
-- Previous Close: ${market.nifty.previousClose ?? "N/A"}
-- Open: ${market.nifty.ohlc?.open ?? "N/A"}
-- High: ${market.nifty.ohlc?.high ?? "N/A"}
-- Low: ${market.nifty.ohlc?.low ?? "N/A"}
-
-INDIA VIX
-- Current: ${market.indiaVix.lastPrice ?? "N/A"}
-- Change: ${market.indiaVix.netChange ?? "N/A"}
-- Previous Close: ${market.indiaVix.previousClose ?? "N/A"}
-
-GIFT NIFTY
-- Current: ${market.giftNifty.lastPrice ?? "N/A"}
-- Change: ${market.giftNifty.netChange ?? "N/A"}
-- Previous Close: ${market.giftNifty.previousClose ?? "N/A"}
-
-IMPORTANT:
-This data was fetched from the connected market-data API.
-Do not say that you have no live market data if the values above are available.
-
-However:
-- Never guarantee whether Nifty will open up or down.
-- GIFT NIFTY is an indicator of pre-market/global sentiment, not a guaranteed prediction of NSE opening.
-- Clearly distinguish live facts from analysis.
-- If data is insufficient, say WAIT or NO TRADE.
-`;
-
-    } else {
-
-      marketContext = `
-
-LIVE MARKET DATA STATUS:
-Unable to retrieve live market data right now.
-
-Do NOT invent market prices.
-Tell the user that live market data is temporarily unavailable.
-`;
-
-
-    }
-
-
-    /* =================================================
-       ERA SYSTEM
-    ================================================= */
-
-    const systemMessage = {
-
-      role: "system",
-
-      content: `
-You are Era AI, a premium voice-controlled AI assistant.
-
-You are designed primarily for stock-market assistance.
-
-The user may speak in:
-- Hindi
-- Hinglish
-- Gujarati
-- English
-
-Always understand the user's language and reply in the same language when possible.
-
-Keep answers clear, practical and concise because your response may also be spoken aloud by voice.
-
-${marketContext}
-
-TRADING RULES:
-
-1. Never invent live market prices.
-
-2. Use the LIVE MARKET DATA supplied above whenever relevant.
-
-3. If the user asks:
-   "Nifty ka live price kya hai?"
-   give the current Nifty price from the supplied data.
-
-4. If the user asks:
-   "Kal Nifty up open hogi ya down?"
-   analyze available GIFT NIFTY, Nifty, VIX and other supplied information.
-
-5. Do NOT present an opening prediction as a certainty.
-
-6. Clearly use terms such as:
-   - Bullish bias
-   - Bearish bias
-   - Neutral
-   - WAIT
-   when appropriate.
-
-7. GIFT NIFTY is not a guaranteed prediction of NSE opening.
-
-8. If conditions are not sufficiently confirmed:
-   say WAIT or NO TRADE.
-
-9. Never guarantee profit.
-
-10. For a trading setup, when sufficient information exists, explain:
-   - Direction
-   - Entry
-   - Stop Loss
-   - Targets
-   - Risk/Reward
-   - Confirmations
-   - Invalidation
-
-11. Do not claim to have live data if the supplied data is unavailable.
-
-You are Era AI, not ChatGPT.
-
-For normal questions, answer naturally like an intelligent personal assistant.
-`
-
-    };
-
-
-    /* =================================================
-       HISTORY
-    ================================================= */
-
-    const safeHistory =
-      history
-        .slice(-20)
-        .filter(item =>
-          item &&
-          (
-            item.role === "user" ||
-            item.role === "assistant"
-          ) &&
-          typeof item.content === "string"
-        )
-        .map(item => ({
-
-          role:
-            item.role,
-
-          content:
-            item.content
-
-        }));
-
-
-    const messages = [
-
-      systemMessage,
-
-      ...safeHistory,
-
-      {
-
-        role: "user",
-
-        content:
-          String(message).trim()
-
-      }
-
-    ];
-
-
-    /* =================================================
-       OPENROUTER
-    ================================================= */
-
-    const response =
-      await axios.post(
-
-        OPENROUTER_URL,
-
-        {
-
-          model:
-            process.env.OPENROUTER_MODEL ||
-            "openai/gpt-4o-mini",
-
-          messages:
-            messages,
-
-          temperature:
-            0.4,
-
-          max_tokens:
-            800
-
-        },
-
-        {
-
-          headers: {
-
-            Authorization:
-              `Bearer ${apiKey}`,
-
-            "Content-Type":
-              "application/json",
-
-            "HTTP-Referer":
-              "https://shopybuzz.in",
-
-            "X-Title":
-              "Era AI"
-
-          },
-
-          timeout:
-            30000
-
-        }
-
-      );
-
-
-    const answer =
-      response.data
-        ?.choices?.[0]
-        ?.message?.content;
-
-
-    if (!answer) {
-
-      console.error(
-        "OpenRouter response:",
-        response.data
-      );
-
-
-      return res.status(500).json({
-
-        success: false,
-
-        error:
-          "AI ne koi response return nahi kiya"
-
-      });
-
-    }
-
-
-    res.json({
-
-      success: true,
-
-      reply:
-        answer
-
-    });
-
-
-  } catch (error) {
-
-    console.error(
-
-      "AI Chat Error:",
-
-      error.response?.data ||
-      error.message
-
-    );
-
-
-    const openRouterError =
-      error.response?.data
-        ?.error?.message;
-
-
-    res.status(
-      error.response?.status || 500
-    ).json({
-
-      success: false,
-
-      error:
-        openRouterError ||
-        error.message ||
-        "AI response failed"
-
-    });
-
-  }
-
-});
-
-
-/* =====================================================
-   NEWS
-===================================================== */
-
-app.get("/api/news", async (req, res) => {
-
-  try {
-
-    const apiKey =
-      process.env.NEWS_API_KEY;
-
-
-    if (!apiKey) {
-
-      return res.json({
-
-        success: true,
-
-        data: [],
-
-        message:
-          "NEWS_API_KEY is not configured"
-
-      });
-
-    }
-
 
     const response =
       await axios.get(
-
-        "https://newsapi.org/v2/everything",
-
+        `${UPSTOX_V3}/historical-candle/intraday/${encoded}/minutes/${interval}`,
         {
-
-          params: {
-
-            q:
-              "Indian stock market OR Nifty OR Sensex OR NSE OR BSE",
-
-            language:
-              "en",
-
-            sortBy:
-              "publishedAt",
-
-            pageSize:
-              20,
-
-            apiKey:
-              apiKey
-
-          },
-
-          timeout:
-            15000
-
+          headers: authHeaders(),
+          timeout: 15000
         }
-
       );
 
+    const candles =
+      response.data?.data?.candles || [];
 
-    const articles =
-      Array.isArray(
-        response.data?.articles
-      )
-        ? response.data.articles
-        : [];
-
-
-    const news =
-      articles.map(article => ({
-
-        title:
-          article.title || "",
-
-        description:
-          article.description || "",
-
-        url:
-          article.url || "",
-
-        image:
-          article.urlToImage || "",
-
-        source:
-          article.source?.name || "",
-
-        publishedAt:
-          article.publishedAt || ""
-
-      }));
-
-
-    res.json({
-
-      success: true,
-
-      data:
-        news
-
-    });
-
+    return candles
+      .map(c => ({
+        timestamp: c[0],
+        open: Number(c[1]),
+        high: Number(c[2]),
+        low: Number(c[3]),
+        close: Number(c[4]),
+        volume: Number(c[5] || 0),
+        oi: Number(c[6] || 0)
+      }))
+      .reverse();
 
   } catch (error) {
 
     console.error(
-
-      "News Error:",
-
+      "CANDLE ERROR:",
       error.response?.data ||
       error.message
+    );
 
+    return [];
+  }
+}
+
+
+/* =====================================================
+   EMA
+===================================================== */
+
+function calculateEMA(values, period) {
+
+  if (!values.length) {
+    return null;
+  }
+
+  if (values.length < period) {
+    return values[values.length - 1];
+  }
+
+  const multiplier =
+    2 / (period + 1);
+
+  let ema =
+    values
+      .slice(0, period)
+      .reduce(
+        (a, b) => a + b,
+        0
+      ) / period;
+
+  for (
+    let i = period;
+    i < values.length;
+    i++
+  ) {
+
+    ema =
+      (
+        values[i] - ema
+      ) *
+      multiplier +
+      ema;
+  }
+
+  return ema;
+}
+
+
+/* =====================================================
+   RSI
+===================================================== */
+
+function calculateRSI(
+  values,
+  period = 14
+) {
+
+  if (
+    values.length <= period
+  ) {
+    return null;
+  }
+
+  let gains = 0;
+  let losses = 0;
+
+  for (
+    let i = 1;
+    i <= period;
+    i++
+  ) {
+
+    const diff =
+      values[i] -
+      values[i - 1];
+
+    if (diff >= 0) {
+      gains += diff;
+    } else {
+      losses += Math.abs(diff);
+    }
+  }
+
+  let avgGain =
+    gains / period;
+
+  let avgLoss =
+    losses / period;
+
+  for (
+    let i = period + 1;
+    i < values.length;
+    i++
+  ) {
+
+    const diff =
+      values[i] -
+      values[i - 1];
+
+    const gain =
+      diff > 0 ? diff : 0;
+
+    const loss =
+      diff < 0 ? Math.abs(diff) : 0;
+
+    avgGain =
+      (
+        avgGain * (period - 1) +
+        gain
+      ) / period;
+
+    avgLoss =
+      (
+        avgLoss * (period - 1) +
+        loss
+      ) / period;
+  }
+
+  if (avgLoss === 0) {
+    return 100;
+  }
+
+  const rs =
+    avgGain / avgLoss;
+
+  return 100 - 100 / (1 + rs);
+}
+
+
+/* =====================================================
+   VWAP
+===================================================== */
+
+function calculateVWAP(candles) {
+
+  let cumulativePV = 0;
+  let cumulativeVolume = 0;
+
+  for (const c of candles) {
+
+    const typical =
+      (
+        c.high +
+        c.low +
+        c.close
+      ) / 3;
+
+    cumulativePV +=
+      typical *
+      c.volume;
+
+    cumulativeVolume +=
+      c.volume;
+  }
+
+  if (!cumulativeVolume) {
+    return null;
+  }
+
+  return (
+    cumulativePV /
+    cumulativeVolume
+  );
+}
+
+
+/* =====================================================
+   SUPPORT / RESISTANCE
+===================================================== */
+
+function calculateSupportResistance(
+  candles
+) {
+
+  if (!candles.length) {
+    return {
+      support: null,
+      resistance: null
+    };
+  }
+
+  const recent =
+    candles.slice(-20);
+
+  const lows =
+    recent.map(c => c.low);
+
+  const highs =
+    recent.map(c => c.high);
+
+  return {
+    support:
+      Math.min(...lows),
+
+    resistance:
+      Math.max(...highs)
+  };
+}
+
+
+/* =====================================================
+   TECHNICAL ANALYSIS
+===================================================== */
+
+async function getTechnicalAnalysis() {
+
+  const candles =
+    await getIntradayCandles(
+      NIFTY_KEY,
+      5
+    );
+
+  if (!candles.length) {
+
+    return {
+      success: false,
+      error:
+        "Technical candle data unavailable"
+    };
+  }
+
+  const closes =
+    candles.map(c => c.close);
+
+  const current =
+    closes[closes.length - 1];
+
+  const ema9 =
+    calculateEMA(
+      closes,
+      9
+    );
+
+  const ema20 =
+    calculateEMA(
+      closes,
+      20
+    );
+
+  const ema50 =
+    calculateEMA(
+      closes,
+      50
+    );
+
+  const rsi =
+    calculateRSI(
+      closes,
+      14
+    );
+
+  const vwap =
+    calculateVWAP(candles);
+
+  const sr =
+    calculateSupportResistance(
+      candles
     );
 
 
-    res.status(500).json({
+  let trend =
+    "SIDEWAYS";
 
-      success: false,
-
-      error:
-        "Unable to fetch news"
-
-    });
-
+  if (
+    current > ema9 &&
+    ema9 > ema20 &&
+    ema20 > ema50
+  ) {
+    trend = "BULLISH";
   }
 
-});
+  else if (
+    current < ema9 &&
+    ema9 < ema20 &&
+    ema20 < ema50
+  ) {
+    trend = "BEARISH";
+  }
+
+
+  let momentum =
+    "NEUTRAL";
+
+  if (rsi !== null) {
+
+    if (rsi >= 60) {
+      momentum = "POSITIVE";
+    }
+
+    else if (rsi <= 40) {
+      momentum = "NEGATIVE";
+    }
+  }
+
+
+  return {
+
+    success: true,
+
+    timeframe:
+      "5 minute",
+
+    candles:
+      candles.length,
+
+    current,
+
+    ema9,
+
+    ema20,
+
+    ema50,
+
+    rsi,
+
+    vwap,
+
+    support:
+      sr.support,
+
+    resistance:
+      sr.resistance,
+
+    trend,
+
+    momentum
+  };
+}
 
 
 /* =====================================================
    OPTION CONTRACTS
-   EXISTING LOGIC PRESERVED
 ===================================================== */
 
 app.get(
@@ -727,73 +643,77 @@ app.get(
 
       const instrumentKey =
         req.query.instrument_key ||
-        "NSE_INDEX|Nifty 50";
-
+        NIFTY_KEY;
 
       const response =
         await axios.get(
-
-          `${UPSTOX_BASE}/v2/option/contract`,
-
+          `${UPSTOX_BASE}/option/contract`,
           {
-
             params: {
-
               instrument_key:
                 instrumentKey
-
             },
 
             headers:
               authHeaders()
-
           }
-
         );
 
-
       res.json({
-
         success: true,
-
         data:
-          response.data.data
-
+          response.data?.data || []
       });
-
 
     } catch (error) {
 
       console.error(
-
-        "Option contract error:",
-
+        "OPTION CONTRACT ERROR:",
         error.response?.data ||
         error.message
-
       );
 
-
       res.status(500).json({
-
         success: false,
-
         error:
           "Unable to fetch option contracts"
-
       });
-
     }
-
   }
-
 );
 
 
 /* =====================================================
    OPTION CHAIN
-   EXISTING LOGIC PRESERVED
 ===================================================== */
+
+async function getOptionChain(
+  instrumentKey,
+  expiry
+) {
+
+  const response =
+    await axios.get(
+      `${UPSTOX_BASE}/option/chain`,
+      {
+        params: {
+          instrument_key:
+            instrumentKey,
+
+          expiry_date:
+            expiry
+        },
+
+        headers:
+          authHeaders(),
+
+        timeout: 15000
+      }
+    );
+
+  return response.data?.data || [];
+}
+
 
 app.get(
   "/api/options/chain",
@@ -803,87 +723,1100 @@ app.get(
 
       const instrumentKey =
         req.query.instrument_key ||
-        "NSE_INDEX|Nifty 50";
-
+        NIFTY_KEY;
 
       const expiry =
         req.query.expiry_date;
 
-
       if (!expiry) {
 
         return res.status(400).json({
-
           success: false,
-
           error:
             "expiry_date is required"
-
         });
+      }
 
+      const data =
+        await getOptionChain(
+          instrumentKey,
+          expiry
+        );
+
+      res.json({
+        success: true,
+        data
+      });
+
+    } catch (error) {
+
+      console.error(
+        "OPTION CHAIN ERROR:",
+        error.response?.data ||
+        error.message
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Unable to fetch option chain"
+      });
+    }
+  }
+);
+
+
+/* =====================================================
+   FIND NEAREST EXPIRY
+===================================================== */
+
+async function getNearestExpiry() {
+
+  try {
+
+    const response =
+      await axios.get(
+        `${UPSTOX_BASE}/option/contract`,
+        {
+          params: {
+            instrument_key:
+              NIFTY_KEY
+          },
+
+          headers:
+            authHeaders(),
+
+          timeout: 15000
+        }
+      );
+
+    const contracts =
+      response.data?.data || [];
+
+    const today =
+      getIndiaDate();
+
+    const expiries =
+      [
+        ...new Set(
+          contracts
+            .map(
+              x =>
+                x.expiry ||
+                x.expiry_date
+            )
+            .filter(
+              x => x && x >= today
+            )
+        )
+      ].sort();
+
+    return expiries[0] || null;
+
+  } catch (error) {
+
+    console.error(
+      "EXPIRY ERROR:",
+      error.response?.data ||
+      error.message
+    );
+
+    return null;
+  }
+}
+
+
+/* =====================================================
+   OPTION ANALYSIS
+===================================================== */
+
+async function getOptionAnalysis() {
+
+  try {
+
+    const expiry =
+      await getNearestExpiry();
+
+    if (!expiry) {
+
+      return {
+        success: false,
+        error:
+          "No valid Nifty expiry found"
+      };
+    }
+
+    const chain =
+      await getOptionChain(
+        NIFTY_KEY,
+        expiry
+      );
+
+    if (!Array.isArray(chain) || !chain.length) {
+
+      return {
+        success: false,
+        error:
+          "Option chain is empty"
+      };
+    }
+
+
+    let totalCallOI = 0;
+    let totalPutOI = 0;
+
+    let maxPain =
+      null;
+
+    const strikes = [];
+
+
+    for (const row of chain) {
+
+      const strike =
+        Number(
+          row.strike_price
+        );
+
+      if (
+        !Number.isFinite(strike)
+      ) {
+        continue;
+      }
+
+      strikes.push(strike);
+
+      const call =
+        row.call_options || {};
+
+      const put =
+        row.put_options || {};
+
+      const callMarket =
+        call.market_data || {};
+
+      const putMarket =
+        put.market_data || {};
+
+      const callOI =
+        Number(
+          callMarket.oi || 0
+        );
+
+      const putOI =
+        Number(
+          putMarket.oi || 0
+        );
+
+      totalCallOI += callOI;
+      totalPutOI += putOI;
+    }
+
+
+    const pcr =
+      totalCallOI > 0
+        ? totalPutOI / totalCallOI
+        : null;
+
+
+    /* ================================================
+       MAX PAIN
+    ================================================ */
+
+    if (strikes.length) {
+
+      let lowestPain =
+        Infinity;
+
+      for (const testStrike of strikes) {
+
+        let pain = 0;
+
+        for (const row of chain) {
+
+          const strike =
+            Number(
+              row.strike_price
+            );
+
+          const call =
+            row.call_options || {};
+
+          const put =
+            row.put_options || {};
+
+          const callMarket =
+            call.market_data || {};
+
+          const putMarket =
+            put.market_data || {};
+
+          const callOI =
+            Number(
+              callMarket.oi || 0
+            );
+
+          const putOI =
+            Number(
+              putMarket.oi || 0
+            );
+
+
+          if (
+            testStrike > strike
+          ) {
+            pain +=
+              (
+                testStrike -
+                strike
+              ) * callOI;
+          }
+
+          if (
+            testStrike < strike
+          ) {
+            pain +=
+              (
+                strike -
+                testStrike
+              ) * putOI;
+          }
+        }
+
+
+        if (
+          pain < lowestPain
+        ) {
+
+          lowestPain = pain;
+          maxPain = testStrike;
+        }
+      }
+    }
+
+
+    let bias =
+      "NEUTRAL";
+
+    if (
+      pcr !== null
+    ) {
+
+      if (pcr > 1.15) {
+        bias = "BULLISH";
+      }
+
+      else if (pcr < 0.85) {
+        bias = "BEARISH";
+      }
+    }
+
+
+    return {
+
+      success: true,
+
+      expiry,
+
+      totalCallOI,
+
+      totalPutOI,
+
+      pcr,
+
+      maxPain,
+
+      bias,
+
+      strikes
+    };
+
+  } catch (error) {
+
+    console.error(
+      "OPTION ANALYSIS ERROR:",
+      error.response?.data ||
+      error.message
+    );
+
+    return {
+      success: false,
+      error:
+        error.message
+    };
+  }
+}
+
+
+/* =====================================================
+   COMPLETE ERA ANALYSIS
+===================================================== */
+
+async function getEraAnalysis() {
+
+  const [
+    market,
+    technical,
+    options
+  ] =
+    await Promise.all([
+      getLiveMarketData(),
+      getTechnicalAnalysis(),
+      getOptionAnalysis()
+    ]);
+
+
+  let direction =
+    "WAIT";
+
+  let confidence =
+    0;
+
+  const reasons = [];
+
+
+  if (
+    technical.success
+  ) {
+
+    if (
+      technical.trend ===
+      "BULLISH"
+    ) {
+
+      confidence += 30;
+
+      reasons.push(
+        "Technical trend bullish"
+      );
+    }
+
+    else if (
+      technical.trend ===
+      "BEARISH"
+    ) {
+
+      confidence += 30;
+
+      reasons.push(
+        "Technical trend bearish"
+      );
+    }
+
+
+    if (
+      technical.rsi !== null
+    ) {
+
+      if (
+        technical.rsi > 55
+      ) {
+
+        confidence += 15;
+
+        reasons.push(
+          "RSI positive"
+        );
+      }
+
+      else if (
+        technical.rsi < 45
+      ) {
+
+        confidence += 15;
+
+        reasons.push(
+          "RSI negative"
+        );
+      }
+    }
+
+
+    if (
+      technical.vwap &&
+      technical.current >
+      technical.vwap
+    ) {
+
+      confidence += 10;
+
+      reasons.push(
+        "Price above VWAP"
+      );
+    }
+
+    else if (
+      technical.vwap &&
+      technical.current <
+      technical.vwap
+    ) {
+
+      confidence += 10;
+
+      reasons.push(
+        "Price below VWAP"
+      );
+    }
+  }
+
+
+  if (
+    options.success
+  ) {
+
+    if (
+      options.bias ===
+      "BULLISH"
+    ) {
+
+      confidence += 25;
+
+      reasons.push(
+        "Option PCR indicates bullish bias"
+      );
+    }
+
+    else if (
+      options.bias ===
+      "BEARISH"
+    ) {
+
+      confidence += 25;
+
+      reasons.push(
+        "Option PCR indicates bearish bias"
+      );
+    }
+  }
+
+
+  const technicalTrend =
+    technical.success
+      ? technical.trend
+      : "UNKNOWN";
+
+  const optionBias =
+    options.success
+      ? options.bias
+      : "UNKNOWN";
+
+
+  if (
+    technicalTrend === "BULLISH" &&
+    optionBias === "BULLISH"
+  ) {
+
+    direction =
+      "BUY";
+
+  }
+
+  else if (
+    technicalTrend === "BEARISH" &&
+    optionBias === "BEARISH"
+  ) {
+
+    direction =
+      "SELL";
+
+  }
+
+  else {
+
+    direction =
+      "WAIT";
+  }
+
+
+  /* ================================================
+     ENTRY / SL / TARGETS
+  ================================================ */
+
+  let entry = null;
+  let stopLoss = null;
+  let target1 = null;
+  let target2 = null;
+  let target3 = null;
+
+  if (
+    technical.success &&
+    direction !== "WAIT"
+  ) {
+
+    entry =
+      technical.current;
+
+
+    if (
+      direction === "BUY"
+    ) {
+
+      stopLoss =
+        technical.support;
+
+      const risk =
+        entry -
+        stopLoss;
+
+      if (risk > 0) {
+
+        target1 =
+          entry + risk;
+
+        target2 =
+          entry + risk * 2;
+
+        target3 =
+          entry + risk * 3;
+      }
+    }
+
+
+    if (
+      direction === "SELL"
+    ) {
+
+      stopLoss =
+        technical.resistance;
+
+      const risk =
+        stopLoss -
+        entry;
+
+      if (risk > 0) {
+
+        target1 =
+          entry - risk;
+
+        target2 =
+          entry - risk * 2;
+
+        target3 =
+          entry - risk * 3;
+      }
+    }
+  }
+
+
+  const riskReward =
+    entry &&
+    stopLoss &&
+    target2
+      ? Math.abs(
+          target2 - entry
+        ) /
+        Math.abs(
+          entry - stopLoss
+        )
+      : null;
+
+
+  if (
+    confidence < 55
+  ) {
+    direction =
+      "WAIT";
+  }
+
+
+  return {
+
+    success: true,
+
+    timestamp:
+      new Date().toISOString(),
+
+    signal: {
+      direction,
+      confidence,
+      entry,
+      stopLoss,
+      target1,
+      target2,
+      target3,
+      riskReward
+    },
+
+    market,
+
+    technical,
+
+    options,
+
+    reasons,
+
+    invalidation:
+      direction === "BUY"
+        ? "Bullish setup invalid if price loses key support and confirmation fails."
+        : direction === "SELL"
+          ? "Bearish setup invalid if price breaks key resistance and confirmation fails."
+          : "No trade until technical and option confirmation align."
+  };
+}
+
+
+/* =====================================================
+   ANALYSIS API
+===================================================== */
+
+app.get(
+  "/api/analysis",
+  async (req, res) => {
+
+    try {
+
+      const analysis =
+        await getEraAnalysis();
+
+      res.json(analysis);
+
+    } catch (error) {
+
+      console.error(
+        "ANALYSIS ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          error.message
+      });
+    }
+  }
+);
+
+
+/* =====================================================
+   NEWS
+===================================================== */
+
+app.get(
+  "/api/news",
+  async (req, res) => {
+
+    try {
+
+      const apiKey =
+        process.env.NEWS_API_KEY;
+
+      if (!apiKey) {
+
+        return res.json({
+          success: true,
+          data: [],
+          message:
+            "NEWS_API_KEY is not configured"
+        });
       }
 
 
       const response =
         await axios.get(
-
-          `${UPSTOX_BASE}/v2/option/chain`,
-
+          "https://newsapi.org/v2/everything",
           {
-
             params: {
 
-              instrument_key:
-                instrumentKey,
+              q:
+                "Indian stock market OR Nifty OR Sensex OR NSE OR BSE",
 
-              expiry_date:
-                expiry
+              language:
+                "en",
 
+              sortBy:
+                "publishedAt",
+
+              pageSize:
+                20,
+
+              apiKey
             },
 
-            headers:
-              authHeaders()
-
+            timeout: 15000
           }
-
         );
 
 
+      const articles =
+        Array.isArray(
+          response.data?.articles
+        )
+          ? response.data.articles
+          : [];
+
+
+      const news =
+        articles.map(article => ({
+
+          title:
+            article.title || "",
+
+          description:
+            article.description || "",
+
+          url:
+            article.url || "",
+
+          image:
+            article.urlToImage || "",
+
+          source:
+            article.source?.name || "",
+
+          publishedAt:
+            article.publishedAt || ""
+        }));
+
+
       res.json({
-
         success: true,
+        data: news
+      });
 
-        data:
-          response.data.data
+    } catch (error) {
 
+      console.error(
+        "NEWS ERROR:",
+        error.response?.data ||
+        error.message
+      );
+
+      res.status(500).json({
+        success: false,
+        error:
+          "Unable to fetch news"
+      });
+    }
+  }
+);
+
+
+/* =====================================================
+   AI CHAT
+===================================================== */
+
+app.post(
+  "/api/chat",
+  async (req, res) => {
+
+    try {
+
+      const apiKey =
+        process.env.OPENROUTER_API_KEY;
+
+
+      if (!apiKey) {
+
+        return res.status(500).json({
+          success: false,
+          error:
+            "OPENROUTER_API_KEY is missing"
+        });
+      }
+
+
+      const message =
+        req.body?.message;
+
+
+      const history =
+        Array.isArray(
+          req.body?.history
+        )
+          ? req.body.history
+          : [];
+
+
+      if (
+        !message ||
+        !String(message).trim()
+      ) {
+
+        return res.status(400).json({
+          success: false,
+          error:
+            "Message is required"
+        });
+      }
+
+
+      /* ==============================================
+         LIVE ERA ANALYSIS
+      ============================================== */
+
+      const analysis =
+        await getEraAnalysis();
+
+
+      let analysisContext =
+        "";
+
+
+      if (
+        analysis.success
+      ) {
+
+        analysisContext = `
+
+LIVE ERA ANALYSIS:
+
+SIGNAL:
+${analysis.signal.direction}
+
+CONFIDENCE:
+${analysis.signal.confidence}%
+
+ENTRY:
+${analysis.signal.entry ?? "N/A"}
+
+STOP LOSS:
+${analysis.signal.stopLoss ?? "N/A"}
+
+TARGET 1:
+${analysis.signal.target1 ?? "N/A"}
+
+TARGET 2:
+${analysis.signal.target2 ?? "N/A"}
+
+TARGET 3:
+${analysis.signal.target3 ?? "N/A"}
+
+RISK/REWARD:
+${analysis.signal.riskReward
+  ? analysis.signal.riskReward.toFixed(2)
+  : "N/A"}
+
+TECHNICAL TREND:
+${analysis.technical?.trend ?? "N/A"}
+
+RSI:
+${analysis.technical?.rsi ?? "N/A"}
+
+VWAP:
+${analysis.technical?.vwap ?? "N/A"}
+
+EMA 9:
+${analysis.technical?.ema9 ?? "N/A"}
+
+EMA 20:
+${analysis.technical?.ema20 ?? "N/A"}
+
+EMA 50:
+${analysis.technical?.ema50 ?? "N/A"}
+
+SUPPORT:
+${analysis.technical?.support ?? "N/A"}
+
+RESISTANCE:
+${analysis.technical?.resistance ?? "N/A"}
+
+OPTION BIAS:
+${analysis.options?.bias ?? "N/A"}
+
+PCR:
+${analysis.options?.pcr ?? "N/A"}
+
+MAX PAIN:
+${analysis.options?.maxPain ?? "N/A"}
+
+REASONS:
+${analysis.reasons.join("; ")}
+
+INVALIDATION:
+${analysis.invalidation}
+
+`;
+      }
+
+
+      /* ==============================================
+         SYSTEM
+      ============================================== */
+
+      const systemMessage = {
+
+        role: "system",
+
+        content: `
+You are Era AI V4, a premium voice-controlled stock-market assistant.
+
+The user may speak Hindi, Hinglish, Gujarati or English.
+
+Reply in the same language as the user.
+
+You receive live market data and calculated analysis from the Era backend.
+
+IMPORTANT:
+
+- Never invent live prices.
+- Never guarantee profit.
+- Never claim certainty about market direction.
+- Clearly distinguish LIVE DATA from ANALYSIS.
+- If signal is WAIT, do not force a BUY or SELL.
+- If confirmations are insufficient, say WAIT / NO TRADE.
+- Do not present the analysis as guaranteed.
+- Entry, SL and targets are analytical levels, not guaranteed execution prices.
+
+For a trading setup explain:
+
+Direction
+Entry
+Stop Loss
+Target 1
+Target 2
+Target 3
+Risk/Reward
+Confirmations
+Invalidation
+
+If the user asks for live Nifty price, use the supplied live Nifty value.
+
+If the user asks whether Nifty is bullish/bearish, use:
+- Nifty
+- GIFT NIFTY
+- India VIX
+- technical analysis
+- option analysis
+
+Do not use GIFT NIFTY alone as a prediction.
+
+If the user asks for a trade and confirmation is weak:
+say WAIT / NO TRADE.
+
+Keep responses concise and voice-friendly.
+
+${analysisContext}
+`
+      };
+
+
+      const safeHistory =
+        history
+          .slice(-20)
+          .filter(
+            item =>
+              item &&
+              (
+                item.role === "user" ||
+                item.role === "assistant"
+              ) &&
+              typeof item.content === "string"
+          )
+          .map(item => ({
+            role:
+              item.role,
+
+            content:
+              item.content
+          }));
+
+
+      const messages = [
+
+        systemMessage,
+
+        ...safeHistory,
+
+        {
+          role: "user",
+          content:
+            String(message).trim()
+        }
+
+      ];
+
+
+      const response =
+        await axios.post(
+          OPENROUTER_URL,
+
+          {
+            model:
+              process.env.OPENROUTER_MODEL ||
+              "openai/gpt-4o-mini",
+
+            messages,
+
+            temperature:
+              0.3,
+
+            max_tokens:
+              1000
+          },
+
+          {
+            headers: {
+
+              Authorization:
+                `Bearer ${apiKey}`,
+
+              "Content-Type":
+                "application/json",
+
+              "HTTP-Referer":
+                "https://alltimebest2501-eng.github.io/Era-ai/",
+
+              "X-Title":
+                "Era AI V4"
+            },
+
+            timeout:
+              30000
+          }
+        );
+
+
+      const answer =
+        response.data
+          ?.choices?.[0]
+          ?.message?.content;
+
+
+      if (!answer) {
+
+        return res.status(500).json({
+          success: false,
+          error:
+            "AI ne koi response return nahi kiya"
+        });
+      }
+
+
+      res.json({
+        success: true,
+        reply:
+          answer,
+
+        analysis:
+          analysis.success
+            ? analysis.signal
+            : null
       });
 
 
     } catch (error) {
 
       console.error(
-
-        "Option chain error:",
-
+        "AI CHAT ERROR:",
         error.response?.data ||
         error.message
-
       );
 
 
-      res.status(500).json({
+      res.status(
+        error.response?.status ||
+        500
+      ).json({
 
         success: false,
 
         error:
-          "Unable to fetch option chain"
-
+          error.response?.data?.error?.message ||
+          error.message ||
+          "AI response failed"
       });
-
     }
-
   }
-
 );
 
 
@@ -896,7 +1829,7 @@ app.listen(
   () => {
 
     console.log(
-      `Era AI backend running on port ${PORT}`
+      `Era AI V4 backend running on port ${PORT}`
     );
 
   }
