@@ -90,9 +90,27 @@
       cursor: pointer;
     }
 
+    .mic.listening {
+      background: #183d28;
+      border-color: #65ff9a;
+      box-shadow: 0 0 25px rgba(101,255,154,.3);
+    }
+
     .mic:disabled {
       opacity: .5;
       cursor: not-allowed;
+    }
+
+    .voice-test {
+      display: block;
+      margin: 12px auto 0;
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: #151a20;
+      color: #8cffb0;
+      border: 1px solid #26332b;
+      font-size: 12px;
+      font-weight: bold;
     }
 
     .language-box {
@@ -262,6 +280,93 @@
       color: #ddd;
     }
 
+    /* =========================================
+       CHAT BOARD
+    ========================================= */
+
+    .chat-container {
+      margin-top: 15px;
+      background: #0b0e12;
+      border: 1px solid #1c2229;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid #1c2229;
+      font-size: 13px;
+      font-weight: bold;
+      color: #ddd;
+    }
+
+    .chat-board {
+      height: 330px;
+      overflow-y: auto;
+      padding: 12px;
+    }
+
+    .chat-empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .chat-message {
+      display: flex;
+      margin: 10px 0;
+    }
+
+    .chat-message.user {
+      justify-content: flex-end;
+    }
+
+    .chat-message.era {
+      justify-content: flex-start;
+    }
+
+    .chat-content {
+      max-width: 85%;
+    }
+
+    .chat-label {
+      font-size: 10px;
+      color: #666;
+      margin: 0 5px 4px;
+    }
+
+    .chat-bubble {
+      padding: 11px 13px;
+      border-radius: 15px;
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .chat-message.user .chat-bubble {
+      background: #fff;
+      color: #000;
+      border-bottom-right-radius: 5px;
+    }
+
+    .chat-message.era .chat-bubble {
+      background: #151a20;
+      color: #eee;
+      border: 1px solid #242b33;
+      border-bottom-left-radius: 5px;
+    }
+
+    .chat-thinking {
+      color: #777;
+      font-size: 13px;
+      padding: 8px 4px;
+    }
+
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -333,6 +438,13 @@
         🎙️
       </button>
 
+      <button
+        id="voiceTestBtn"
+        class="voice-test"
+      >
+        🔊 Test Era Voice
+      </button>
+
 
       <!-- LANGUAGE SELECTOR -->
 
@@ -375,6 +487,32 @@
         >
           Send
         </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- CHAT BOARD -->
+
+    <div class="chat-container">
+
+      <div class="chat-header">
+        💬 Era Chat
+      </div>
+
+      <div
+        id="chatBoard"
+        class="chat-board"
+      >
+
+        <div
+          id="chatEmpty"
+          class="chat-empty"
+        >
+          Era is ready.<br>
+          Ask me anything.
+        </div>
 
       </div>
 
@@ -509,7 +647,11 @@
     </div>
 
 
-    <div id="chatOutput" class="message">
+    <div
+      id="chatOutput"
+      class="message"
+      style="display:none;"
+    >
       Era is ready.
     </div>
 
@@ -923,6 +1065,7 @@
 
   /* =========================================
      OPTION CHAIN
+     ORIGINAL LOGIC PRESERVED
   ========================================= */
 
   const indexSelect =
@@ -1354,87 +1497,6 @@
 
 
   /* =========================================
-     TEXT INPUT
-  ========================================= */
-
-  const textInput =
-    document.getElementById("textInput");
-
-
-  const sendBtn =
-    document.getElementById("sendBtn");
-
-
-  const chatOutput =
-    document.getElementById("chatOutput");
-
-
-  function handleUserMessage(text) {
-
-    text = text.trim();
-
-
-    if (!text) {
-      return;
-    }
-
-
-    chatOutput.textContent =
-      "Era received: " + text;
-
-
-    saveChat(text);
-
-
-    if (
-      text.toLowerCase().includes("option") ||
-      text.toLowerCase().includes("option chain")
-    ) {
-
-      document
-        .querySelector(
-          '[data-screen="options"]'
-        )
-        .click();
-
-    }
-
-  }
-
-
-  sendBtn.addEventListener(
-    "click",
-    () => {
-
-      handleUserMessage(
-        textInput.value
-      );
-
-      textInput.value = "";
-
-    }
-  );
-
-
-  textInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.key === "Enter") {
-
-        handleUserMessage(
-          textInput.value
-        );
-
-        textInput.value = "";
-
-      }
-
-    }
-  );
-
-
-  /* =========================================
      LANGUAGE
   ========================================= */
 
@@ -1481,6 +1543,537 @@
         names[
           getSelectedLanguage()
         ];
+
+    }
+  );
+
+
+  /* =========================================
+     CHAT BOARD
+  ========================================= */
+
+  const textInput =
+    document.getElementById(
+      "textInput"
+    );
+
+
+  const sendBtn =
+    document.getElementById(
+      "sendBtn"
+    );
+
+
+  const chatOutput =
+    document.getElementById(
+      "chatOutput"
+    );
+
+
+  const chatBoard =
+    document.getElementById(
+      "chatBoard"
+    );
+
+
+  const chatEmpty =
+    document.getElementById(
+      "chatEmpty"
+    );
+
+
+  let chatConversation = [];
+
+
+  function addChatMessage(
+    sender,
+    text
+  ) {
+
+    chatEmpty.style.display =
+      "none";
+
+
+    const wrapper =
+      document.createElement("div");
+
+
+    wrapper.className =
+      "chat-message " +
+      sender;
+
+
+    const content =
+      document.createElement("div");
+
+
+    content.className =
+      "chat-content";
+
+
+    const label =
+      document.createElement("div");
+
+
+    label.className =
+      "chat-label";
+
+
+    label.textContent =
+      sender === "user"
+        ? "You"
+        : "Era";
+
+
+    const bubble =
+      document.createElement("div");
+
+
+    bubble.className =
+      "chat-bubble";
+
+
+    bubble.textContent =
+      text;
+
+
+    content.appendChild(label);
+    content.appendChild(bubble);
+
+    wrapper.appendChild(content);
+
+    chatBoard.appendChild(wrapper);
+
+
+    chatBoard.scrollTop =
+      chatBoard.scrollHeight;
+
+  }
+
+
+  function addThinking() {
+
+    chatEmpty.style.display =
+      "none";
+
+
+    const wrapper =
+      document.createElement("div");
+
+
+    wrapper.id =
+      "thinkingMessage";
+
+
+    wrapper.className =
+      "chat-message era";
+
+
+    const content =
+      document.createElement("div");
+
+
+    content.className =
+      "chat-content";
+
+
+    const label =
+      document.createElement("div");
+
+
+    label.className =
+      "chat-label";
+
+
+    label.textContent =
+      "Era";
+
+
+    const bubble =
+      document.createElement("div");
+
+
+    bubble.className =
+      "chat-bubble";
+
+
+    bubble.innerHTML =
+      '<span class="chat-thinking">Thinking...</span>';
+
+
+    content.appendChild(label);
+    content.appendChild(bubble);
+
+    wrapper.appendChild(content);
+
+    chatBoard.appendChild(wrapper);
+
+
+    chatBoard.scrollTop =
+      chatBoard.scrollHeight;
+
+  }
+
+
+  function removeThinking() {
+
+    const thinking =
+      document.getElementById(
+        "thinkingMessage"
+      );
+
+
+    if (thinking) {
+
+      thinking.remove();
+
+    }
+
+  }
+
+
+  function getAnswerFromResponse(result) {
+
+    if (!result) {
+
+      return "";
+
+    }
+
+
+    if (typeof result === "string") {
+
+      return result;
+
+    }
+
+
+    if (
+      result.reply
+    ) {
+
+      return result.reply;
+
+    }
+
+
+    if (
+      result.response
+    ) {
+
+      return result.response;
+
+    }
+
+
+    if (
+      result.answer
+    ) {
+
+      return result.answer;
+
+    }
+
+
+    if (
+      result.message
+    ) {
+
+      return result.message;
+
+    }
+
+
+    if (
+      result.text
+    ) {
+
+      return result.text;
+
+    }
+
+
+    if (
+      result.content
+    ) {
+
+      return result.content;
+
+    }
+
+
+    if (
+      result.data
+    ) {
+
+      return (
+        result.data.reply ||
+        result.data.response ||
+        result.data.answer ||
+        result.data.message ||
+        result.data.text ||
+        result.data.content ||
+        ""
+      );
+
+    }
+
+
+    return "";
+
+  }
+
+
+  async function handleUserMessage(text) {
+
+    text =
+      text.trim();
+
+
+    if (!text) {
+
+      return;
+
+    }
+
+
+    addChatMessage(
+      "user",
+      text
+    );
+
+
+    saveChat(text);
+
+
+    const lowerText =
+      text.toLowerCase();
+
+
+    if (
+      lowerText.includes("option") ||
+      lowerText.includes("option chain")
+    ) {
+
+      document
+        .querySelector(
+          '[data-screen="options"]'
+        )
+        .click();
+
+    }
+
+
+    chatConversation.push({
+
+      role:
+        "user",
+
+      content:
+        text
+
+    });
+
+
+    addThinking();
+
+
+    state.textContent =
+      "Thinking...";
+
+
+    status.textContent =
+      "● Thinking";
+
+
+    try {
+
+      const response =
+        await fetch(
+          `${BACKEND_URL}/api/chat`,
+          {
+            method:
+              "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify({
+
+                message:
+                  text,
+
+                language:
+                  getSelectedLanguage(),
+
+                history:
+                  chatConversation.slice(-10)
+
+              })
+
+          }
+        );
+
+
+      let result = null;
+
+
+      try {
+
+        result =
+          await response.json();
+
+      } catch {
+
+        result = null;
+
+      }
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          (
+            result &&
+            (
+              result.error ||
+              result.message
+            )
+          ) ||
+          "Chat server error"
+        );
+
+      }
+
+
+      const answer =
+        getAnswerFromResponse(
+          result
+        );
+
+
+      if (!answer) {
+
+        throw new Error(
+          "Empty response from Era"
+        );
+
+      }
+
+
+      removeThinking();
+
+
+      addChatMessage(
+        "era",
+        answer
+      );
+
+
+      chatConversation.push({
+
+        role:
+          "assistant",
+
+        content:
+          answer
+
+      });
+
+
+      chatOutput.textContent =
+        answer;
+
+
+      state.textContent =
+        "Ready";
+
+
+      status.textContent =
+        "● Ready";
+
+
+      speak(answer);
+
+    } catch (error) {
+
+      console.error(
+        "Era chat error:",
+        error
+      );
+
+
+      removeThinking();
+
+
+      const errorMessage =
+        "Era se connection nahi ho pa raha. Please try again.";
+
+
+      addChatMessage(
+        "era",
+        errorMessage
+      );
+
+
+      chatOutput.textContent =
+        errorMessage;
+
+
+      state.textContent =
+        "Ready";
+
+
+      status.textContent =
+        "● Ready";
+
+    }
+
+  }
+
+
+  sendBtn.addEventListener(
+    "click",
+    () => {
+
+      const text =
+        textInput.value;
+
+
+      textInput.value =
+        "";
+
+
+      handleUserMessage(
+        text
+      );
+
+    }
+  );
+
+
+  textInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+
+        const text =
+          textInput.value;
+
+
+        textInput.value =
+          "";
+
+
+        handleUserMessage(
+          text
+        );
+
+      }
 
     }
   );
@@ -1541,6 +2134,11 @@
         listening = true;
 
 
+        micBtn.classList.add(
+          "listening"
+        );
+
+
         state.textContent =
           "Listening...";
 
@@ -1582,6 +2180,11 @@
         listening = false;
 
 
+        micBtn.classList.remove(
+          "listening"
+        );
+
+
         state.textContent =
           "Ready";
 
@@ -1598,12 +2201,26 @@
         listening = false;
 
 
-        state.textContent =
-          "Ready";
+        micBtn.classList.remove(
+          "listening"
+        );
 
 
-        status.textContent =
-          "● Ready";
+        if (
+          status.textContent !==
+          "● Thinking" &&
+          status.textContent !==
+          "● Speaking"
+        ) {
+
+          state.textContent =
+            "Ready";
+
+
+          status.textContent =
+            "● Ready";
+
+        }
 
       };
 
@@ -1651,7 +2268,7 @@
 
 
   /* =========================================
-     FEMALE-PRIORITY TEXT TO SPEECH
+     FEMALE PRIORITY VOICE
   ========================================= */
 
   let availableVoices = [];
@@ -1732,14 +2349,6 @@
     }
 
 
-    /*
-      Browser voice metadata does not
-      always specify gender.
-
-      We therefore prefer names commonly
-      associated with natural/female voices.
-    */
-
     const femalePriority =
       matching.find(voice => {
 
@@ -1781,7 +2390,9 @@
 
 
     if (!text) {
+
       return;
+
     }
 
 
@@ -1869,6 +2480,44 @@
       );
 
   }
+
+
+  /* =========================================
+     VOICE TEST
+  ========================================= */
+
+  const voiceTestBtn =
+    document.getElementById(
+      "voiceTestBtn"
+    );
+
+
+  voiceTestBtn.addEventListener(
+    "click",
+    () => {
+
+      const testMessages = {
+
+        "hi-IN":
+          "Namaste, main Era AI hoon. Voice system ready hai.",
+
+        "gu-IN":
+          "Namaste, hu Era AI chu. Voice system ready che.",
+
+        "en-IN":
+          "Hello, I am Era AI. The voice system is ready."
+
+      };
+
+
+      speak(
+        testMessages[
+          getSelectedLanguage()
+        ]
+      );
+
+    }
+  );
 
 
   /* =========================================
@@ -2004,4 +2653,4 @@
 </script>
 
 </body>
-</html>
+  </html>
