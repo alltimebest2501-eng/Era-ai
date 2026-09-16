@@ -8,7 +8,7 @@ const UpstoxClient = require("upstox-js-sdk");
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 const PORT = process.env.PORT || 3000;
 
@@ -160,12 +160,12 @@ app.get("/", (req, res) => {
 
   res.json({
 
-    app: "Era AI V4",
+    app: "Era AI V5",
 
     status: "online",
 
     message:
-      "Era AI V4 backend is running",
+      "Era AI V5 backend is running",
 
     liveOptions: {
 
@@ -192,10 +192,214 @@ app.get("/", (req, res) => {
 
       websocket2:
         websocket2Connected
+    },
+
+    naturalVoice: {
+
+      provider:
+        "ElevenLabs",
+
+      configured:
+        Boolean(
+          process.env.ELEVENLABS_API_KEY &&
+          process.env.ELEVENLABS_VOICE_ID
+        )
     }
   });
 
 });
+
+
+/* =====================================================
+   ELEVENLABS NATURAL FEMALE VOICE
+===================================================== */
+
+app.post(
+  "/api/tts",
+  async (req, res) => {
+
+    try {
+
+      const apiKey =
+        process.env.ELEVENLABS_API_KEY;
+
+      const voiceId =
+        process.env.ELEVENLABS_VOICE_ID;
+
+      const text =
+        typeof req.body?.text === "string"
+          ? req.body.text.trim()
+          : "";
+
+      if (!apiKey) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          error:
+            "ELEVENLABS_API_KEY is missing"
+        });
+      }
+
+      if (!voiceId) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          error:
+            "ELEVENLABS_VOICE_ID is missing"
+        });
+      }
+
+      if (!text) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          error:
+            "Text is required"
+        });
+      }
+
+
+      /*
+        Limit individual voice responses
+        to keep response time reasonable.
+      */
+
+      const cleanText =
+        text.slice(0, 4000);
+
+
+      const response =
+        await axios.post(
+
+          `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+
+          {
+
+            text:
+              cleanText,
+
+            model_id:
+              "eleven_multilingual_v2",
+
+            voice_settings: {
+
+              stability:
+                0.42,
+
+              similarity_boost:
+                0.82,
+
+              use_speaker_boost:
+                true
+            }
+          },
+
+          {
+
+            params: {
+
+              output_format:
+                "mp3_44100_128"
+            },
+
+            headers: {
+
+              "xi-api-key":
+                apiKey,
+
+              "Content-Type":
+                "application/json",
+
+              Accept:
+                "audio/mpeg"
+            },
+
+            responseType:
+              "arraybuffer",
+
+            timeout:
+              30000
+          }
+        );
+
+
+      res.set(
+        "Content-Type",
+        "audio/mpeg"
+      );
+
+      res.set(
+        "Cache-Control",
+        "no-store"
+      );
+
+      res.set(
+        "Content-Length",
+        response.data.length
+      );
+
+
+      res.send(
+        Buffer.from(
+          response.data
+        )
+      );
+
+
+    } catch (error) {
+
+      let detail =
+        error.message;
+
+
+      if (
+        error.response?.data
+      ) {
+
+        try {
+
+          detail =
+            Buffer
+              .from(
+                error.response.data
+              )
+              .toString("utf8");
+
+        } catch {
+
+          detail =
+            String(
+              error.response.data
+            );
+        }
+      }
+
+
+      console.error(
+        "[ELEVENLABS TTS ERROR]:",
+        detail
+      );
+
+
+      res.status(
+        error.response?.status ||
+        500
+      ).json({
+
+        success: false,
+
+        error:
+          "Natural voice generation failed"
+      });
+    }
+  }
+);
 
 
 /* =====================================================
@@ -1564,12 +1768,6 @@ function createOptionStreamer(
   }
 
 
-  /*
-    IMPORTANT:
-    Authentication must be configured
-    BEFORE MarketDataStreamerV3 is created.
-  */
-
   configureUpstoxSDK();
 
 
@@ -1579,10 +1777,6 @@ function createOptionStreamer(
       "ltpc"
     );
 
-
-  /*
-    Keep reconnect enabled.
-  */
 
   streamer.autoReconnect(
     true,
@@ -1625,11 +1819,6 @@ function createOptionStreamer(
 
 
       try {
-
-        /*
-          Subscribe ONLY this socket's
-          own instruments.
-        */
 
         streamer.subscribe(
           instrumentKeys,
@@ -1798,10 +1987,6 @@ function createOptionStreamer(
   );
 
 
-  /*
-    Connect AFTER all listeners are registered.
-  */
-
   console.log(
     `[LIVE OPTIONS] Connecting WebSocket #${socketNumber}...`
   );
@@ -1848,16 +2033,8 @@ async function startLiveOptionWebSocket() {
     }
 
 
-    /*
-      Configure SDK authentication FIRST.
-    */
-
     configureUpstoxSDK();
 
-
-    /*
-      Load every active CE/PE contract.
-    */
 
     const contracts =
       await fetchAllLiveOptionContracts();
@@ -1893,15 +2070,6 @@ async function startLiveOptionWebSocket() {
     );
 
 
-    /*
-      Maximum capacity:
-
-      Socket 1 = 5000
-      Socket 2 = 5000
-
-      Total = 10000
-    */
-
     if (
       allKeys.length >
       LTPC_CONNECTION_LIMIT *
@@ -1916,19 +2084,6 @@ async function startLiveOptionWebSocket() {
       );
     }
 
-
-    /*
-      Split all contracts.
-
-      Example:
-      5765
-
-      Socket 1:
-      5000
-
-      Socket 2:
-      765
-    */
 
     const socket1Keys =
       allKeys.slice(
@@ -1955,10 +2110,6 @@ async function startLiveOptionWebSocket() {
     );
 
 
-    /*
-      Reset state.
-    */
-
     websocket1Connected =
       false;
 
@@ -1984,24 +2135,12 @@ async function startLiveOptionWebSocket() {
       null;
 
 
-    /*
-      Create Socket #1.
-    */
-
     optionStreamer =
       createOptionStreamer(
         1,
         socket1Keys
       );
 
-
-    /*
-      Create Socket #2.
-
-      Delay only 1 second so that
-      both connections don't start
-      at exactly the same millisecond.
-    */
 
     if (
       socket2Keys.length
@@ -2034,15 +2173,6 @@ async function startLiveOptionWebSocket() {
       );
     }
 
-
-    /*
-      Initialization means that the
-      socket objects have been created.
-
-      Actual websocket status is separately
-      tracked by websocket1Connected /
-      websocket2Connected.
-    */
 
     liveOptionsInitialized =
       true;
@@ -2314,14 +2444,6 @@ async function getOptionChain(
     return rows;
   }
 
-
-  /*
-    REST option chain remains the source
-    for OI / Greeks.
-
-    WebSocket LTPC updates LTP
-    when available.
-  */
 
   return rows.map(row => {
 
@@ -3536,7 +3658,7 @@ ${analysis.invalidation}
         role: "system",
 
         content: `
-You are Era AI V4, a premium voice-controlled stock-market assistant.
+You are Era AI V5, a premium voice-controlled stock-market assistant.
 
 The user may speak Hindi, Hinglish, Gujarati or English.
 
@@ -3668,7 +3790,7 @@ ${analysisContext}
                 "https://alltimebest2501-eng.github.io/Era-ai/",
 
               "X-Title":
-                "Era AI V4"
+                "Era AI V5"
             },
 
             timeout:
@@ -3747,7 +3869,23 @@ app.listen(
   () => {
 
     console.log(
-      `Era AI V4 backend running on port ${PORT}`
+      `Era AI V5 backend running on port ${PORT}`
+    );
+
+    console.log(
+      `[ELEVENLABS] API key configured: ${
+        Boolean(
+          process.env.ELEVENLABS_API_KEY
+        )
+      }`
+    );
+
+    console.log(
+      `[ELEVENLABS] Voice ID configured: ${
+        Boolean(
+          process.env.ELEVENLABS_VOICE_ID
+        )
+      }`
     );
 
 
