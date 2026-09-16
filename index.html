@@ -1,939 +1,577 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Era AI</title>
-
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-}
-
-body{
-  background:#07090d;
-  color:#f5f7fa;
-  font-family:Arial,Helvetica,sans-serif;
-  min-height:100vh;
-}
-
-button,input,select{
-  font:inherit;
-}
-
-.app{
-  max-width:520px;
-  margin:auto;
-  min-height:100vh;
-  padding-bottom:90px;
-}
-
-/* HEADER */
-.top{
-  padding:18px 18px 10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.logo{
-  font-size:25px;
-  font-weight:800;
-}
-
-.logo span{
-  color:#25e68a;
-}
-
-.status{
-  font-size:12px;
-  color:#25e68a;
-  background:#10251c;
-  border:1px solid #1d5d40;
-  padding:7px 11px;
-  border-radius:20px;
-}
-
-/* SCREENS */
-.screen{
-  display:none;
-  padding:10px 16px 25px;
-}
-
-.screen.active{
-  display:block;
-}
-
-/* HOME */
-.hero{
-  margin-top:10px;
-  padding:22px;
-  border:1px solid #202630;
-  border-radius:24px;
-  background:linear-gradient(145deg,#10151d,#0a0d12);
-}
-
-.hero h1{
-  font-size:28px;
-  margin-bottom:8px;
-}
-
-.hero p{
-  color:#929aa8;
-  line-height:1.5;
-  font-size:14px;
-}
-
-.mic-wrap{
-  display:flex;
-  justify-content:center;
-  margin:25px 0;
-}
-
-.mic{
-  width:92px;
-  height:92px;
-  border-radius:50%;
-  border:1px solid #2c5e49;
-  background:#0e2119;
-  color:#25e68a;
-  font-size:36px;
-  cursor:pointer;
-}
-
-.mic.listening{
-  background:#173b2a;
-  box-shadow:0 0 45px rgba(37,230,138,.3);
-}
-
-.section-title{
-  margin:24px 0 12px;
-  font-size:17px;
-  font-weight:700;
-}
-
-/* MARKET */
-.market-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-.market{
-  padding:16px;
-  border:1px solid #202630;
-  background:#0d1117;
-  border-radius:18px;
-}
-
-.market-name{
-  font-size:13px;
-  color:#9ca4b1;
-}
-
-.market-value{
-  margin-top:8px;
-  font-size:19px;
-  font-weight:700;
-}
-
-.pending{
-  color:#f3c84b;
-  font-size:12px;
-  margin-top:6px;
-}
-
-/* CARDS */
-.card{
-  padding:18px;
-  border:1px solid #202630;
-  background:#0d1117;
-  border-radius:20px;
-  margin-bottom:12px;
-}
-
-.analysis-text{
-  color:#aab1bd;
-  line-height:1.6;
-  font-size:14px;
-}
-
-/* TRADE SETUP */
-.trade-box{
-  border-left:3px solid #f3c84b;
-}
-
-.trade-status{
-  color:#f3c84b;
-  font-weight:700;
-  margin-bottom:15px;
-}
-
-.trade-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-.trade-field{
-  background:#10151c;
-  border:1px solid #252c35;
-  border-radius:14px;
-  padding:13px;
-}
-
-.trade-label{
-  color:#7f8997;
-  font-size:11px;
-  margin-bottom:6px;
-}
-
-.trade-value{
-  font-size:16px;
-  font-weight:700;
-}
-
-.entry{
-  color:#4db6ff;
-}
-
-.sl{
-  color:#ff5d6c;
-}
-
-.target{
-  color:#25e68a;
-}
-
-.rr{
-  color:#f3c84b;
-}
-
-.wait{
-  display:inline-block;
-  margin-top:14px;
-  color:#f3c84b;
-  background:#29240f;
-  border:1px solid #62551d;
-  padding:7px 12px;
-  border-radius:10px;
-  font-size:12px;
-  font-weight:700;
-}
-
-/* ASK */
-.ask{
-  display:flex;
-  gap:8px;
-  margin-top:12px;
-}
-
-.ask input{
-  flex:1;
-  background:#0d1117;
-  border:1px solid #242b35;
-  color:white;
-  padding:14px;
-  border-radius:14px;
-  outline:none;
-}
-
-.ask button{
-  width:50px;
-  border:0;
-  border-radius:14px;
-  background:#25e68a;
-  color:#06120c;
-  font-weight:800;
-}
-
-/* PAGE TITLE */
-.page-title{
-  font-size:25px;
-  font-weight:800;
-  margin:8px 0 18px;
-}
-
-/* NEWS */
-.tabs{
-  display:flex;
-  gap:8px;
-  margin-bottom:14px;
-}
-
-.tab{
-  flex:1;
-  padding:12px;
-  border-radius:12px;
-  border:1px solid #252c35;
-  background:#0d1117;
-  color:#9da5b1;
-  cursor:pointer;
-}
-
-.tab.active{
-  color:#07120c;
-  background:#25e68a;
-}
-
-.news-item{
-  padding:16px;
-  border:1px solid #202630;
-  background:#0d1117;
-  border-radius:17px;
-  margin-bottom:10px;
-}
-
-.news-impact{
-  display:inline-block;
-  margin-top:10px;
-  font-size:11px;
-  padding:5px 8px;
-  border-radius:8px;
-  background:#29240f;
-  color:#f3c84b;
-}
-
-.news-empty,
-.history-empty{
-  text-align:center;
-  color:#737b88;
-  padding:40px 10px;
-}
-
-/* HISTORY */
-.history-tabs{
-  display:flex;
-  gap:8px;
-  margin-bottom:15px;
-}
-
-.history-item{
-  padding:16px;
-  border:1px solid #202630;
-  background:#0d1117;
-  border-radius:16px;
-  margin-bottom:10px;
-}
-
-.history-time{
-  color:#25e68a;
-  font-size:11px;
-  margin-bottom:8px;
-}
-
-/* PERFORMANCE */
-.performance-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-}
-
-.stat{
-  padding:18px;
-  background:#0d1117;
-  border:1px solid #202630;
-  border-radius:18px;
-}
-
-.stat-label{
-  color:#8d96a3;
-  font-size:12px;
-}
-
-.stat-value{
-  font-size:25px;
-  font-weight:800;
-  margin-top:8px;
-}
-
-.green{
-  color:#25e68a;
-}
-
-.red{
-  color:#ff5d6c;
-}
-
-.yellow{
-  color:#f3c84b;
-}
-
-/* OPTION CHAIN */
-.option-controls{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-bottom:14px;
-}
-
-.option-select{
-  width:100%;
-  background:#0d1117;
-  color:#fff;
-  border:1px solid #252c35;
-  padding:12px;
-  border-radius:12px;
-  outline:none;
-}
-
-.option-status{
-  padding:14px;
-  border:1px solid #5b4e18;
-  background:#18160d;
-  color:#f3c84b;
-  border-radius:14px;
-  margin-bottom:14px;
-  font-size:13px;
-}
-
-.chain-wrap{
-  overflow-x:auto;
-  border:1px solid #202630;
-  border-radius:18px;
-}
-
-.chain{
-  min-width:850px;
-  border-collapse:collapse;
-  width:100%;
-  font-size:11px;
-}
-
-.chain th{
-  background:#151a21;
-  color:#aab2be;
-  padding:10px 6px;
-  border-bottom:1px solid #252c35;
-  white-space:nowrap;
-}
-
-.chain td{
-  padding:10px 6px;
-  text-align:center;
-  border-bottom:1px solid #1b2028;
-  white-space:nowrap;
-}
-
-.ce{
-  color:#25e68a;
-}
-
-.pe{
-  color:#ff5d6c;
-}
-
-.strike{
-  color:#f3c84b;
-  font-weight:800;
-  background:#151a16;
-}
-
-.chain-note{
-  color:#737b88;
-  font-size:11px;
-  margin-top:10px;
-  line-height:1.5;
-}
-
-/* BOTTOM NAV */
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:min(520px,100%);
-  height:76px;
-  background:rgba(10,13,18,.97);
-  border-top:1px solid #202630;
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  z-index:100;
-  backdrop-filter:blur(15px);
-}
-
-.nav-btn{
-  background:none;
-  border:0;
-  color:#737b88;
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:5px;
-  font-size:10px;
-}
-
-.nav-icon{
-  font-size:20px;
-}
-
-.nav-btn.active{
-  color:#25e68a;
-}
-
-@media(max-width:360px){
-  .market-grid,
-  .performance-grid{
-    grid-template-columns:1fr;
-  }
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Era AI V3</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #07090d;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 600px;
+      margin: auto;
+      min-height: 100vh;
+      padding-bottom: 85px;
+    }
+
+    header {
+      padding: 22px 18px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 26px;
+      font-weight: 800;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #8cffb0;
+    }
+
+    .screen {
+      display: none;
+      padding: 10px 15px;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 25px 10px;
+    }
+
+    .orb {
+      width: 115px;
+      height: 115px;
+      margin: auto;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, #8cffb0 8%, #14251d 40%, #08100c 70%);
+      box-shadow: 0 0 35px rgba(100,255,160,.25);
+    }
+
+    .state {
+      margin-top: 15px;
+      color: #aaa;
+      font-size: 14px;
+    }
+
+    .mic {
+      margin-top: 20px;
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      border: 1px solid #27332c;
+      background: #101612;
+      color: white;
+      font-size: 25px;
+      cursor: pointer;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    input {
+      flex: 1;
+      background: #101318;
+      color: white;
+      border: 1px solid #252b33;
+      border-radius: 12px;
+      padding: 14px;
+      outline: none;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .send {
+      background: #fff;
+      color: #000;
+      padding: 0 17px;
+      border-radius: 12px;
+      font-weight: bold;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .card {
+      background: #0e1116;
+      border: 1px solid #1c2229;
+      border-radius: 16px;
+      padding: 15px;
+    }
+
+    .card h3 {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .value {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .analysis,
+    .trade {
+      margin-top: 12px;
+      background: #0e1116;
+      border: 1px solid #1c2229;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .trade-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 9px 0;
+      border-bottom: 1px solid #1b2026;
+      font-size: 14px;
+    }
+
+    .trade-row:last-child {
+      border-bottom: 0;
+    }
+
+    .green {
+      color: #65ff9a;
+    }
+
+    .red {
+      color: #ff6666;
+    }
+
+    .yellow {
+      color: #ffd45c;
+    }
+
+    select {
+      width: 100%;
+      background: #101318;
+      color: white;
+      border: 1px solid #252b33;
+      border-radius: 12px;
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+
+    .option-box {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid #1c2229;
+    }
+
+    table {
+      width: 100%;
+      min-width: 850px;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    th {
+      background: #15191f;
+      color: #aaa;
+      padding: 10px 5px;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 9px 5px;
+      text-align: center;
+      border-top: 1px solid #1b2026;
+    }
+
+    .ce {
+      color: #ff7777;
+    }
+
+    .pe {
+      color: #68ff9e;
+    }
+
+    .loading {
+      padding: 25px;
+      text-align: center;
+      color: #aaa;
+    }
+
+    .message {
+      margin-top: 15px;
+      padding: 15px;
+      background: #0e1116;
+      border: 1px solid #1c2229;
+      border-radius: 14px;
+      line-height: 1.5;
+      color: #ddd;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 600px;
+      background: #0b0e12;
+      border-top: 1px solid #1d2329;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      padding: 9px 5px;
+      z-index: 10;
+    }
+
+    .nav-btn {
+      background: transparent;
+      color: #777;
+      padding: 7px 2px;
+      font-size: 11px;
+    }
+
+    .nav-btn.active {
+      color: white;
+    }
+
+    .nav-icon {
+      display: block;
+      font-size: 19px;
+      margin-bottom: 3px;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 40px 15px;
+      color: #777;
+    }
+
+    @media (max-width: 380px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
 <div class="app">
 
-<header class="top">
-  <div class="logo">Era <span>AI</span></div>
-  <div class="status" id="status">● READY</div>
-</header>
+  <header>
+    <div class="logo">Era AI</div>
+    <div id="status" class="status">● Ready</div>
+  </header>
 
+  <!-- HOME -->
+  <section id="home" class="screen active">
 
-<!-- ================= HOME ================= -->
+    <div class="hero">
+      <div class="orb"></div>
+      <div id="state" class="state">Say "Era" to start</div>
 
-<main id="homeScreen" class="screen active">
+      <button id="micBtn" class="mic">🎙️</button>
 
-  <section class="hero">
-
-    <h1>Trade with Era.</h1>
-
-    <p>
-      Voice-powered market analysis with technical,
-      options, news and market-structure intelligence.
-    </p>
-
-    <div class="mic-wrap">
-      <button class="mic" id="micBtn">🎙️</button>
+      <div class="input-row">
+        <input id="textInput" type="text" placeholder="Ask Era anything...">
+        <button id="sendBtn" class="send">Send</button>
+      </div>
     </div>
 
-    <div class="ask">
-      <input
-        id="question"
-        type="text"
-        placeholder="Ask Era anything..."
-      >
+    <div class="grid">
+      <div class="card">
+        <h3>NIFTY 50</h3>
+        <div class="value" id="niftyValue">--</div>
+      </div>
 
-      <button id="sendBtn">➤</button>
+      <div class="card">
+        <h3>BANKNIFTY</h3>
+        <div class="value" id="bankValue">--</div>
+      </div>
+
+      <div class="card">
+        <h3>FINNIFTY</h3>
+        <div class="value" id="finValue">--</div>
+      </div>
+
+      <div class="card">
+        <h3>SENSEX</h3>
+        <div class="value" id="sensexValue">--</div>
+      </div>
+    </div>
+
+    <div class="analysis">
+      <div class="section-title">Era Analysis</div>
+      <div id="analysisText">
+        Live market analysis will appear here.
+      </div>
+    </div>
+
+    <div class="trade">
+      <div class="section-title">Trade Setup</div>
+
+      <div class="trade-row">
+        <span>Direction</span>
+        <strong id="direction" class="yellow">WAIT</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>Entry</span>
+        <strong id="entry">--</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>Stop Loss</span>
+        <strong id="sl">--</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>Target 1</span>
+        <strong id="target1">--</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>Target 2</span>
+        <strong id="target2">--</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>R:R</span>
+        <strong id="rr">--</strong>
+      </div>
+
+      <div class="trade-row">
+        <span>Status</span>
+        <strong id="tradeStatus" class="yellow">NO TRADE</strong>
+      </div>
+    </div>
+
+    <div id="chatOutput" class="message">
+      Era is ready.
     </div>
 
   </section>
 
 
-  <div class="section-title">Markets</div>
+  <!-- NEWS -->
+  <section id="news" class="screen">
 
-  <section class="market-grid">
+    <div class="section-title">📰 NEWS</div>
 
-    <div class="market">
-      <div class="market-name">NIFTY 50</div>
-      <div class="market-value">—</div>
-      <div class="pending">Live data pending</div>
+    <div class="grid">
+      <div class="card">
+        🇮🇳 INDIA
+        <p style="color:#777;margin-top:8px;">
+          Live news connection pending.
+        </p>
+      </div>
+
+      <div class="card">
+        🌎 GLOBAL
+        <p style="color:#777;margin-top:8px;">
+          Live news connection pending.
+        </p>
+      </div>
     </div>
 
-    <div class="market">
-      <div class="market-name">BANKNIFTY</div>
-      <div class="market-value">—</div>
-      <div class="pending">Live data pending</div>
-    </div>
-
-    <div class="market">
-      <div class="market-name">FINNIFTY</div>
-      <div class="market-value">—</div>
-      <div class="pending">Live data pending</div>
-    </div>
-
-    <div class="market">
-      <div class="market-name">SENSEX</div>
-      <div class="market-value">—</div>
-      <div class="pending">Live data pending</div>
+    <div class="empty">
+      News API connect hone ke baad market-moving news yahan dikhegi.
     </div>
 
   </section>
 
 
-  <div class="section-title">Era Analysis</div>
+  <!-- OPTIONS -->
+  <section id="options" class="screen">
 
-  <section class="card">
+    <div class="section-title">📊 LIVE OPTION CHAIN</div>
 
-    <div class="analysis-text" id="analysisText">
-      Era is ready. Ask for NIFTY, BANKNIFTY,
-      FINNIFTY or SENSEX analysis.
-    </div>
-
-    <div class="wait" id="analysisStatus">
-      WAITING FOR LIVE DATA
-    </div>
-
-  </section>
-
-
-  <!-- TARGET / SL SECTION -->
-
-  <div class="section-title">Trade Setup</div>
-
-  <section class="card trade-box">
-
-    <div class="trade-status">
-      🟡 NO TRADE
-    </div>
-
-    <div class="trade-grid">
-
-      <div class="trade-field">
-        <div class="trade-label">DIRECTION</div>
-        <div class="trade-value">—</div>
-      </div>
-
-      <div class="trade-field">
-        <div class="trade-label">ENTRY</div>
-        <div class="trade-value entry">₹—</div>
-      </div>
-
-      <div class="trade-field">
-        <div class="trade-label">STOP LOSS</div>
-        <div class="trade-value sl">₹—</div>
-      </div>
-
-      <div class="trade-field">
-        <div class="trade-label">TARGET 1</div>
-        <div class="trade-value target">₹—</div>
-      </div>
-
-      <div class="trade-field">
-        <div class="trade-label">TARGET 2</div>
-        <div class="trade-value target">₹—</div>
-      </div>
-
-      <div class="trade-field">
-        <div class="trade-label">R:R</div>
-        <div class="trade-value rr">—</div>
-      </div>
-
-    </div>
-
-    <div class="wait">
-      WAIT — CONFIRMATION REQUIRED
-    </div>
-
-  </section>
-
-</main>
-
-
-<!-- ================= NEWS ================= -->
-
-<main id="newsScreen" class="screen">
-
-  <div class="page-title">📰 NEWS</div>
-
-  <div class="tabs">
-
-    <button class="tab active" data-news="india">
-      🇮🇳 INDIA
-    </button>
-
-    <button class="tab" data-news="global">
-      🌎 GLOBAL
-    </button>
-
-  </div>
-
-  <div id="indiaNews">
-
-    <div class="news-empty">
-      Live India market news will appear here
-      after the secure news API is connected.
-    </div>
-
-  </div>
-
-  <div id="globalNews" style="display:none;">
-
-    <div class="news-empty">
-      Live global market news will appear here
-      after the secure news API is connected.
-    </div>
-
-  </div>
-
-</main>
-
-
-<!-- ================= OPTION CHAIN ================= -->
-
-<main id="optionScreen" class="screen">
-
-  <div class="page-title">⛓️ OPTION CHAIN</div>
-
-  <div class="option-controls">
-
-    <select class="option-select" id="optionIndex">
-
-      <option>NIFTY</option>
-      <option>BANKNIFTY</option>
-      <option>FINNIFTY</option>
-      <option>SENSEX</option>
-
+    <select id="indexSelect">
+      <option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
+      <option value="NSE_INDEX|Nifty Bank">BANKNIFTY</option>
+      <option value="NSE_INDEX|Nifty Fin Service">FINNIFTY</option>
+      <option value="BSE_INDEX|SENSEX">SENSEX</option>
     </select>
 
-    <select class="option-select" id="expiry">
-
-      <option>Nearest Expiry</option>
-      <option>Next Expiry</option>
-
+    <select id="expirySelect">
+      <option value="">Select Expiry</option>
     </select>
 
-  </div>
-
-
-  <div class="option-status">
-    🟡 LIVE OPTION DATA NOT CONNECTED
-  </div>
-
-
-  <div class="chain-wrap">
-
-    <table class="chain">
-
-      <thead>
-
-        <tr>
-
-          <th colspan="5">CALL (CE)</th>
-
-          <th>STRIKE</th>
-
-          <th colspan="5">PUT (PE)</th>
-
-        </tr>
-
-        <tr>
-
-          <th>OI</th>
-          <th>CHG OI</th>
-          <th>VOL</th>
-          <th>IV</th>
-          <th>LTP</th>
-
-          <th>STRIKE</th>
-
-          <th>LTP</th>
-          <th>IV</th>
-          <th>VOL</th>
-          <th>CHG OI</th>
-          <th>OI</th>
-
-        </tr>
-
-      </thead>
-
-      <tbody>
-
-        <tr>
-
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-
-          <td class="strike">—</td>
-
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-
-        </tr>
-
-        <tr>
-
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-
-          <td class="strike">—</td>
-
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-
-        </tr>
-
-        <tr>
-
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-          <td class="ce">—</td>
-
-          <td class="strike">—</td>
-
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-          <td class="pe">—</td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-  <div class="chain-note">
-    Option chain will show verified live data including
-    OI, Change OI, Volume, IV, LTP and later Greeks,
-    PCR and Max Pain. No placeholder market values
-    will be treated as real data.
-  </div>
-
-</main>
-
-
-<!-- ================= HISTORY ================= -->
-
-<main id="historyScreen" class="screen">
-
-  <div class="page-title">📚 HISTORY</div>
-
-  <div class="history-tabs">
-
-    <button class="tab active" id="chatHistoryBtn">
-      💬 CHAT HISTORY
+    <button
+      id="loadOptionsBtn"
+      style="
+        width:100%;
+        padding:13px;
+        border-radius:12px;
+        background:#fff;
+        color:#000;
+        font-weight:bold;
+        margin-bottom:12px;
+      "
+    >
+      Load Live Option Chain
     </button>
 
-    <button class="tab" id="tradeHistoryBtn">
-      📈 TRADE HISTORY
-    </button>
-
-  </div>
-
-  <div id="chatHistory">
-
-    <div class="history-empty">
-      No chat history yet.
+    <div id="optionStatus" class="message">
+      Select expiry to load option chain.
     </div>
 
-  </div>
+    <div class="option-box" style="margin-top:12px;">
+      <table>
+        <thead>
+          <tr>
+            <th colspan="5" class="ce">CALL / CE</th>
+            <th>STRIKE</th>
+            <th colspan="5" class="pe">PUT / PE</th>
+          </tr>
 
-  <div id="tradeHistory" style="display:none;">
+          <tr>
+            <th>OI</th>
+            <th>ΔOI</th>
+            <th>VOL</th>
+            <th>IV</th>
+            <th>LTP</th>
 
-    <div class="history-empty">
-      No Era trade setups recorded yet.
-    </div>
+            <th>STRIKE</th>
 
-  </div>
+            <th>LTP</th>
+            <th>IV</th>
+            <th>VOL</th>
+            <th>ΔOI</th>
+            <th>OI</th>
+          </tr>
+        </thead>
 
-</main>
-
-
-<!-- ================= PERFORMANCE ================= -->
-
-<main id="performanceScreen" class="screen">
-
-  <div class="page-title">📊 PERFORMANCE</div>
-
-  <div class="tabs">
-
-    <button class="tab active">
-      📅 WEEKLY
-    </button>
-
-    <button class="tab">
-      📆 MONTHLY
-    </button>
-
-  </div>
-
-
-  <div class="section-title">🤖 ERA SETUPS</div>
-
-  <section class="performance-grid">
-
-    <div class="stat">
-      <div class="stat-label">TOTAL SETUPS</div>
-      <div class="stat-value">0</div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-label">SUCCESSFUL</div>
-      <div class="stat-value green">0</div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-label">UNSUCCESSFUL</div>
-      <div class="stat-value red">0</div>
-    </div>
-
-    <div class="stat">
-      <div class="stat-label">WAIT / INVALID</div>
-      <div class="stat-value yellow">0</div>
+        <tbody id="optionBody">
+          <tr>
+            <td colspan="11" class="loading">
+              No data loaded
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
   </section>
 
 
-  <div class="section-title">👤 MY TRADES</div>
+  <!-- HISTORY -->
+  <section id="history" class="screen">
 
-  <section class="performance-grid">
+    <div class="section-title">📚 HISTORY</div>
 
-    <div class="stat">
-      <div class="stat-label">TOTAL TRADES</div>
-      <div class="stat-value">0</div>
+    <div class="card">
+      <h3>💬 CHAT HISTORY</h3>
+      <div id="chatHistory">
+        <div class="empty">No chat history yet.</div>
+      </div>
     </div>
 
-    <div class="stat">
-      <div class="stat-label">NET P&L</div>
-      <div class="stat-value">₹0</div>
+    <div class="card" style="margin-top:12px;">
+      <h3>📈 TRADE HISTORY</h3>
+      <div id="tradeHistory">
+        <div class="empty">No trade history yet.</div>
+      </div>
     </div>
 
   </section>
 
-</main>
+
+  <!-- PERFORMANCE -->
+  <section id="performance" class="screen">
+
+    <div class="section-title">📊 PERFORMANCE</div>
+
+    <div class="grid">
+
+      <div class="card">
+        <h3>WEEKLY</h3>
+        <div class="value">--</div>
+      </div>
+
+      <div class="card">
+        <h3>MONTHLY</h3>
+        <div class="value">--</div>
+      </div>
+
+      <div class="card">
+        <h3>ERA SETUPS</h3>
+        <div class="value">0</div>
+      </div>
+
+      <div class="card">
+        <h3>MY TRADES</h3>
+        <div class="value">0</div>
+      </div>
+
+    </div>
+
+    <div class="empty">
+      Performance tracking backend connect hone ke baad automatically update hoga.
+    </div>
+
+  </section>
 
 </div>
 
 
-<!-- ================= BOTTOM NAV ================= -->
+<!-- BOTTOM NAV -->
 
 <nav class="bottom-nav">
 
-  <button class="nav-btn active" data-screen="homeScreen">
-    <div class="nav-icon">⌂</div>
-    <div>Home</div>
+  <button class="nav-btn active" data-screen="home">
+    <span class="nav-icon">⌂</span>
+    Home
   </button>
 
-  <button class="nav-btn" data-screen="newsScreen">
-    <div class="nav-icon">📰</div>
-    <div>News</div>
+  <button class="nav-btn" data-screen="news">
+    <span class="nav-icon">📰</span>
+    News
   </button>
 
-  <button class="nav-btn" data-screen="optionScreen">
-    <div class="nav-icon">⛓️</div>
-    <div>Options</div>
+  <button class="nav-btn" data-screen="options">
+    <span class="nav-icon">📊</span>
+    Options
   </button>
 
-  <button class="nav-btn" data-screen="historyScreen">
-    <div class="nav-icon">📚</div>
-    <div>History</div>
+  <button class="nav-btn" data-screen="history">
+    <span class="nav-icon">📚</span>
+    History
   </button>
 
-  <button class="nav-btn" data-screen="performanceScreen">
-    <div class="nav-icon">📊</div>
-    <div>Performance</div>
+  <button class="nav-btn" data-screen="performance">
+    <span class="nav-icon">📈</span>
+    Performance
   </button>
 
 </nav>
@@ -941,532 +579,692 @@ button,input,select{
 
 <script>
 
-/* ================= NAVIGATION ================= */
+  /* =========================================
+     ERA BACKEND
+  ========================================= */
 
-const navButtons =
-  document.querySelectorAll(".nav-btn");
+  const BACKEND_URL = "https://era-ai.onrender.com";
 
-const screens =
-  document.querySelectorAll(".screen");
 
-navButtons.forEach(button => {
+  /* =========================================
+     NAVIGATION
+  ========================================= */
 
-  button.addEventListener("click", () => {
+  const navButtons = document.querySelectorAll(".nav-btn");
+  const screens = document.querySelectorAll(".screen");
 
-    const target =
-      button.dataset.screen;
+  navButtons.forEach(button => {
 
-    screens.forEach(screen => {
-      screen.classList.remove("active");
-    });
+    button.addEventListener("click", () => {
 
-    document
-      .getElementById(target)
-      .classList.add("active");
+      const screenName = button.dataset.screen;
 
-    navButtons.forEach(btn => {
-      btn.classList.remove("active");
-    });
+      screens.forEach(screen => {
+        screen.classList.remove("active");
+      });
 
-    button.classList.add("active");
+      document.getElementById(screenName).classList.add("active");
 
-    window.scrollTo({
-      top:0,
-      behavior:"smooth"
+      navButtons.forEach(btn => {
+        btn.classList.remove("active");
+      });
+
+      button.classList.add("active");
+
+      if (screenName === "options") {
+        loadExpiries();
+      }
+
     });
 
   });
 
-});
+
+  /* =========================================
+     OPTION CHAIN
+  ========================================= */
+
+  const indexSelect =
+    document.getElementById("indexSelect");
+
+  const expirySelect =
+    document.getElementById("expirySelect");
+
+  const optionBody =
+    document.getElementById("optionBody");
+
+  const optionStatus =
+    document.getElementById("optionStatus");
 
 
-/* ================= STATUS ================= */
+  async function loadExpiries() {
 
-const statusEl =
-  document.getElementById("status");
+    const instrumentKey =
+      indexSelect.value;
 
-function setStatus(text,color){
+    optionStatus.textContent =
+      "Loading expiry dates...";
 
-  statusEl.textContent =
-    "● " + text;
+    expirySelect.innerHTML =
+      '<option value="">Loading...</option>';
 
-  statusEl.style.color =
-    color || "#25e68a";
+    try {
 
-}
+      const url =
+        `${BACKEND_URL}/api/options/contracts` +
+        `?instrument_key=${encodeURIComponent(instrumentKey)}`;
 
+      const response =
+        await fetch(url);
 
-/* ================= SPEECH ================= */
+      const result =
+        await response.json();
 
-let recognition = null;
-let listening = false;
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error || "Unable to load contracts"
+        );
+      }
 
-const micBtn =
-  document.getElementById("micBtn");
+      const contracts =
+        Array.isArray(result.data)
+          ? result.data
+          : [];
 
-function speak(text){
+      const expiries = [
+        ...new Set(
+          contracts
+            .map(item =>
+              item.expiry ||
+              item.expiry_date
+            )
+            .filter(Boolean)
+        )
+      ].sort();
 
-  if(!("speechSynthesis" in window)){
-    return;
+      expirySelect.innerHTML =
+        '<option value="">Select Expiry</option>';
+
+      expiries.forEach(expiry => {
+
+        const option =
+          document.createElement("option");
+
+        option.value = expiry;
+        option.textContent = expiry;
+
+        expirySelect.appendChild(option);
+
+      });
+
+      optionStatus.textContent =
+        expiries.length
+          ? "Expiry loaded. Select expiry and load option chain."
+          : "No expiry data returned.";
+
+    } catch (error) {
+
+      console.error(error);
+
+      expirySelect.innerHTML =
+        '<option value="">Unable to load</option>';
+
+      optionStatus.textContent =
+        "Option data load nahi ho pa raha: " +
+        error.message;
+
+    }
+
   }
 
-  window.speechSynthesis.cancel();
 
-  const utterance =
-    new SpeechSynthesisUtterance(text);
+  async function loadOptionChain() {
 
-  utterance.lang = "hi-IN";
-  utterance.rate = .95;
-  utterance.pitch = 1.05;
+    const instrumentKey =
+      indexSelect.value;
 
-  window.speechSynthesis.speak(
-    utterance
+    const expiry =
+      expirySelect.value;
+
+    if (!expiry) {
+
+      optionStatus.textContent =
+        "Pehle expiry select kijiye.";
+
+      return;
+    }
+
+    optionStatus.textContent =
+      "Loading live option chain...";
+
+    optionBody.innerHTML =
+      `<tr>
+        <td colspan="11" class="loading">
+          Loading...
+        </td>
+      </tr>`;
+
+    try {
+
+      const url =
+        `${BACKEND_URL}/api/options/chain` +
+        `?instrument_key=${encodeURIComponent(instrumentKey)}` +
+        `&expiry_date=${encodeURIComponent(expiry)}`;
+
+      const response =
+        await fetch(url);
+
+      const result =
+        await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.error || "Unable to load option chain"
+        );
+      }
+
+      renderOptionChain(result.data);
+
+      optionStatus.textContent =
+        "Live option-chain data loaded.";
+
+    } catch (error) {
+
+      console.error(error);
+
+      optionBody.innerHTML =
+        `<tr>
+          <td colspan="11" class="loading">
+            Live data unavailable
+          </td>
+        </tr>`;
+
+      optionStatus.textContent =
+        "Option chain error: " +
+        error.message;
+
+    }
+
+  }
+
+
+  function renderOptionChain(data) {
+
+    optionBody.innerHTML = "";
+
+    let rows = [];
+
+    if (Array.isArray(data)) {
+      rows = data;
+    } else if (data && Array.isArray(data.option_chain)) {
+      rows = data.option_chain;
+    } else if (data && Array.isArray(data.data)) {
+      rows = data.data;
+    }
+
+    if (!rows.length) {
+
+      optionBody.innerHTML =
+        `<tr>
+          <td colspan="11" class="loading">
+            API ne option-chain rows return nahi kiye.
+          </td>
+        </tr>`;
+
+      return;
+    }
+
+    rows.forEach(row => {
+
+      const strike =
+        row.strike_price ??
+        row.strike ??
+        "--";
+
+      const call =
+        row.call_options ||
+        row.CE ||
+        row.ce ||
+        {};
+
+      const put =
+        row.put_options ||
+        row.PE ||
+        row.pe ||
+        {};
+
+      const callMarket =
+        call.market_data ||
+        call.marketData ||
+        {};
+
+      const putMarket =
+        put.market_data ||
+        put.marketData ||
+        {};
+
+      const callGreeks =
+        call.option_greeks ||
+        call.greeks ||
+        {};
+
+      const putGreeks =
+        put.option_greeks ||
+        put.greeks ||
+        {};
+
+      const tr =
+        document.createElement("tr");
+
+      tr.innerHTML = `
+
+        <td class="ce">
+          ${formatNumber(callMarket.oi)}
+        </td>
+
+        <td class="ce">
+          ${formatNumber(
+            callMarket.oi_change ??
+            callMarket.change_in_oi
+          )}
+        </td>
+
+        <td class="ce">
+          ${formatNumber(callMarket.volume)}
+        </td>
+
+        <td class="ce">
+          ${formatNumber(
+            callGreeks.iv ??
+            callMarket.iv
+          )}
+        </td>
+
+        <td class="ce">
+          ${formatNumber(callMarket.ltp)}
+        </td>
+
+        <td>
+          <strong>${formatNumber(strike)}</strong>
+        </td>
+
+        <td class="pe">
+          ${formatNumber(putMarket.ltp)}
+        </td>
+
+        <td class="pe">
+          ${formatNumber(
+            putGreeks.iv ??
+            putMarket.iv
+          )}
+        </td>
+
+        <td class="pe">
+          ${formatNumber(putMarket.volume)}
+        </td>
+
+        <td class="pe">
+          ${formatNumber(
+            putMarket.oi_change ??
+            putMarket.change_in_oi
+          )}
+        </td>
+
+        <td class="pe">
+          ${formatNumber(putMarket.oi)}
+        </td>
+
+      `;
+
+      optionBody.appendChild(tr);
+
+    });
+
+  }
+
+
+  function formatNumber(value) {
+
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) {
+      return "--";
+    }
+
+    if (typeof value === "number") {
+      return Number.isInteger(value)
+        ? value.toLocaleString("en-IN")
+        : value.toFixed(2);
+    }
+
+    return value;
+  }
+
+
+  indexSelect.addEventListener(
+    "change",
+    loadExpiries
   );
 
-}
+  document
+    .getElementById("loadOptionsBtn")
+    .addEventListener(
+      "click",
+      loadOptionChain
+    );
 
 
-function startVoice(){
+  /* =========================================
+     TEXT INPUT
+  ========================================= */
+
+  const textInput =
+    document.getElementById("textInput");
+
+  const sendBtn =
+    document.getElementById("sendBtn");
+
+  const chatOutput =
+    document.getElementById("chatOutput");
+
+
+  function handleUserMessage(text) {
+
+    text = text.trim();
+
+    if (!text) return;
+
+    chatOutput.textContent =
+      "Era received: " + text;
+
+    saveChat(text);
+
+    /*
+      Full AI reasoning engine will be connected
+      in the next backend step.
+    */
+
+    if (
+      text.toLowerCase().includes("option") ||
+      text.toLowerCase().includes("option chain")
+    ) {
+
+      document
+        .querySelector('[data-screen="options"]')
+        .click();
+
+    }
+
+  }
+
+
+  sendBtn.addEventListener(
+    "click",
+    () => handleUserMessage(textInput.value)
+  );
+
+
+  textInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.key === "Enter") {
+
+        handleUserMessage(
+          textInput.value
+        );
+
+        textInput.value = "";
+
+      }
+
+    }
+  );
+
+
+  /* =========================================
+     VOICE
+  ========================================= */
 
   const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
-  if(!SpeechRecognition){
+  let recognition = null;
+  let listening = false;
 
-    setStatus(
-      "VOICE NOT SUPPORTED",
-      "#ff5d6c"
-    );
+  const micBtn =
+    document.getElementById("micBtn");
 
-    return;
-  }
+  const state =
+    document.getElementById("state");
 
-  if(listening){
-    return;
-  }
-
-  recognition =
-    new SpeechRecognition();
-
-  recognition.lang =
-    "hi-IN";
-
-  recognition.continuous =
-    false;
-
-  recognition.interimResults =
-    false;
+  const status =
+    document.getElementById("status");
 
 
-  recognition.onstart = () => {
+  if (SpeechRecognition) {
 
-    listening = true;
+    recognition =
+      new SpeechRecognition();
 
-    micBtn.classList.add(
-      "listening"
-    );
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "hi-IN";
 
-    setStatus(
-      "LISTENING",
-      "#25e68a"
-    );
+    recognition.onstart = () => {
 
-  };
+      listening = true;
 
+      state.textContent =
+        "Listening...";
 
-  recognition.onresult =
-    event => {
-
-      const text =
-        event.results[0][0]
-          .transcript;
-
-      document
-        .getElementById("question")
-        .value = text;
-
-      askEra(text);
+      status.textContent =
+        "● Listening";
 
     };
 
 
-  recognition.onerror = () => {
+    recognition.onresult = event => {
 
-    listening = false;
+      const text =
+        event.results[0][0].transcript;
 
-    micBtn.classList.remove(
-      "listening"
-    );
+      textInput.value = text;
 
-    setStatus(
-      "READY",
-      "#25e68a"
-    );
+      handleUserMessage(text);
 
-  };
+      speak(
+        "Ji, main samajh gayi. " +
+        "Aapka request process kar rahi hoon."
+      );
 
+    };
 
-  recognition.onend = () => {
 
-    listening = false;
+    recognition.onerror = event => {
 
-    micBtn.classList.remove(
-      "listening"
-    );
+      console.log(
+        "Speech error:",
+        event.error
+      );
 
-    setStatus(
-      "READY",
-      "#25e68a"
-    );
+      listening = false;
 
-  };
+      state.textContent =
+        "Say Era to start";
 
+      status.textContent =
+        "● Ready";
 
-  try{
+    };
 
-    recognition.start();
 
-  }catch(error){
+    recognition.onend = () => {
 
-    listening = false;
+      listening = false;
 
-    micBtn.classList.remove(
-      "listening"
-    );
+      state.textContent =
+        "Say Era to start";
 
-  }
+      status.textContent =
+        "● Ready";
 
-}
+    };
 
 
-micBtn.addEventListener(
-  "click",
-  startVoice
-);
-
-
-/* ================= ERA ================= */
-
-function askEra(text){
-
-  if(!text || !text.trim()){
-    return;
-  }
-
-  setStatus(
-    "THINKING",
-    "#f3c84b"
-  );
-
-  const lower =
-    text.toLowerCase();
-
-  let answer =
-    "Live verified market data connect hone ke baad main technical, options, news aur market structure ko combine karke analysis karungi.";
-
-  if(
-    lower.includes("nifty") ||
-    lower.includes("banknifty") ||
-    lower.includes("finnifty") ||
-    lower.includes("sensex")
-  ){
-
-    answer =
-      "Live data ke bina main fake direction, entry, target ya stop loss nahi dungi. Verified data milne par Era confirmation ke basis par trade setup ya WAIT degi.";
-
-  }
-
-  document
-    .getElementById("analysisText")
-    .textContent = answer;
-
-  document
-    .getElementById("analysisStatus")
-    .textContent =
-      "WAIT — LIVE DATA REQUIRED";
-
-  setStatus(
-    "SPEAKING",
-    "#25e68a"
-  );
-
-  speak(answer);
-
-  saveChat(
-    text,
-    answer
-  );
-
-  setTimeout(() => {
-
-    setStatus(
-      "READY",
-      "#25e68a"
-    );
-
-  },1500);
-
-}
-
-
-/* ================= TEXT ================= */
-
-document
-  .getElementById("sendBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      const input =
-        document.getElementById(
-          "question"
-        );
-
-      askEra(input.value);
-
-      input.value = "";
-
-    }
-  );
-
-
-document
-  .getElementById("question")
-  .addEventListener(
-    "keydown",
-    event => {
-
-      if(event.key === "Enter"){
-
-        const input =
-          document.getElementById(
-            "question"
-          );
-
-        askEra(input.value);
-
-        input.value = "";
-
-      }
-
-    }
-  );
-
-
-/* ================= CHAT HISTORY ================= */
-
-function saveChat(question,answer){
-
-  let history =
-    JSON.parse(
-      localStorage.getItem(
-        "era_chat_history"
-      ) || "[]"
-    );
-
-  history.unshift({
-
-    time:
-      new Date().toLocaleString(),
-
-    question:
-      question,
-
-    answer:
-      answer
-
-  });
-
-  history =
-    history.slice(0,100);
-
-  localStorage.setItem(
-    "era_chat_history",
-    JSON.stringify(history)
-  );
-
-}
-
-
-function loadHistory(){
-
-  const container =
-    document.getElementById(
-      "chatHistory"
-    );
-
-  const history =
-    JSON.parse(
-      localStorage.getItem(
-        "era_chat_history"
-      ) || "[]"
-    );
-
-  if(!history.length){
-
-    container.innerHTML =
-      '<div class="history-empty">No chat history yet.</div>';
-
-    return;
-
-  }
-
-  container.innerHTML =
-    history.map(item => `
-
-      <div class="history-item">
-
-        <div class="history-time">
-          ${escapeHtml(item.time)}
-        </div>
-
-        <strong>You:</strong>
-
-        <div style="margin:6px 0 12px;color:#c7ccd4;">
-          ${escapeHtml(item.question)}
-        </div>
-
-        <strong>Era:</strong>
-
-        <div style="margin-top:6px;color:#8f98a6;line-height:1.5;">
-          ${escapeHtml(item.answer)}
-        </div>
-
-      </div>
-
-    `).join("");
-
-}
-
-
-function escapeHtml(text){
-
-  return String(text)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
-
-}
-
-
-/* ================= HISTORY TABS ================= */
-
-document
-  .getElementById("chatHistoryBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById("chatHistory")
-        .style.display =
-          "block";
-
-      document
-        .getElementById("tradeHistory")
-        .style.display =
-          "none";
-
-      document
-        .getElementById("chatHistoryBtn")
-        .classList.add("active");
-
-      document
-        .getElementById("tradeHistoryBtn")
-        .classList.remove("active");
-
-    }
-  );
-
-
-document
-  .getElementById("tradeHistoryBtn")
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById("chatHistory")
-        .style.display =
-          "none";
-
-      document
-        .getElementById("tradeHistory")
-        .style.display =
-          "block";
-
-      document
-        .getElementById("chatHistoryBtn")
-        .classList.remove("active");
-
-      document
-        .getElementById("tradeHistoryBtn")
-        .classList.add("active");
-
-    }
-  );
-
-
-/* ================= NEWS TABS ================= */
-
-document
-  .querySelectorAll("[data-news]")
-  .forEach(tab => {
-
-    tab.addEventListener(
+    micBtn.addEventListener(
       "click",
       () => {
 
-        document
-          .querySelectorAll("[data-news]")
-          .forEach(btn =>
-            btn.classList.remove(
-              "active"
-            )
-          );
+        if (listening) {
 
-        tab.classList.add(
-          "active"
-        );
+          recognition.stop();
 
-        const type =
-          tab.dataset.news;
+          return;
+        }
 
-        document
-          .getElementById(
-            "indiaNews"
-          )
-          .style.display =
-            type === "india"
-              ? "block"
-              : "none";
+        try {
 
-        document
-          .getElementById(
-            "globalNews"
-          )
-          .style.display =
-            type === "global"
-              ? "block"
-              : "none";
+          recognition.start();
+
+        } catch (error) {
+
+          console.log(error);
+
+        }
 
       }
     );
 
-  });
+  } else {
+
+    micBtn.disabled = true;
+
+    state.textContent =
+      "Voice recognition not supported";
+
+  }
 
 
-/* ================= START ================= */
+  /* =========================================
+     TEXT TO SPEECH
+  ========================================= */
 
-loadHistory();
+  function speak(text) {
 
-setStatus(
-  "READY",
-  "#25e68a"
-);
+    if (!("speechSynthesis" in window)) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance =
+      new SpeechSynthesisUtterance(text);
+
+    utterance.lang = "hi-IN";
+    utterance.rate = 0.95;
+    utterance.pitch = 1.05;
+
+    window.speechSynthesis.speak(
+      utterance
+    );
+
+  }
+
+
+  /* =========================================
+     LOCAL CHAT HISTORY
+  ========================================= */
+
+  function saveChat(message) {
+
+    const history =
+      JSON.parse(
+        localStorage.getItem(
+          "era_chat_history"
+        ) || "[]"
+      );
+
+    history.push({
+      time: new Date().toLocaleString("en-IN"),
+      message
+    });
+
+    localStorage.setItem(
+      "era_chat_history",
+      JSON.stringify(history)
+    );
+
+    renderChatHistory();
+
+  }
+
+
+  function renderChatHistory() {
+
+    const container =
+      document.getElementById(
+        "chatHistory"
+      );
+
+    const history =
+      JSON.parse(
+        localStorage.getItem(
+          "era_chat_history"
+        ) || "[]"
+      );
+
+    if (!history.length) {
+
+      container.innerHTML =
+        '<div class="empty">No chat history yet.</div>';
+
+      return;
+
+    }
+
+    container.innerHTML =
+      history
+        .slice()
+        .reverse()
+        .map(item => `
+          <div style="
+            padding:10px 0;
+            border-bottom:1px solid #1b2026;
+          ">
+            <small style="color:#777;">
+              ${item.time}
+            </small>
+            <div style="margin-top:5px;">
+              ${escapeHTML(item.message)}
+            </div>
+          </div>
+        `)
+        .join("");
+
+  }
+
+
+  function escapeHTML(text) {
+
+    return text
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+
+  }
+
+
+  /* =========================================
+     START
+  ========================================= */
+
+  renderChatHistory();
 
 </script>
 
