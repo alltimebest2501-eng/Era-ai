@@ -62,7 +62,13 @@
       height: 115px;
       margin: auto;
       border-radius: 50%;
-      background: radial-gradient(circle, #ffffff 0%, #8cffb0 8%, #14251d 40%, #08100c 70%);
+      background: radial-gradient(
+        circle,
+        #ffffff 0%,
+        #8cffb0 8%,
+        #14251d 40%,
+        #08100c 70%
+      );
       box-shadow: 0 0 35px rgba(100,255,160,.25);
     }
 
@@ -82,6 +88,24 @@
       color: white;
       font-size: 25px;
       cursor: pointer;
+    }
+
+    .mic:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .language-box {
+      margin: 18px auto 0;
+      max-width: 260px;
+      text-align: left;
+    }
+
+    .language-label {
+      display: block;
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 7px;
     }
 
     .input-row {
@@ -293,88 +317,197 @@
     <div id="status" class="status">● Ready</div>
   </header>
 
+
   <!-- HOME -->
   <section id="home" class="screen active">
 
     <div class="hero">
-      <div class="orb"></div>
-      <div id="state" class="state">Say "Era" to start</div>
 
-      <button id="micBtn" class="mic">🎙️</button>
+      <div class="orb"></div>
+
+      <div id="state" class="state">
+        Say "Era" to start
+      </div>
+
+      <button id="micBtn" class="mic">
+        🎙️
+      </button>
+
+
+      <!-- LANGUAGE SELECTOR -->
+
+      <div class="language-box">
+
+        <label class="language-label">
+          Era Language
+        </label>
+
+        <select id="languageSelect">
+
+          <option value="hi-IN">
+            🇮🇳 Hindi
+          </option>
+
+          <option value="gu-IN">
+            🟢 Gujarati
+          </option>
+
+          <option value="en-IN">
+            🇬🇧 English
+          </option>
+
+        </select>
+
+      </div>
+
 
       <div class="input-row">
-        <input id="textInput" type="text" placeholder="Ask Era anything...">
-        <button id="sendBtn" class="send">Send</button>
+
+        <input
+          id="textInput"
+          type="text"
+          placeholder="Ask Era anything..."
+        >
+
+        <button
+          id="sendBtn"
+          class="send"
+        >
+          Send
+        </button>
+
       </div>
+
     </div>
 
+
+    <!-- MARKET CARDS -->
+
     <div class="grid">
+
       <div class="card">
         <h3>NIFTY 50</h3>
-        <div class="value" id="niftyValue">--</div>
+        <div
+          class="value"
+          id="niftyValue"
+        >
+          --
+        </div>
       </div>
 
       <div class="card">
         <h3>BANKNIFTY</h3>
-        <div class="value" id="bankValue">--</div>
+        <div
+          class="value"
+          id="bankValue"
+        >
+          --
+        </div>
       </div>
 
       <div class="card">
         <h3>FINNIFTY</h3>
-        <div class="value" id="finValue">--</div>
+        <div
+          class="value"
+          id="finValue"
+        >
+          --
+        </div>
       </div>
 
       <div class="card">
         <h3>SENSEX</h3>
-        <div class="value" id="sensexValue">--</div>
+        <div
+          class="value"
+          id="sensexValue"
+        >
+          --
+        </div>
       </div>
+
     </div>
 
+
+    <!-- ANALYSIS -->
+
     <div class="analysis">
-      <div class="section-title">Era Analysis</div>
+
+      <div class="section-title">
+        Era Analysis
+      </div>
+
       <div id="analysisText">
         Live market analysis will appear here.
       </div>
+
     </div>
 
+
+    <!-- TRADE SETUP -->
+
     <div class="trade">
-      <div class="section-title">Trade Setup</div>
+
+      <div class="section-title">
+        Trade Setup
+      </div>
 
       <div class="trade-row">
         <span>Direction</span>
-        <strong id="direction" class="yellow">WAIT</strong>
+        <strong
+          id="direction"
+          class="yellow"
+        >
+          WAIT
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>Entry</span>
-        <strong id="entry">--</strong>
+        <strong id="entry">
+          --
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>Stop Loss</span>
-        <strong id="sl">--</strong>
+        <strong id="sl">
+          --
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>Target 1</span>
-        <strong id="target1">--</strong>
+        <strong id="target1">
+          --
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>Target 2</span>
-        <strong id="target2">--</strong>
+        <strong id="target2">
+          --
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>R:R</span>
-        <strong id="rr">--</strong>
+        <strong id="rr">
+          --
+        </strong>
       </div>
 
       <div class="trade-row">
         <span>Status</span>
-        <strong id="tradeStatus" class="yellow">NO TRADE</strong>
+        <strong
+          id="tradeStatus"
+          class="yellow"
+        >
+          NO TRADE
+        </strong>
       </div>
+
     </div>
+
 
     <div id="chatOutput" class="message">
       Era is ready.
@@ -384,48 +517,82 @@
 
 
   <!-- NEWS -->
+
   <section id="news" class="screen">
 
-    <div class="section-title">📰 NEWS</div>
+    <div class="section-title">
+      📰 NEWS
+    </div>
 
     <div class="grid">
+
       <div class="card">
+
         🇮🇳 INDIA
+
         <p style="color:#777;margin-top:8px;">
           Live news connection pending.
         </p>
+
       </div>
 
       <div class="card">
+
         🌎 GLOBAL
+
         <p style="color:#777;margin-top:8px;">
           Live news connection pending.
         </p>
+
       </div>
+
     </div>
 
     <div class="empty">
-      News API connect hone ke baad market-moving news yahan dikhegi.
+      News API connect hone ke baad
+      market-moving news yahan dikhegi.
     </div>
 
   </section>
 
 
   <!-- OPTIONS -->
+
   <section id="options" class="screen">
 
-    <div class="section-title">📊 LIVE OPTION CHAIN</div>
+    <div class="section-title">
+      📊 LIVE OPTION CHAIN
+    </div>
 
     <select id="indexSelect">
-      <option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
-      <option value="NSE_INDEX|Nifty Bank">BANKNIFTY</option>
-      <option value="NSE_INDEX|Nifty Fin Service">FINNIFTY</option>
-      <option value="BSE_INDEX|SENSEX">SENSEX</option>
+
+      <option value="NSE_INDEX|Nifty 50">
+        NIFTY 50
+      </option>
+
+      <option value="NSE_INDEX|Nifty Bank">
+        BANKNIFTY
+      </option>
+
+      <option value="NSE_INDEX|Nifty Fin Service">
+        FINNIFTY
+      </option>
+
+      <option value="BSE_INDEX|SENSEX">
+        SENSEX
+      </option>
+
     </select>
 
+
     <select id="expirySelect">
-      <option value="">Select Expiry</option>
+
+      <option value="">
+        Select Expiry
+      </option>
+
     </select>
+
 
     <button
       id="loadOptionsBtn"
@@ -442,20 +609,49 @@
       Load Live Option Chain
     </button>
 
-    <div id="optionStatus" class="message">
+
+    <div
+      id="optionStatus"
+      class="message"
+    >
       Select expiry to load option chain.
     </div>
 
-    <div class="option-box" style="margin-top:12px;">
+
+    <div
+      class="option-box"
+      style="margin-top:12px;"
+    >
+
       <table>
+
         <thead>
-          <tr>
-            <th colspan="5" class="ce">CALL / CE</th>
-            <th>STRIKE</th>
-            <th colspan="5" class="pe">PUT / PE</th>
-          </tr>
 
           <tr>
+
+            <th
+              colspan="5"
+              class="ce"
+            >
+              CALL / CE
+            </th>
+
+            <th>
+              STRIKE
+            </th>
+
+            <th
+              colspan="5"
+              class="pe"
+            >
+              PUT / PE
+            </th>
+
+          </tr>
+
+
+          <tr>
+
             <th>OI</th>
             <th>ΔOI</th>
             <th>VOL</th>
@@ -469,75 +665,142 @@
             <th>VOL</th>
             <th>ΔOI</th>
             <th>OI</th>
+
           </tr>
+
         </thead>
 
+
         <tbody id="optionBody">
+
           <tr>
-            <td colspan="11" class="loading">
+
+            <td
+              colspan="11"
+              class="loading"
+            >
               No data loaded
             </td>
+
           </tr>
+
         </tbody>
+
       </table>
+
     </div>
 
   </section>
 
 
   <!-- HISTORY -->
+
   <section id="history" class="screen">
 
-    <div class="section-title">📚 HISTORY</div>
-
-    <div class="card">
-      <h3>💬 CHAT HISTORY</h3>
-      <div id="chatHistory">
-        <div class="empty">No chat history yet.</div>
-      </div>
+    <div class="section-title">
+      📚 HISTORY
     </div>
 
-    <div class="card" style="margin-top:12px;">
-      <h3>📈 TRADE HISTORY</h3>
-      <div id="tradeHistory">
-        <div class="empty">No trade history yet.</div>
+
+    <div class="card">
+
+      <h3>
+        💬 CHAT HISTORY
+      </h3>
+
+      <div id="chatHistory">
+
+        <div class="empty">
+          No chat history yet.
+        </div>
+
       </div>
+
+    </div>
+
+
+    <div
+      class="card"
+      style="margin-top:12px;"
+    >
+
+      <h3>
+        📈 TRADE HISTORY
+      </h3>
+
+      <div id="tradeHistory">
+
+        <div class="empty">
+          No trade history yet.
+        </div>
+
+      </div>
+
     </div>
 
   </section>
 
 
   <!-- PERFORMANCE -->
+
   <section id="performance" class="screen">
 
-    <div class="section-title">📊 PERFORMANCE</div>
+    <div class="section-title">
+      📊 PERFORMANCE
+    </div>
+
 
     <div class="grid">
 
       <div class="card">
+
         <h3>WEEKLY</h3>
-        <div class="value">--</div>
+
+        <div class="value">
+          --
+        </div>
+
       </div>
 
+
       <div class="card">
+
         <h3>MONTHLY</h3>
-        <div class="value">--</div>
+
+        <div class="value">
+          --
+        </div>
+
       </div>
 
+
       <div class="card">
+
         <h3>ERA SETUPS</h3>
-        <div class="value">0</div>
+
+        <div class="value">
+          0
+        </div>
+
       </div>
 
+
       <div class="card">
+
         <h3>MY TRADES</h3>
-        <div class="value">0</div>
+
+        <div class="value">
+          0
+        </div>
+
       </div>
 
     </div>
 
+
     <div class="empty">
-      Performance tracking backend connect hone ke baad automatically update hoga.
+      Performance tracking backend connect
+      hone ke baad automatically update hoga.
     </div>
 
   </section>
@@ -549,27 +812,46 @@
 
 <nav class="bottom-nav">
 
-  <button class="nav-btn active" data-screen="home">
+  <button
+    class="nav-btn active"
+    data-screen="home"
+  >
     <span class="nav-icon">⌂</span>
     Home
   </button>
 
-  <button class="nav-btn" data-screen="news">
+
+  <button
+    class="nav-btn"
+    data-screen="news"
+  >
     <span class="nav-icon">📰</span>
     News
   </button>
 
-  <button class="nav-btn" data-screen="options">
+
+  <button
+    class="nav-btn"
+    data-screen="options"
+  >
     <span class="nav-icon">📊</span>
     Options
   </button>
 
-  <button class="nav-btn" data-screen="history">
+
+  <button
+    class="nav-btn"
+    data-screen="history"
+  >
     <span class="nav-icon">📚</span>
     History
   </button>
 
-  <button class="nav-btn" data-screen="performance">
+
+  <button
+    class="nav-btn"
+    data-screen="performance"
+  >
     <span class="nav-icon">📈</span>
     Performance
   </button>
@@ -583,36 +865,55 @@
      ERA BACKEND
   ========================================= */
 
-  const BACKEND_URL = "https://era-ai.onrender.com";
+  const BACKEND_URL =
+    "https://era-ai.onrender.com";
 
 
   /* =========================================
      NAVIGATION
   ========================================= */
 
-  const navButtons = document.querySelectorAll(".nav-btn");
-  const screens = document.querySelectorAll(".screen");
+  const navButtons =
+    document.querySelectorAll(".nav-btn");
+
+  const screens =
+    document.querySelectorAll(".screen");
+
 
   navButtons.forEach(button => {
 
     button.addEventListener("click", () => {
 
-      const screenName = button.dataset.screen;
+      const screenName =
+        button.dataset.screen;
+
 
       screens.forEach(screen => {
+
         screen.classList.remove("active");
+
       });
 
-      document.getElementById(screenName).classList.add("active");
+
+      document
+        .getElementById(screenName)
+        .classList.add("active");
+
 
       navButtons.forEach(btn => {
+
         btn.classList.remove("active");
+
       });
+
 
       button.classList.add("active");
 
+
       if (screenName === "options") {
+
         loadExpiries();
+
       }
 
     });
@@ -642,11 +943,14 @@
     const instrumentKey =
       indexSelect.value;
 
+
     optionStatus.textContent =
       "Loading expiry dates...";
 
+
     expirySelect.innerHTML =
       '<option value="">Loading...</option>';
+
 
     try {
 
@@ -654,22 +958,33 @@
         `${BACKEND_URL}/api/options/contracts` +
         `?instrument_key=${encodeURIComponent(instrumentKey)}`;
 
+
       const response =
         await fetch(url);
+
 
       const result =
         await response.json();
 
-      if (!response.ok || !result.success) {
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
         throw new Error(
-          result.error || "Unable to load contracts"
+          result.error ||
+          "Unable to load contracts"
         );
+
       }
+
 
       const contracts =
         Array.isArray(result.data)
           ? result.data
           : [];
+
 
       const expiries = [
         ...new Set(
@@ -682,32 +997,46 @@
         )
       ].sort();
 
+
       expirySelect.innerHTML =
         '<option value="">Select Expiry</option>';
+
 
       expiries.forEach(expiry => {
 
         const option =
           document.createElement("option");
 
-        option.value = expiry;
-        option.textContent = expiry;
 
-        expirySelect.appendChild(option);
+        option.value =
+          expiry;
+
+
+        option.textContent =
+          expiry;
+
+
+        expirySelect.appendChild(
+          option
+        );
 
       });
+
 
       optionStatus.textContent =
         expiries.length
           ? "Expiry loaded. Select expiry and load option chain."
           : "No expiry data returned.";
 
+
     } catch (error) {
 
       console.error(error);
 
+
       expirySelect.innerHTML =
         '<option value="">Unable to load</option>';
+
 
       optionStatus.textContent =
         "Option data load nahi ho pa raha: " +
@@ -723,8 +1052,10 @@
     const instrumentKey =
       indexSelect.value;
 
+
     const expiry =
       expirySelect.value;
+
 
     if (!expiry) {
 
@@ -732,10 +1063,13 @@
         "Pehle expiry select kijiye.";
 
       return;
+
     }
+
 
     optionStatus.textContent =
       "Loading live option chain...";
+
 
     optionBody.innerHTML =
       `<tr>
@@ -744,6 +1078,7 @@
         </td>
       </tr>`;
 
+
     try {
 
       const url =
@@ -751,26 +1086,41 @@
         `?instrument_key=${encodeURIComponent(instrumentKey)}` +
         `&expiry_date=${encodeURIComponent(expiry)}`;
 
+
       const response =
         await fetch(url);
+
 
       const result =
         await response.json();
 
-      if (!response.ok || !result.success) {
+
+      if (
+        !response.ok ||
+        !result.success
+      ) {
+
         throw new Error(
-          result.error || "Unable to load option chain"
+          result.error ||
+          "Unable to load option chain"
         );
+
       }
 
-      renderOptionChain(result.data);
+
+      renderOptionChain(
+        result.data
+      );
+
 
       optionStatus.textContent =
         "Live option-chain data loaded.";
 
+
     } catch (error) {
 
       console.error(error);
+
 
       optionBody.innerHTML =
         `<tr>
@@ -778,6 +1128,7 @@
             Live data unavailable
           </td>
         </tr>`;
+
 
       optionStatus.textContent =
         "Option chain error: " +
@@ -792,15 +1143,30 @@
 
     optionBody.innerHTML = "";
 
+
     let rows = [];
 
+
     if (Array.isArray(data)) {
+
       rows = data;
-    } else if (data && Array.isArray(data.option_chain)) {
+
+    } else if (
+      data &&
+      Array.isArray(data.option_chain)
+    ) {
+
       rows = data.option_chain;
-    } else if (data && Array.isArray(data.data)) {
+
+    } else if (
+      data &&
+      Array.isArray(data.data)
+    ) {
+
       rows = data.data;
+
     }
+
 
     if (!rows.length) {
 
@@ -812,7 +1178,9 @@
         </tr>`;
 
       return;
+
     }
+
 
     rows.forEach(row => {
 
@@ -821,11 +1189,13 @@
         row.strike ??
         "--";
 
+
       const call =
         row.call_options ||
         row.CE ||
         row.ce ||
         {};
+
 
       const put =
         row.put_options ||
@@ -833,28 +1203,34 @@
         row.pe ||
         {};
 
+
       const callMarket =
         call.market_data ||
         call.marketData ||
         {};
+
 
       const putMarket =
         put.market_data ||
         put.marketData ||
         {};
 
+
       const callGreeks =
         call.option_greeks ||
         call.greeks ||
         {};
+
 
       const putGreeks =
         put.option_greeks ||
         put.greeks ||
         {};
 
+
       const tr =
         document.createElement("tr");
+
 
       tr.innerHTML = `
 
@@ -870,7 +1246,9 @@
         </td>
 
         <td class="ce">
-          ${formatNumber(callMarket.volume)}
+          ${formatNumber(
+            callMarket.volume
+          )}
         </td>
 
         <td class="ce">
@@ -881,15 +1259,21 @@
         </td>
 
         <td class="ce">
-          ${formatNumber(callMarket.ltp)}
+          ${formatNumber(
+            callMarket.ltp
+          )}
         </td>
 
         <td>
-          <strong>${formatNumber(strike)}</strong>
+          <strong>
+            ${formatNumber(strike)}
+          </strong>
         </td>
 
         <td class="pe">
-          ${formatNumber(putMarket.ltp)}
+          ${formatNumber(
+            putMarket.ltp
+          )}
         </td>
 
         <td class="pe">
@@ -900,7 +1284,9 @@
         </td>
 
         <td class="pe">
-          ${formatNumber(putMarket.volume)}
+          ${formatNumber(
+            putMarket.volume
+          )}
         </td>
 
         <td class="pe">
@@ -911,10 +1297,13 @@
         </td>
 
         <td class="pe">
-          ${formatNumber(putMarket.oi)}
+          ${formatNumber(
+            putMarket.oi
+          )}
         </td>
 
       `;
+
 
       optionBody.appendChild(tr);
 
@@ -930,16 +1319,23 @@
       value === undefined ||
       value === ""
     ) {
+
       return "--";
+
     }
 
+
     if (typeof value === "number") {
+
       return Number.isInteger(value)
         ? value.toLocaleString("en-IN")
         : value.toFixed(2);
+
     }
 
+
     return value;
+
   }
 
 
@@ -947,6 +1343,7 @@
     "change",
     loadExpiries
   );
+
 
   document
     .getElementById("loadOptionsBtn")
@@ -963,8 +1360,10 @@
   const textInput =
     document.getElementById("textInput");
 
+
   const sendBtn =
     document.getElementById("sendBtn");
+
 
   const chatOutput =
     document.getElementById("chatOutput");
@@ -974,17 +1373,18 @@
 
     text = text.trim();
 
-    if (!text) return;
+
+    if (!text) {
+      return;
+    }
+
 
     chatOutput.textContent =
       "Era received: " + text;
 
+
     saveChat(text);
 
-    /*
-      Full AI reasoning engine will be connected
-      in the next backend step.
-    */
 
     if (
       text.toLowerCase().includes("option") ||
@@ -992,7 +1392,9 @@
     ) {
 
       document
-        .querySelector('[data-screen="options"]')
+        .querySelector(
+          '[data-screen="options"]'
+        )
         .click();
 
     }
@@ -1002,7 +1404,15 @@
 
   sendBtn.addEventListener(
     "click",
-    () => handleUserMessage(textInput.value)
+    () => {
+
+      handleUserMessage(
+        textInput.value
+      );
+
+      textInput.value = "";
+
+    }
   );
 
 
@@ -1025,24 +1435,86 @@
 
 
   /* =========================================
-     VOICE
+     LANGUAGE
+  ========================================= */
+
+  const languageSelect =
+    document.getElementById(
+      "languageSelect"
+    );
+
+
+  function getSelectedLanguage() {
+
+    return languageSelect.value;
+
+  }
+
+
+  languageSelect.addEventListener(
+    "change",
+    () => {
+
+      if (recognition) {
+
+        recognition.lang =
+          getSelectedLanguage();
+
+      }
+
+
+      const names = {
+
+        "hi-IN":
+          "Hindi selected",
+
+        "gu-IN":
+          "Gujarati selected",
+
+        "en-IN":
+          "English selected"
+
+      };
+
+
+      state.textContent =
+        names[
+          getSelectedLanguage()
+        ];
+
+    }
+  );
+
+
+  /* =========================================
+     SPEECH RECOGNITION
   ========================================= */
 
   const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+
   let recognition = null;
   let listening = false;
 
+
   const micBtn =
-    document.getElementById("micBtn");
+    document.getElementById(
+      "micBtn"
+    );
+
 
   const state =
-    document.getElementById("state");
+    document.getElementById(
+      "state"
+    );
+
 
   const status =
-    document.getElementById("status");
+    document.getElementById(
+      "status"
+    );
 
 
   if (SpeechRecognition) {
@@ -1050,69 +1522,90 @@
     recognition =
       new SpeechRecognition();
 
-    recognition.continuous = false;
-    recognition.interimResults = false;
-    recognition.lang = "hi-IN";
 
-    recognition.onstart = () => {
-
-      listening = true;
-
-      state.textContent =
-        "Listening...";
-
-      status.textContent =
-        "● Listening";
-
-    };
+    recognition.continuous =
+      false;
 
 
-    recognition.onresult = event => {
-
-      const text =
-        event.results[0][0].transcript;
-
-      textInput.value = text;
-
-      handleUserMessage(text);
-
-      speak(
-        "Ji, main samajh gayi. " +
-        "Aapka request process kar rahi hoon."
-      );
-
-    };
+    recognition.interimResults =
+      false;
 
 
-    recognition.onerror = event => {
-
-      console.log(
-        "Speech error:",
-        event.error
-      );
-
-      listening = false;
-
-      state.textContent =
-        "Say Era to start";
-
-      status.textContent =
-        "● Ready";
-
-    };
+    recognition.lang =
+      getSelectedLanguage();
 
 
-    recognition.onend = () => {
+    recognition.onstart =
+      () => {
 
-      listening = false;
+        listening = true;
 
-      state.textContent =
-        "Say Era to start";
 
-      status.textContent =
-        "● Ready";
+        state.textContent =
+          "Listening...";
 
-    };
+
+        status.textContent =
+          "● Listening";
+
+      };
+
+
+    recognition.onresult =
+      event => {
+
+        const text =
+          event.results[0][0]
+            .transcript;
+
+
+        textInput.value =
+          text;
+
+
+        handleUserMessage(
+          text
+        );
+
+      };
+
+
+    recognition.onerror =
+      event => {
+
+        console.log(
+          "Speech error:",
+          event.error
+        );
+
+
+        listening = false;
+
+
+        state.textContent =
+          "Ready";
+
+
+        status.textContent =
+          "● Ready";
+
+      };
+
+
+    recognition.onend =
+      () => {
+
+        listening = false;
+
+
+        state.textContent =
+          "Ready";
+
+
+        status.textContent =
+          "● Ready";
+
+      };
 
 
     micBtn.addEventListener(
@@ -1124,7 +1617,13 @@
           recognition.stop();
 
           return;
+
         }
+
+
+        recognition.lang =
+          getSelectedLanguage();
+
 
         try {
 
@@ -1139,9 +1638,11 @@
       }
     );
 
+
   } else {
 
     micBtn.disabled = true;
+
 
     state.textContent =
       "Voice recognition not supported";
@@ -1150,27 +1651,222 @@
 
 
   /* =========================================
-     TEXT TO SPEECH
+     FEMALE-PRIORITY TEXT TO SPEECH
   ========================================= */
+
+  let availableVoices = [];
+
+
+  function loadVoices() {
+
+    if (
+      !("speechSynthesis" in window)
+    ) {
+
+      return;
+
+    }
+
+
+    availableVoices =
+      window.speechSynthesis
+        .getVoices();
+
+  }
+
+
+  loadVoices();
+
+
+  if (
+    "speechSynthesis" in window
+  ) {
+
+    window.speechSynthesis
+      .onvoiceschanged =
+      loadVoices;
+
+  }
+
+
+  function getBestVoice(language) {
+
+    const languageCode =
+      language
+        .split("-")[0]
+        .toLowerCase();
+
+
+    let matching =
+      availableVoices.filter(
+        voice =>
+          voice.lang &&
+          voice.lang
+            .toLowerCase()
+            .startsWith(
+              languageCode
+            )
+      );
+
+
+    if (!matching.length) {
+
+      matching =
+        availableVoices.filter(
+          voice =>
+            voice.lang &&
+            voice.lang
+              .toLowerCase()
+              .includes(
+                languageCode
+              )
+        );
+
+    }
+
+
+    if (!matching.length) {
+
+      return null;
+
+    }
+
+
+    /*
+      Browser voice metadata does not
+      always specify gender.
+
+      We therefore prefer names commonly
+      associated with natural/female voices.
+    */
+
+    const femalePriority =
+      matching.find(voice => {
+
+        const name =
+          voice.name
+            .toLowerCase();
+
+
+        return (
+          name.includes("female") ||
+          name.includes("woman") ||
+          name.includes("girl") ||
+          name.includes("natural") ||
+          name.includes("samantha") ||
+          name.includes("zira") ||
+          name.includes("google")
+        );
+
+      });
+
+
+    return (
+      femalePriority ||
+      matching[0]
+    );
+
+  }
+
 
   function speak(text) {
 
-    if (!("speechSynthesis" in window)) {
+    if (
+      !("speechSynthesis" in window)
+    ) {
+
+      return;
+
+    }
+
+
+    if (!text) {
       return;
     }
 
+
     window.speechSynthesis.cancel();
 
+
+    const language =
+      getSelectedLanguage();
+
+
     const utterance =
-      new SpeechSynthesisUtterance(text);
+      new SpeechSynthesisUtterance(
+        text
+      );
 
-    utterance.lang = "hi-IN";
-    utterance.rate = 0.95;
-    utterance.pitch = 1.05;
 
-    window.speechSynthesis.speak(
-      utterance
-    );
+    utterance.lang =
+      language;
+
+
+    const voice =
+      getBestVoice(
+        language
+      );
+
+
+    if (voice) {
+
+      utterance.voice =
+        voice;
+
+    }
+
+
+    utterance.rate =
+      0.95;
+
+
+    utterance.pitch =
+      1.08;
+
+
+    utterance.onstart =
+      () => {
+
+        state.textContent =
+          "Speaking...";
+
+
+        status.textContent =
+          "● Speaking";
+
+      };
+
+
+    utterance.onend =
+      () => {
+
+        state.textContent =
+          "Ready";
+
+
+        status.textContent =
+          "● Ready";
+
+      };
+
+
+    utterance.onerror =
+      () => {
+
+        state.textContent =
+          "Ready";
+
+
+        status.textContent =
+          "● Ready";
+
+      };
+
+
+    window.speechSynthesis
+      .speak(
+        utterance
+      );
 
   }
 
@@ -1188,15 +1884,25 @@
         ) || "[]"
       );
 
+
     history.push({
-      time: new Date().toLocaleString("en-IN"),
+
+      time:
+        new Date()
+          .toLocaleString(
+            "en-IN"
+          ),
+
       message
+
     });
+
 
     localStorage.setItem(
       "era_chat_history",
       JSON.stringify(history)
     );
+
 
     renderChatHistory();
 
@@ -1210,12 +1916,14 @@
         "chatHistory"
       );
 
+
     const history =
       JSON.parse(
         localStorage.getItem(
           "era_chat_history"
         ) || "[]"
       );
+
 
     if (!history.length) {
 
@@ -1226,22 +1934,34 @@
 
     }
 
+
     container.innerHTML =
       history
         .slice()
         .reverse()
         .map(item => `
+
           <div style="
             padding:10px 0;
             border-bottom:1px solid #1b2026;
           ">
-            <small style="color:#777;">
+
+            <small style="
+              color:#777;
+            ">
               ${item.time}
             </small>
-            <div style="margin-top:5px;">
-              ${escapeHTML(item.message)}
+
+            <div style="
+              margin-top:5px;
+            ">
+              ${escapeHTML(
+                item.message
+              )}
             </div>
+
           </div>
+
         `)
         .join("");
 
@@ -1251,11 +1971,26 @@
   function escapeHTML(text) {
 
     return text
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
 
   }
 
