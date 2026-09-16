@@ -72,7 +72,24 @@ const optionContracts =
 const liveOptionData =
   new Map();
 
+
+/*
+  We use two WebSocket connections.
+
+  Upstox LTPC limit:
+  5000 instruments per connection.
+
+  Maximum normal connections:
+  2 per user.
+
+  Therefore:
+  Socket #1 = first 5000
+  Socket #2 = remaining contracts
+*/
+
 let optionStreamer = null;
+
+let optionStreamer2 = null;
 
 let liveOptionsInitialized =
   false;
@@ -80,28 +97,24 @@ let liveOptionsInitialized =
 let liveOptionsInitializing =
   false;
 
+let websocket1Connected =
+  false;
 
-/*
-  Upstox V3 normal limits:
+let websocket2Connected =
+  false;
 
-  LTPC individual:
-  5000
+let subscribedContracts1 =
+  0;
 
-  Option Greeks individual:
-  3000
+let subscribedContracts2 =
+  0;
 
-  Full:
-  2000
 
-  When multiple modes/categories
-  are combined, lower combined
-  limits apply.
+const LTPC_CONNECTION_LIMIT =
+  5000;
 
-  We therefore use LTPC as the
-  primary all-option live stream.
-*/
-
-const LTPC_LIMIT = 5000;
+const MAX_WEBSOCKET_CONNECTIONS =
+  2;
 
 
 /* =====================================================
@@ -118,7 +131,9 @@ function authHeaders() {
 
   return {
     Accept: "application/json",
-    "Content-Type": "application/json",
+
+    "Content-Type":
+      "application/json",
 
     Authorization:
       `Bearer ${process.env.UPSTOX_ACCESS_TOKEN}`
@@ -133,6 +148,7 @@ function authHeaders() {
 app.get("/", (req, res) => {
 
   res.json({
+
     app: "Era AI V4",
 
     status: "online",
@@ -141,6 +157,7 @@ app.get("/", (req, res) => {
       "Era AI V4 backend is running",
 
     liveOptions: {
+
       initialized:
         liveOptionsInitialized,
 
@@ -148,7 +165,20 @@ app.get("/", (req, res) => {
         optionContracts.size,
 
       liveContracts:
-        liveOptionData.size
+        liveOptionData.size,
+
+      websocketConnections:
+        MAX_WEBSOCKET_CONNECTIONS,
+
+      websocket1:
+        websocket1Connected,
+
+      websocket2:
+        websocket2Connected,
+
+      subscribedContracts:
+        subscribedContracts1 +
+        subscribedContracts2
     }
   });
 
@@ -171,9 +201,11 @@ function findQuote(
     return {};
   }
 
+
   if (data[instrumentKey]) {
     return data[instrumentKey];
   }
+
 
   const encoded =
     instrumentKey.replace(
@@ -181,12 +213,15 @@ function findQuote(
       "%7C"
     );
 
+
   if (data[encoded]) {
     return data[encoded];
   }
 
+
   const shortName =
     instrumentKey.split("|")[1];
+
 
   for (
     const key of Object.keys(data)
@@ -196,9 +231,11 @@ function findQuote(
       key.includes(shortName) ||
       key.includes(encoded)
     ) {
+
       return data[key];
     }
   }
+
 
   return {};
 }
@@ -213,12 +250,19 @@ async function getLiveMarketData() {
   try {
 
     const keys = [
+
       NIFTY_KEY,
+
       BANKNIFTY_KEY,
+
       FINNIFTY_KEY,
+
       SENSEX_KEY,
+
       VIX_KEY,
+
       GIFT_KEY
+
     ].join(",");
 
 
@@ -226,7 +270,9 @@ async function getLiveMarketData() {
       await axios.get(
         `${UPSTOX_BASE}/market-quote/quotes`,
         {
+
           params: {
+
             instrument_key:
               keys
           },
@@ -250,11 +296,13 @@ async function getLiveMarketData() {
         NIFTY_KEY
       );
 
+
     const banknifty =
       findQuote(
         data,
         BANKNIFTY_KEY
       );
+
 
     const finnifty =
       findQuote(
@@ -262,17 +310,20 @@ async function getLiveMarketData() {
         FINNIFTY_KEY
       );
 
+
     const sensex =
       findQuote(
         data,
         SENSEX_KEY
       );
 
+
     const vix =
       findQuote(
         data,
         VIX_KEY
       );
+
 
     const gift =
       findQuote(
@@ -285,6 +336,7 @@ async function getLiveMarketData() {
 
       const ohlc =
         q.ohlc || {};
+
 
       return {
 
@@ -389,11 +441,14 @@ app.get(
     const data =
       await getLiveMarketData();
 
+
     if (!data.success) {
+
       return res
         .status(500)
         .json(data);
     }
+
 
     res.json(data);
   }
@@ -409,24 +464,33 @@ function getIndiaDate() {
   const now =
     new Date();
 
+
   const parts =
     new Intl.DateTimeFormat(
       "en-CA",
       {
+
         timeZone:
           "Asia/Kolkata",
 
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit"
+        year:
+          "numeric",
+
+        month:
+          "2-digit",
+
+        day:
+          "2-digit"
       }
     ).formatToParts(now);
 
 
   const map = {};
 
+
   parts.forEach(
     p => {
+
       map[p.type] =
         p.value;
     }
@@ -458,6 +522,7 @@ async function getIntradayCandles(
       await axios.get(
         `${UPSTOX_V3}/historical-candle/intraday/${encoded}/minutes/${interval}`,
         {
+
           headers:
             authHeaders(),
 
@@ -509,6 +574,7 @@ async function getIntradayCandles(
       error.message
     );
 
+
     return [];
   }
 }
@@ -527,9 +593,11 @@ function calculateEMA(
     return null;
   }
 
+
   if (
     values.length < period
   ) {
+
     return values[
       values.length - 1
     ];
@@ -582,11 +650,13 @@ function calculateRSI(
   if (
     values.length <= period
   ) {
+
     return null;
   }
 
 
   let gains = 0;
+
   let losses = 0;
 
 
@@ -602,8 +672,11 @@ function calculateRSI(
 
 
     if (diff >= 0) {
+
       gains += diff;
+
     } else {
+
       losses +=
         Math.abs(diff);
     }
@@ -612,6 +685,7 @@ function calculateRSI(
 
   let avgGain =
     gains / period;
+
 
   let avgLoss =
     losses / period;
@@ -660,6 +734,7 @@ function calculateRSI(
   if (
     avgLoss === 0
   ) {
+
     return 100;
   }
 
@@ -685,6 +760,7 @@ function calculateVWAP(
 ) {
 
   let cumulativePV = 0;
+
   let cumulativeVolume = 0;
 
 
@@ -713,6 +789,7 @@ function calculateVWAP(
   if (
     !cumulativeVolume
   ) {
+
     return null;
   }
 
@@ -735,8 +812,12 @@ function calculateSupportResistance(
   if (!candles.length) {
 
     return {
-      support: null,
-      resistance: null
+
+      support:
+        null,
+
+      resistance:
+        null
     };
   }
 
@@ -860,9 +941,7 @@ async function getTechnicalAnalysis(
     trend =
       "BULLISH";
 
-  }
-
-  else if (
+  } else if (
     current < ema9 &&
     ema9 < ema20 &&
     ema20 < ema50
@@ -884,13 +963,14 @@ async function getTechnicalAnalysis(
     if (
       rsi >= 60
     ) {
+
       momentum =
         "POSITIVE";
-    }
 
-    else if (
+    } else if (
       rsi <= 40
     ) {
+
       momentum =
         "NEGATIVE";
     }
@@ -953,7 +1033,9 @@ app.get(
         await axios.get(
           `${UPSTOX_BASE}/option/contract`,
           {
+
             params: {
+
               instrument_key:
                 instrumentKey
             },
@@ -993,6 +1075,7 @@ app.get(
         error:
           error.response?.data
             ?.errors?.[0]?.message ||
+
           "Unable to fetch option contracts"
       });
     }
@@ -1026,7 +1109,9 @@ async function fetchAllLiveOptionContracts() {
         await axios.get(
           `${UPSTOX_BASE}/option/contract`,
           {
+
             params: {
+
               instrument_key:
                 underlying.key
             },
@@ -1053,6 +1138,7 @@ async function fetchAllLiveOptionContracts() {
         if (
           !contract.instrument_key
         ) {
+
           continue;
         }
 
@@ -1064,13 +1150,16 @@ async function fetchAllLiveOptionContracts() {
           contract.instrument_type !==
             "PE"
         ) {
+
           continue;
         }
 
 
         all.set(
           contract.instrument_key,
+
           {
+
             ...contract,
 
             underlying_name:
@@ -1092,6 +1181,7 @@ async function fetchAllLiveOptionContracts() {
 
       console.error(
         `[LIVE OPTIONS] ${underlying.name} contract error:`,
+
         error.response?.data ||
         error.message
       );
@@ -1137,6 +1227,11 @@ function updateLiveOption(
   data
 ) {
 
+  if (!instrumentKey) {
+    return;
+  }
+
+
   const previous =
     liveOptionData.get(
       instrumentKey
@@ -1145,7 +1240,9 @@ function updateLiveOption(
 
   liveOptionData.set(
     instrumentKey,
+
     {
+
       ...previous,
 
       ...data,
@@ -1239,6 +1336,7 @@ function extractOptionFeed(
 ) {
 
   if (!feed) {
+
     return {};
   }
 
@@ -1247,6 +1345,13 @@ function extractOptionFeed(
     feed.ltpc ||
     {};
 
+
+  /*
+    LTPC gives live LTP.
+
+    Other fields are retained when
+    the feed happens to contain them.
+  */
 
   const firstLevel =
     feed.firstLevelWithGreeks ||
@@ -1286,12 +1391,14 @@ function extractOptionFeed(
   const bid =
     firstDepth.bidP ??
     feed.bidP ??
+    firstLevel.bidP ??
     null;
 
 
   const ask =
     firstDepth.askP ??
     feed.askP ??
+    firstLevel.askP ??
     null;
 
 
@@ -1322,8 +1429,10 @@ function extractOptionFeed(
     oiChange:
       oi !== null &&
       previousOI !== null
+
         ? Number(oi) -
           Number(previousOI)
+
         : null,
 
     bid,
@@ -1358,15 +1467,268 @@ function extractOptionFeed(
 
 
 /* =====================================================
-   START ALL OPTION LIVE WEBSOCKET
+   HANDLE WEBSOCKET MESSAGE
+===================================================== */
+
+function handleLiveOptionMessage(
+  data,
+  socketNumber
+) {
+
+  const decoded =
+    parseUpstoxMessage(
+      data
+    );
+
+
+  if (!decoded) {
+
+    return;
+  }
+
+
+  const feeds =
+    decoded.feeds ||
+    decoded.data ||
+    {};
+
+
+  if (
+    !feeds ||
+    typeof feeds !== "object"
+  ) {
+
+    return;
+  }
+
+
+  for (
+    const [
+      instrumentKey,
+      feed
+    ]
+    of Object.entries(
+      feeds
+    )
+  ) {
+
+    /*
+      currentTs is not an instrument.
+      Ignore anything that isn't a feed object.
+    */
+
+    if (
+      instrumentKey ===
+      "currentTs"
+    ) {
+
+      continue;
+    }
+
+
+    const parsed =
+      extractOptionFeed(
+        feed
+      );
+
+
+    if (!parsed) {
+
+      continue;
+    }
+
+
+    updateLiveOption(
+      instrumentKey,
+      parsed
+    );
+  }
+}
+
+
+/* =====================================================
+   CREATE OPTION WEBSOCKET
+===================================================== */
+
+function createOptionStreamer(
+  socketNumber,
+  instrumentKeys
+) {
+
+  if (
+    !instrumentKeys.length
+  ) {
+
+    return null;
+  }
+
+
+  const streamer =
+    new UpstoxClient
+      .MarketDataStreamerV3(
+        [],
+        "ltpc"
+      );
+
+
+  streamer.autoReconnect(
+    true,
+    10,
+    999999
+  );
+
+
+  streamer.on(
+    "open",
+    () => {
+
+      if (
+        socketNumber === 1
+      ) {
+
+        websocket1Connected =
+          true;
+
+      } else {
+
+        websocket2Connected =
+          true;
+      }
+
+
+      console.log(
+        `[LIVE OPTIONS] WebSocket #${socketNumber} CONNECTED`
+      );
+
+
+      try {
+
+        streamer.subscribe(
+          instrumentKeys,
+          "ltpc"
+        );
+
+
+        if (
+          socketNumber === 1
+        ) {
+
+          subscribedContracts1 =
+            instrumentKeys.length;
+
+        } else {
+
+          subscribedContracts2 =
+            instrumentKeys.length;
+        }
+
+
+        console.log(
+          `[LIVE OPTIONS] WebSocket #${socketNumber} SUBSCRIBED ${instrumentKeys.length} contracts`
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          `[LIVE OPTIONS] WebSocket #${socketNumber} subscribe error:`,
+
+          error
+        );
+      }
+    }
+  );
+
+
+  streamer.on(
+    "message",
+    data => {
+
+      handleLiveOptionMessage(
+        data,
+        socketNumber
+      );
+    }
+  );
+
+
+  streamer.on(
+    "error",
+    error => {
+
+      console.error(
+        `[LIVE OPTIONS] WebSocket #${socketNumber} ERROR:`,
+
+        error
+      );
+    }
+  );
+
+
+  streamer.on(
+    "close",
+    () => {
+
+      if (
+        socketNumber === 1
+      ) {
+
+        websocket1Connected =
+          false;
+
+      } else {
+
+        websocket2Connected =
+          false;
+      }
+
+
+      console.log(
+        `[LIVE OPTIONS] WebSocket #${socketNumber} CLOSED`
+      );
+    }
+  );
+
+
+  streamer.on(
+    "reconnecting",
+    () => {
+
+      console.log(
+        `[LIVE OPTIONS] WebSocket #${socketNumber} RECONNECTING...`
+      );
+    }
+  );
+
+
+  streamer.on(
+    "autoReconnectStopped",
+    () => {
+
+      console.error(
+        `[LIVE OPTIONS] WebSocket #${socketNumber} AUTO RECONNECT STOPPED`
+      );
+    }
+  );
+
+
+  streamer.connect();
+
+
+  return streamer;
+}
+
+
+/* =====================================================
+   START ALL OPTION LIVE WEBSOCKETS
 ===================================================== */
 
 async function startLiveOptionWebSocket() {
 
   if (
-    liveOptionsInitializing ||
-    liveOptionsInitialized
+    liveOptionsInitializing
   ) {
+
     return;
   }
 
@@ -1396,12 +1758,15 @@ async function startLiveOptionWebSocket() {
     const allKeys =
       [
         ...new Set(
+
           contracts
             .map(
-              x =>
-                x.instrument_key
+              item =>
+                item.instrument_key
             )
+
             .filter(Boolean)
+
         )
       ];
 
@@ -1417,189 +1782,92 @@ async function startLiveOptionWebSocket() {
 
 
     /*
-      Upstox normal LTPC limit = 5000.
+      Split every discovered option
+      contract across maximum 2 sockets.
 
-      We subscribe to as many
-      contracts as the account allows.
+      Socket 1:
+      first 5000
+
+      Socket 2:
+      remaining contracts
     */
 
-    const keysToSubscribe =
+    const socket1Keys =
       allKeys.slice(
         0,
-        LTPC_LIMIT
+        LTPC_CONNECTION_LIMIT
+      );
+
+
+    const socket2Keys =
+      allKeys.slice(
+        LTPC_CONNECTION_LIMIT,
+        LTPC_CONNECTION_LIMIT * 2
       );
 
 
     console.log(
-      `[LIVE OPTIONS] Preparing WebSocket for ${keysToSubscribe.length} contracts`
+      `[LIVE OPTIONS] Total contracts discovered: ${allKeys.length}`
     );
 
 
-    const defaultClient =
-      UpstoxClient
-        .ApiClient
-        .instance;
+    console.log(
+      `[LIVE OPTIONS] WebSocket #1 keys: ${socket1Keys.length}`
+    );
 
 
-    const oauth =
-      defaultClient
-        .authentications
-        ["OAUTH2"];
+    console.log(
+      `[LIVE OPTIONS] WebSocket #2 keys: ${socket2Keys.length}`
+    );
 
 
-    oauth.accessToken =
-      process.env.UPSTOX_ACCESS_TOKEN;
+    /*
+      Clear old state before creating
+      new connections.
+    */
+
+    websocket1Connected =
+      false;
+
+    websocket2Connected =
+      false;
+
+    subscribedContracts1 =
+      0;
+
+    subscribedContracts2 =
+      0;
 
 
     optionStreamer =
-      new UpstoxClient
-        .MarketDataStreamerV3(
-          [],
-          "ltpc"
-        );
+      createOptionStreamer(
+        1,
+        socket1Keys
+      );
 
 
-    optionStreamer.autoReconnect(
-      true,
-      10,
-      999999
-    );
+    /*
+      Start second socket slightly
+      after the first socket.
+    */
 
+    if (
+      socket2Keys.length
+    ) {
 
-    optionStreamer.on(
-      "open",
-      () => {
+      setTimeout(
+        () => {
 
-        console.log(
-          "[LIVE OPTIONS] WebSocket CONNECTED"
-        );
-
-
-        try {
-
-          optionStreamer.subscribe(
-            keysToSubscribe,
-            "ltpc"
-          );
-
-
-          console.log(
-            `[LIVE OPTIONS] SUBSCRIBED ${keysToSubscribe.length} option contracts`
-          );
-
-
-        } catch (error) {
-
-          console.error(
-            "[LIVE OPTIONS] Subscribe error:",
-            error
-          );
-        }
-      }
-    );
-
-
-    optionStreamer.on(
-      "message",
-      data => {
-
-        const decoded =
-          parseUpstoxMessage(
-            data
-          );
-
-
-        if (!decoded) {
-          return;
-        }
-
-
-        const feeds =
-          decoded.feeds ||
-          decoded.data ||
-          {};
-
-
-        if (
-          !feeds ||
-          typeof feeds !==
-            "object"
-        ) {
-          return;
-        }
-
-
-        for (
-          const [
-            instrumentKey,
-            feed
-          ]
-          of Object.entries(
-            feeds
-          )
-        ) {
-
-          const parsed =
-            extractOptionFeed(
-              feed
+          optionStreamer2 =
+            createOptionStreamer(
+              2,
+              socket2Keys
             );
 
-
-          updateLiveOption(
-            instrumentKey,
-            parsed
-          );
-        }
-      }
-    );
-
-
-    optionStreamer.on(
-      "error",
-      error => {
-
-        console.error(
-          "[LIVE OPTIONS] WebSocket ERROR:",
-          error
-        );
-      }
-    );
-
-
-    optionStreamer.on(
-      "close",
-      () => {
-
-        console.log(
-          "[LIVE OPTIONS] WebSocket CLOSED"
-        );
-      }
-    );
-
-
-    optionStreamer.on(
-      "reconnecting",
-      () => {
-
-        console.log(
-          "[LIVE OPTIONS] WebSocket RECONNECTING..."
-        );
-      }
-    );
-
-
-    optionStreamer.on(
-      "autoReconnectStopped",
-      () => {
-
-        console.error(
-          "[LIVE OPTIONS] Auto reconnect stopped."
-        );
-      }
-    );
-
-
-    optionStreamer.connect();
+        },
+        2000
+      );
+    }
 
 
     liveOptionsInitialized =
@@ -1607,14 +1875,34 @@ async function startLiveOptionWebSocket() {
 
 
     console.log(
-      "[LIVE OPTIONS] Initialization complete."
+      `[LIVE OPTIONS] Live option WebSockets initialized for ${Math.min(
+        allKeys.length,
+        LTPC_CONNECTION_LIMIT *
+        MAX_WEBSOCKET_CONNECTIONS
+      )} contracts.`
     );
+
+
+    if (
+      allKeys.length >
+      LTPC_CONNECTION_LIMIT *
+      MAX_WEBSOCKET_CONNECTIONS
+    ) {
+
+      console.warn(
+        `[LIVE OPTIONS] ${allKeys.length - (
+          LTPC_CONNECTION_LIMIT *
+          MAX_WEBSOCKET_CONNECTIONS
+        )} contracts could not be subscribed because the normal account connection limit is 2.`
+      );
+    }
 
 
   } catch (error) {
 
     console.error(
       "[LIVE OPTIONS] Initialization failed:",
+
       error
     );
 
@@ -1639,21 +1927,53 @@ app.get(
   "/api/options/live-status",
   (req, res) => {
 
+    const discovered =
+      optionContracts.size;
+
+
+    const maxSubscribable =
+      LTPC_CONNECTION_LIMIT *
+      MAX_WEBSOCKET_CONNECTIONS;
+
+
     res.json({
 
       success: true,
 
       websocket:
-        liveOptionsInitialized,
+        websocket1Connected ||
+        websocket2Connected,
+
+      websocket1:
+        websocket1Connected,
+
+      websocket2:
+        websocket2Connected,
 
       discoveredContracts:
-        optionContracts.size,
+        discovered,
 
       liveContracts:
         liveOptionData.size,
 
-      subscribedLimit:
-        LTPC_LIMIT
+      subscribedContracts:
+        subscribedContracts1 +
+        subscribedContracts2,
+
+      socket1Subscribed:
+        subscribedContracts1,
+
+      socket2Subscribed:
+        subscribedContracts2,
+
+      subscribedLimitPerConnection:
+        LTPC_CONNECTION_LIMIT,
+
+      maxNormalConnections:
+        MAX_WEBSOCKET_CONNECTIONS,
+
+      maxNormalLTPCSubscriptions:
+        maxSubscribable
     });
   }
 );
@@ -1694,15 +2014,16 @@ app.get(
           success: true,
 
           data: {
+
             ...contract,
+
             ...live
           }
         });
       }
 
 
-      const result =
-        [];
+      const result = [];
 
 
       for (
@@ -1800,23 +2121,26 @@ async function getOptionChain(
     [];
 
 
-  /*
-    Merge WebSocket data into
-    normal Option Chain rows.
-  */
-
   if (
     !Array.isArray(rows)
   ) {
+
     return rows;
   }
 
+
+  /*
+    Merge live WebSocket LTP
+    into the normal Upstox
+    Option Chain response.
+  */
 
   return rows.map(row => {
 
     const call =
       row.call_options ||
       {};
+
 
     const put =
       row.put_options ||
@@ -1826,14 +2150,12 @@ async function getOptionChain(
     const callKey =
       call.instrument_key ||
       call.instrumentKey ||
-      call.instrument_token ||
       null;
 
 
     const putKey =
       put.instrument_key ||
       put.instrumentKey ||
-      put.instrument_token ||
       null;
 
 
@@ -1853,8 +2175,14 @@ async function getOptionChain(
         : null;
 
 
+    /*
+      CALL
+    */
+
     if (
-      callLive
+      callLive &&
+      callLive.ltp !== null &&
+      callLive.ltp !== undefined
     ) {
 
       row.call_options = {
@@ -1866,60 +2194,24 @@ async function getOptionChain(
           ...(call.market_data || {}),
 
           ltp:
-            callLive.ltp ??
-            call.market_data?.ltp,
+            callLive.ltp,
 
-          oi:
-            callLive.oi ??
-            call.market_data?.oi,
-
-          volume:
-            callLive.volume ??
-            call.market_data?.volume,
-
-          bid:
-            callLive.bid ??
-            call.market_data?.bid,
-
-          ask:
-            callLive.ask ??
-            call.market_data?.ask,
-
-          oi_change:
-            callLive.oiChange ??
-            call.market_data?.oi_change
-        },
-
-        option_greeks: {
-
-          ...(call.option_greeks || {}),
-
-          iv:
-            callLive.iv ??
-            call.option_greeks?.iv,
-
-          delta:
-            callLive.delta ??
-            call.option_greeks?.delta,
-
-          gamma:
-            callLive.gamma ??
-            call.option_greeks?.gamma,
-
-          theta:
-            callLive.theta ??
-            call.option_greeks?.theta,
-
-          vega:
-            callLive.vega ??
-            call.option_greeks?.vega
+          close_price:
+            callLive.close ??
+            call.market_data?.close_price
         }
       };
     }
 
 
+    /*
+      PUT
+    */
+
     if (
-      putLive
+      putLive &&
+      putLive.ltp !== null &&
+      putLive.ltp !== undefined
     ) {
 
       row.put_options = {
@@ -1931,53 +2223,11 @@ async function getOptionChain(
           ...(put.market_data || {}),
 
           ltp:
-            putLive.ltp ??
-            put.market_data?.ltp,
+            putLive.ltp,
 
-          oi:
-            putLive.oi ??
-            put.market_data?.oi,
-
-          volume:
-            putLive.volume ??
-            put.market_data?.volume,
-
-          bid:
-            putLive.bid ??
-            put.market_data?.bid,
-
-          ask:
-            putLive.ask ??
-            put.market_data?.ask,
-
-          oi_change:
-            putLive.oiChange ??
-            put.market_data?.oi_change
-        },
-
-        option_greeks: {
-
-          ...(put.option_greeks || {}),
-
-          iv:
-            putLive.iv ??
-            put.option_greeks?.iv,
-
-          delta:
-            putLive.delta ??
-            put.option_greeks?.delta,
-
-          gamma:
-            putLive.gamma ??
-            put.option_greeks?.gamma,
-
-          theta:
-            putLive.theta ??
-            put.option_greeks?.theta,
-
-          vega:
-            putLive.vega ??
-            put.option_greeks?.vega
+          close_price:
+            putLive.close ??
+            put.market_data?.close_price
         }
       };
     }
@@ -2034,6 +2284,7 @@ app.get(
 
       console.error(
         "OPTION CHAIN ERROR:",
+
         error.response?.data ||
         error.message
       );
@@ -2093,17 +2344,21 @@ async function getNearestExpiry(
     const expiries =
       [
         ...new Set(
+
           contracts
+
             .map(
               x =>
                 x.expiry ||
                 x.expiry_date
             )
+
             .filter(
               x =>
                 x &&
                 x >= today
             )
+
         )
       ]
       .sort();
@@ -2119,6 +2374,7 @@ async function getNearestExpiry(
 
     console.error(
       "EXPIRY ERROR:",
+
       error.response?.data ||
       error.message
     );
@@ -2191,7 +2447,8 @@ async function getOptionAnalysis(
 
 
     for (
-      const row of chain
+      const row
+      of chain
     ) {
 
       const strike =
@@ -2205,6 +2462,7 @@ async function getOptionAnalysis(
           strike
         )
       ) {
+
         continue;
       }
 
@@ -2251,6 +2509,7 @@ async function getOptionAnalysis(
       totalCallOI +=
         callOI;
 
+
       totalPutOI +=
         putOI;
     }
@@ -2258,8 +2517,10 @@ async function getOptionAnalysis(
 
     const pcr =
       totalCallOI > 0
+
         ? totalPutOI /
           totalCallOI
+
         : null;
 
 
@@ -2385,9 +2646,7 @@ async function getOptionAnalysis(
         bias =
           "BULLISH";
 
-      }
-
-      else if (
+      } else if (
         pcr < 0.85
       ) {
 
@@ -2423,6 +2682,7 @@ async function getOptionAnalysis(
 
     console.error(
       "OPTION ANALYSIS ERROR:",
+
       error.response?.data ||
       error.message
     );
@@ -2492,9 +2752,7 @@ async function getEraAnalysis() {
         "Technical trend bullish"
       );
 
-    }
-
-    else if (
+    } else if (
       technical.trend ===
       "BEARISH"
     ) {
@@ -2523,9 +2781,7 @@ async function getEraAnalysis() {
           "RSI positive"
         );
 
-      }
-
-      else if (
+      } else if (
         technical.rsi < 45
       ) {
 
@@ -2552,9 +2808,7 @@ async function getEraAnalysis() {
         "Price above VWAP"
       );
 
-    }
-
-    else if (
+    } else if (
       technical.vwap &&
       technical.current <
       technical.vwap
@@ -2586,9 +2840,7 @@ async function getEraAnalysis() {
         "Option PCR indicates bullish bias"
       );
 
-    }
-
-    else if (
+    } else if (
       options.bias ===
       "BEARISH"
     ) {
@@ -2626,9 +2878,7 @@ async function getEraAnalysis() {
     direction =
       "BUY";
 
-  }
-
-  else if (
+  } else if (
     technicalTrend ===
       "BEARISH" &&
 
@@ -2639,9 +2889,7 @@ async function getEraAnalysis() {
     direction =
       "SELL";
 
-  }
-
-  else {
+  } else {
 
     direction =
       "WAIT";
@@ -2910,7 +3158,9 @@ app.get(
         Array.isArray(
           response.data?.articles
         )
+
           ? response.data.articles
+
           : [];
 
 
@@ -2959,6 +3209,7 @@ app.get(
 
       console.error(
         "NEWS ERROR:",
+
         error.response?.data ||
         error.message
       );
@@ -3010,7 +3261,9 @@ app.post(
         Array.isArray(
           req.body?.history
         )
+
           ? req.body.history
+
           : [];
 
 
@@ -3175,17 +3428,25 @@ ${analysisContext}
 
       const safeHistory =
         history
+
           .slice(-20)
+
           .filter(
             item =>
               item &&
+
               (
-                item.role === "user" ||
-                item.role === "assistant"
+                item.role ===
+                  "user" ||
+
+                item.role ===
+                  "assistant"
               ) &&
+
               typeof item.content ===
                 "string"
           )
+
           .map(
             item => ({
 
@@ -3295,6 +3556,7 @@ ${analysisContext}
 
       console.error(
         "AI CHAT ERROR:",
+
         error.response?.data ||
         error.message
       );
@@ -3334,7 +3596,7 @@ app.listen(
 
 
     /*
-      Start option WebSocket
+      Start live option WebSockets
       after Express starts.
     */
 
@@ -3355,3 +3617,4 @@ app.listen(
     );
   }
 );
+    
