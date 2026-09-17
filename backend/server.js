@@ -15,7 +15,8 @@ const PORT = process.env.PORT || 3000;
 
 const UPSTOX_BASE = "https://api.upstox.com/v2";
 const UPSTOX_V3 = "https://api.upstox.com/v3";
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions
+   ";
 
 /* =========================================================
    INSTRUMENT KEYS
