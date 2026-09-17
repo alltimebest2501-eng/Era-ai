@@ -11,6 +11,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "upstox-js-sdk": "^2.31.0"  
+    "upstox-js-sdk": "^2.31.0",
+    "web-push": "^3.6.7"
   }
 }
