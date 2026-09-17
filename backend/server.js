@@ -248,6 +248,22 @@ function isMarketOpen() {
   return m >= 555 && m <= 930;
 }
 
+function isMarketOpenWindow() {
+  if (!isWeekday()) return false;
+
+  const m = indiaMinutes();
+
+  // NSE market monitoring window: 09:15 AM - 03:30 PM
+  return m >= 555 && m <= 930;
+}
+
+function isMarketClosed() {
+  if (!isWeekday()) return false;
+
+  return indiaMinutes() > 930;
+}
+}
+
 function isMarketClosed() {
   if (!isWeekday()) return false;
 
