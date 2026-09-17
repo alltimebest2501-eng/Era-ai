@@ -178,7 +178,15 @@ app.get("/", (req, res) => {
         websocket1Connected,
 
       websocket2:
-        websocket2Connected
+        websocket2Connected,
+
+      websocket1LastMessage,
+
+      websocket2LastMessage,
+
+      websocket1Error,
+
+      websocket2Error
     },
 
     naturalVoice: {
@@ -206,6 +214,9 @@ app.post(
   "/api/tts",
   async (req, res) => {
 
+    const startedAt =
+      Date.now();
+
     try {
 
       const apiKey =
@@ -225,7 +236,40 @@ app.post(
           : "en-IN";
 
 
+      console.log(
+        "======================================"
+      );
+
+      console.log(
+        "[TTS] REQUEST RECEIVED"
+      );
+
+      console.log(
+        "[TTS] Language:",
+        language
+      );
+
+      console.log(
+        "[TTS] API key configured:",
+        Boolean(apiKey)
+      );
+
+      console.log(
+        "[TTS] Voice ID configured:",
+        Boolean(voiceId)
+      );
+
+      console.log(
+        "[TTS] Text length:",
+        text.length
+      );
+
+
       if (!apiKey) {
+
+        console.error(
+          "[TTS ERROR] ELEVENLABS_API_KEY missing"
+        );
 
         return res.status(500).json({
 
@@ -239,6 +283,10 @@ app.post(
 
       if (!voiceId) {
 
+        console.error(
+          "[TTS ERROR] ELEVENLABS_VOICE_ID missing"
+        );
+
         return res.status(500).json({
 
           success: false,
@@ -250,6 +298,10 @@ app.post(
 
 
       if (!text) {
+
+        console.error(
+          "[TTS ERROR] Empty text"
+        );
 
         return res.status(400).json({
 
@@ -266,17 +318,7 @@ app.post(
 
 
       console.log(
-        "[ELEVENLABS] Generating voice..."
-      );
-
-      console.log(
-        "[ELEVENLABS] Language:",
-        language
-      );
-
-      console.log(
-        "[ELEVENLABS] Text length:",
-        cleanText.length
+        "[TTS] Sending request to ElevenLabs..."
       );
 
 
@@ -346,6 +388,24 @@ app.post(
         );
 
 
+      console.log(
+        "[TTS] ElevenLabs HTTP:",
+        response.status
+      );
+
+      console.log(
+        "[TTS] Content-Type:",
+        response.headers[
+          "content-type"
+        ]
+      );
+
+      console.log(
+        "[TTS] Audio bytes:",
+        audioBuffer.length
+      );
+
+
       if (!audioBuffer.length) {
 
         throw new Error(
@@ -355,9 +415,13 @@ app.post(
 
 
       console.log(
-        "[ELEVENLABS] Success:",
-        audioBuffer.length,
-        "bytes"
+        "[TTS] SUCCESS in",
+        Date.now() - startedAt,
+        "ms"
+      );
+
+      console.log(
+        "======================================"
       );
 
 
@@ -375,7 +439,12 @@ app.post(
 
       res.setHeader(
         "Cache-Control",
-        "no-store"
+        "no-store, no-cache, must-revalidate"
+      );
+
+      res.setHeader(
+        "Accept-Ranges",
+        "bytes"
       );
 
 
@@ -407,7 +476,9 @@ app.post(
               error.response.data
                 .toString("utf8");
 
-          } else {
+          } else if (
+            error.response.data
+          ) {
 
             detail =
               JSON.stringify(
@@ -426,9 +497,43 @@ app.post(
 
 
       console.error(
-        "[ELEVENLABS TTS ERROR]",
-        error.response?.status || "",
+        "======================================"
+      );
+
+      console.error(
+        "[TTS ERROR]"
+      );
+
+      console.error(
+        "Message:",
+        error.message
+      );
+
+      console.error(
+        "HTTP status:",
+        error.response?.status
+      );
+
+      console.error(
+        "Content-Type:",
+        error.response?.headers?.[
+          "content-type"
+        ]
+      );
+
+      console.error(
+        "Provider response:",
         detail
+      );
+
+      console.error(
+        "Time:",
+        Date.now() - startedAt,
+        "ms"
+      );
+
+      console.error(
+        "======================================"
       );
 
 
@@ -447,6 +552,59 @@ app.post(
         detail
       });
     }
+  }
+);
+
+
+/* =====================================================
+   TTS STATUS / DIAGNOSTIC
+===================================================== */
+
+app.get(
+  "/api/tts/status",
+  (req, res) => {
+
+    const apiKeyConfigured =
+      Boolean(
+        process.env.ELEVENLABS_API_KEY
+      );
+
+    const voiceConfigured =
+      Boolean(
+        process.env.ELEVENLABS_VOICE_ID
+      );
+
+
+    res.json({
+
+      success: true,
+
+      provider:
+        "ElevenLabs",
+
+      configured:
+        apiKeyConfigured &&
+        voiceConfigured,
+
+      apiKey:
+        apiKeyConfigured
+          ? "configured"
+          : "missing",
+
+      voiceId:
+        voiceConfigured
+          ? "configured"
+          : "missing",
+
+      model:
+        "eleven_multilingual_v2",
+
+      outputFormat:
+        "mp3_44100_128",
+
+      serverTime:
+        new Date().toISOString()
+    });
   }
 );
 
@@ -805,40 +963,58 @@ async function getIntradayCandles(
         ?.candles || [];
 
 
-    return candles
+    const parsed =
+      candles
 
-      .map(c => ({
+        .map(c => ({
 
-        timestamp:
-          c[0],
+          timestamp:
+            c[0],
 
-        open:
-          Number(c[1]),
+          open:
+            Number(c[1]),
 
-        high:
-          Number(c[2]),
+          high:
+            Number(c[2]),
 
-        low:
-          Number(c[3]),
+          low:
+            Number(c[3]),
 
-        close:
-          Number(c[4]),
+          close:
+            Number(c[4]),
 
-        volume:
-          Number(c[5] || 0),
+          volume:
+            Number(c[5] || 0),
 
-        oi:
-          Number(c[6] || 0)
+          oi:
+            Number(c[6] || 0)
 
-      }))
+        }))
 
-      .reverse();
+        .filter(c =>
+
+          Number.isFinite(c.open) &&
+          Number.isFinite(c.high) &&
+          Number.isFinite(c.low) &&
+          Number.isFinite(c.close)
+
+        )
+
+        .reverse();
+
+
+    console.log(
+      `[CANDLES] ${instrumentKey} ${interval}m => ${parsed.length}`
+    );
+
+
+    return parsed;
 
 
   } catch (error) {
 
     console.error(
-      "CANDLE ERROR:",
+      `[CANDLE ERROR] ${instrumentKey}:`,
       error.response?.data ||
       error.message
     );
@@ -846,6 +1022,233 @@ async function getIntradayCandles(
 
     return [];
   }
+}
+
+
+/* =====================================================
+   HISTORICAL CANDLES
+===================================================== */
+
+async function getHistoricalCandles(
+  instrumentKey = NIFTY_KEY,
+  interval = 5
+) {
+
+  try {
+
+    const encoded =
+      encodeURIComponent(
+        instrumentKey
+      );
+
+
+    const today =
+      getIndiaDate();
+
+
+    const from =
+      new Date();
+
+
+    from.setDate(
+      from.getDate() - 7
+    );
+
+
+    const fromParts =
+      new Intl.DateTimeFormat(
+        "en-CA",
+        {
+
+          timeZone:
+            "Asia/Kolkata",
+
+          year:
+            "numeric",
+
+          month:
+            "2-digit",
+
+          day:
+            "2-digit"
+        }
+      ).formatToParts(from);
+
+
+    const fromMap = {};
+
+
+    fromParts.forEach(
+      p => {
+
+        fromMap[p.type] =
+          p.value;
+      }
+    );
+
+
+    const fromDate =
+      `${fromMap.year}-${fromMap.month}-${fromMap.day}`;
+
+
+    console.log(
+      `[HISTORY] Requesting ${instrumentKey} from ${fromDate} to ${today}`
+    );
+
+
+    const response =
+      await axios.get(
+
+        `${UPSTOX_V3}/historical-candle/${encoded}/minutes/${interval}/${today}/${fromDate}`,
+
+        {
+
+          headers:
+            authHeaders(),
+
+          timeout:
+            20000
+        }
+      );
+
+
+    const candles =
+      response.data
+        ?.data
+        ?.candles || [];
+
+
+    const parsed =
+      candles
+
+        .map(c => ({
+
+          timestamp:
+            c[0],
+
+          open:
+            Number(c[1]),
+
+          high:
+            Number(c[2]),
+
+          low:
+            Number(c[3]),
+
+          close:
+            Number(c[4]),
+
+          volume:
+            Number(c[5] || 0),
+
+          oi:
+            Number(c[6] || 0)
+
+        }))
+
+        .filter(c =>
+
+          Number.isFinite(c.open) &&
+          Number.isFinite(c.high) &&
+          Number.isFinite(c.low) &&
+          Number.isFinite(c.close)
+
+        )
+
+        .reverse();
+
+
+    console.log(
+      `[HISTORY] ${instrumentKey} => ${parsed.length} candles`
+    );
+
+
+    return parsed;
+
+
+  } catch (error) {
+
+    console.error(
+      `[HISTORY ERROR] ${instrumentKey}:`,
+      error.response?.data ||
+      error.message
+    );
+
+
+    return [];
+  }
+}
+
+
+/* =====================================================
+   SMART ANALYSIS CANDLE LOADER
+===================================================== */
+
+async function getAnalysisCandles(
+  instrumentKey = NIFTY_KEY,
+  interval = 5
+) {
+
+  let candles =
+    await getIntradayCandles(
+      instrumentKey,
+      interval
+    );
+
+
+  /*
+    Current trading day may have fewer candles.
+    We need enough history for EMA50 + RSI14.
+  */
+
+  if (
+    candles.length < 60
+  ) {
+
+    console.log(
+      `[CANDLE FALLBACK] Only ${candles.length} intraday candles. Loading historical candles...`
+    );
+
+
+    const historical =
+      await getHistoricalCandles(
+        instrumentKey,
+        interval
+      );
+
+
+    if (
+      historical.length >
+      candles.length
+    ) {
+
+      candles =
+        historical;
+    }
+  }
+
+
+  /*
+    Keep latest 200 candles.
+    This is enough for the calculations
+    and keeps the response fast.
+  */
+
+  if (
+    candles.length > 200
+  ) {
+
+    candles =
+      candles.slice(-200);
+  }
+
+
+  console.log(
+    `[ANALYSIS CANDLES] ${instrumentKey} => ${candles.length}`
+  );
+
+
+  return candles;
 }
 
 
@@ -858,18 +1261,12 @@ function calculateEMA(
   period
 ) {
 
-  if (!values.length) {
-    return null;
-  }
-
-
   if (
+    !Array.isArray(values) ||
     values.length < period
   ) {
 
-    return values[
-      values.length - 1
-    ];
+    return null;
   }
 
 
@@ -886,8 +1283,8 @@ function calculateEMA(
       )
 
       .reduce(
-        (a, b) =>
-          a + b,
+        (sum, value) =>
+          sum + value,
         0
       ) / period;
 
@@ -908,7 +1305,9 @@ function calculateEMA(
   }
 
 
-  return ema;
+  return Number(
+    ema.toFixed(2)
+  );
 }
 
 
@@ -922,6 +1321,7 @@ function calculateRSI(
 ) {
 
   if (
+    !Array.isArray(values) ||
     values.length <= period
   ) {
 
@@ -939,30 +1339,31 @@ function calculateRSI(
     i++
   ) {
 
-    const diff =
+    const change =
       values[i] -
       values[i - 1];
 
 
     if (
-      diff >= 0
+      change > 0
     ) {
 
-      gains += diff;
+      gains +=
+        change;
 
     } else {
 
       losses +=
-        Math.abs(diff);
+        Math.abs(change);
     }
   }
 
 
-  let avgGain =
+  let averageGain =
     gains / period;
 
 
-  let avgLoss =
+  let averageLoss =
     losses / period;
 
 
@@ -972,34 +1373,34 @@ function calculateRSI(
     i++
   ) {
 
-    const diff =
+    const change =
       values[i] -
       values[i - 1];
 
 
     const gain =
-      diff > 0
-        ? diff
+      change > 0
+        ? change
         : 0;
 
 
     const loss =
-      diff < 0
-        ? Math.abs(diff)
+      change < 0
+        ? Math.abs(change)
         : 0;
 
 
-    avgGain =
+    averageGain =
       (
-        avgGain *
+        averageGain *
         (period - 1) +
         gain
       ) / period;
 
 
-    avgLoss =
+    averageLoss =
       (
-        avgLoss *
+        averageLoss *
         (period - 1) +
         loss
       ) / period;
@@ -1007,7 +1408,7 @@ function calculateRSI(
 
 
   if (
-    avgLoss === 0
+    averageLoss === 0
   ) {
 
     return 100;
@@ -1015,13 +1416,17 @@ function calculateRSI(
 
 
   const rs =
-    avgGain /
-    avgLoss;
+    averageGain /
+    averageLoss;
 
 
-  return (
+  const rsi =
     100 -
-    100 / (1 + rs)
+    100 / (1 + rs);
+
+
+  return Number(
+    rsi.toFixed(2)
   );
 }
 
@@ -1034,6 +1439,15 @@ function calculateVWAP(
   candles
 ) {
 
+  if (
+    !Array.isArray(candles) ||
+    !candles.length
+  ) {
+
+    return null;
+  }
+
+
   let cumulativePV = 0;
   let cumulativeVolume = 0;
 
@@ -1041,6 +1455,20 @@ function calculateVWAP(
   for (
     const c of candles
   ) {
+
+    const volume =
+      Number(
+        c.volume || 0
+      );
+
+
+    if (
+      volume <= 0
+    ) {
+
+      continue;
+    }
+
 
     const typical =
       (
@@ -1052,25 +1480,27 @@ function calculateVWAP(
 
     cumulativePV +=
       typical *
-      c.volume;
+      volume;
 
 
     cumulativeVolume +=
-      c.volume;
+      volume;
   }
 
 
   if (
-    !cumulativeVolume
+    cumulativeVolume <= 0
   ) {
 
     return null;
   }
 
 
-  return (
-    cumulativePV /
-    cumulativeVolume
+  return Number(
+    (
+      cumulativePV /
+      cumulativeVolume
+    ).toFixed(2)
   );
 }
 
@@ -1084,6 +1514,7 @@ function calculateSupportResistance(
 ) {
 
   if (
+    !Array.isArray(candles) ||
     !candles.length
   ) {
 
@@ -1101,24 +1532,44 @@ function calculateSupportResistance(
 
 
   const lows =
-    recent.map(
-      c => c.low
-    );
+    recent
+      .map(
+        c => Number(c.low)
+      )
+      .filter(
+        Number.isFinite
+      );
 
 
   const highs =
-    recent.map(
-      c => c.high
-    );
+    recent
+      .map(
+        c => Number(c.high)
+      )
+      .filter(
+        Number.isFinite
+      );
 
 
   return {
 
     support:
-      Math.min(...lows),
+      lows.length
+        ? Number(
+            Math.min(
+              ...lows
+            ).toFixed(2)
+          )
+        : null,
 
     resistance:
-      Math.max(...highs)
+      highs.length
+        ? Number(
+            Math.max(
+              ...highs
+            ).toFixed(2)
+          )
+        : null
   };
 }
 
@@ -1131,162 +1582,246 @@ async function getTechnicalAnalysis(
   instrumentKey = NIFTY_KEY
 ) {
 
-  const candles =
-    await getIntradayCandles(
+  try {
+
+    const candles =
+      await getAnalysisCandles(
+        instrumentKey,
+        5
+      );
+
+
+    if (
+      candles.length < 20
+    ) {
+
+      console.warn(
+        `[TECHNICAL] Insufficient candles: ${candles.length}`
+      );
+
+
+      return {
+
+        success: false,
+
+        status:
+          "INSUFFICIENT_DATA",
+
+        error:
+          "Not enough candle history",
+
+        instrumentKey,
+
+        timeframe:
+          "5 minute",
+
+        candles:
+          candles.length,
+
+        current:
+          candles.length
+            ? candles[
+                candles.length - 1
+              ].close
+            : null,
+
+        ema9: null,
+        ema20: null,
+        ema50: null,
+        rsi: null,
+        vwap: null,
+        support: null,
+        resistance: null,
+        trend: "UNKNOWN",
+        momentum: "UNKNOWN"
+      };
+    }
+
+
+    const closes =
+      candles.map(
+        c => c.close
+      );
+
+
+    const current =
+      closes[
+        closes.length - 1
+      ];
+
+
+    const ema9 =
+      calculateEMA(
+        closes,
+        9
+      );
+
+
+    const ema20 =
+      calculateEMA(
+        closes,
+        20
+      );
+
+
+    const ema50 =
+      calculateEMA(
+        closes,
+        50
+      );
+
+
+    const rsi =
+      calculateRSI(
+        closes,
+        14
+      );
+
+
+    const vwap =
+      calculateVWAP(
+        candles
+      );
+
+
+    const sr =
+      calculateSupportResistance(
+        candles
+      );
+
+
+    let trend =
+      "SIDEWAYS";
+
+
+    if (
+      ema9 !== null &&
+      ema20 !== null &&
+      ema50 !== null
+    ) {
+
+      if (
+        current > ema9 &&
+        ema9 > ema20 &&
+        ema20 > ema50
+      ) {
+
+        trend =
+          "BULLISH";
+
+      } else if (
+        current < ema9 &&
+        ema9 < ema20 &&
+        ema20 < ema50
+      ) {
+
+        trend =
+          "BEARISH";
+      }
+    }
+
+
+    let momentum =
+      "NEUTRAL";
+
+
+    if (
+      rsi !== null
+    ) {
+
+      if (
+        rsi >= 60
+      ) {
+
+        momentum =
+          "POSITIVE";
+
+      } else if (
+        rsi <= 40
+      ) {
+
+        momentum =
+          "NEGATIVE";
+      }
+    }
+
+
+    const result = {
+
+      success: true,
+
+      status:
+        "OK",
+
       instrumentKey,
-      5
+
+      timeframe:
+        "5 minute",
+
+      candles:
+        candles.length,
+
+      current,
+
+      ema9,
+
+      ema20,
+
+      ema50,
+
+      rsi,
+
+      vwap,
+
+      support:
+        sr.support,
+
+      resistance:
+        sr.resistance,
+
+      trend,
+
+      momentum
+    };
+
+
+    console.log(
+      "[TECHNICAL]",
+      JSON.stringify(
+        result
+      )
     );
 
 
-  if (
-    !candles.length
-  ) {
+    return result;
+
+
+  } catch (error) {
+
+    console.error(
+      "[TECHNICAL ERROR]",
+      error.response?.data ||
+      error.message
+    );
+
 
     return {
 
       success: false,
 
+      status:
+        "ERROR",
+
       error:
-        "Technical candle data unavailable"
+        error.message,
+
+      trend:
+        "UNKNOWN",
+
+      momentum:
+        "UNKNOWN"
     };
   }
-
-
-  const closes =
-    candles.map(
-      c => c.close
-    );
-
-
-  const current =
-    closes[
-      closes.length - 1
-    ];
-
-
-  const ema9 =
-    calculateEMA(
-      closes,
-      9
-    );
-
-
-  const ema20 =
-    calculateEMA(
-      closes,
-      20
-    );
-
-
-  const ema50 =
-    calculateEMA(
-      closes,
-      50
-    );
-
-
-  const rsi =
-    calculateRSI(
-      closes,
-      14
-    );
-
-
-  const vwap =
-    calculateVWAP(
-      candles
-    );
-
-
-  const sr =
-    calculateSupportResistance(
-      candles
-    );
-
-
-  let trend =
-    "SIDEWAYS";
-
-
-  if (
-    current > ema9 &&
-    ema9 > ema20 &&
-    ema20 > ema50
-  ) {
-
-    trend =
-      "BULLISH";
-
-  } else if (
-    current < ema9 &&
-    ema9 < ema20 &&
-    ema20 < ema50
-  ) {
-
-    trend =
-      "BEARISH";
-  }
-
-
-  let momentum =
-    "NEUTRAL";
-
-
-  if (
-    rsi !== null
-  ) {
-
-    if (
-      rsi >= 60
-    ) {
-
-      momentum =
-        "POSITIVE";
-
-    } else if (
-      rsi <= 40
-    ) {
-
-      momentum =
-        "NEGATIVE";
-    }
-  }
-
-
-  return {
-
-    success: true,
-
-    instrumentKey,
-
-    timeframe:
-      "5 minute",
-
-    candles:
-      candles.length,
-
-    current,
-
-    ema9,
-
-    ema20,
-
-    ema50,
-
-    rsi,
-
-    vwap,
-
-    support:
-      sr.support,
-
-    resistance:
-      sr.resistance,
-
-    trend,
-
-    momentum
-  };
 }
 
 
@@ -2132,17 +2667,18 @@ async function startLiveOptionWebSocket() {
     );
 
 
+    const capacity =
+      LTPC_CONNECTION_LIMIT *
+      MAX_WEBSOCKET_CONNECTIONS;
+
+
     if (
       allKeys.length >
-      LTPC_CONNECTION_LIMIT *
-      MAX_WEBSOCKET_CONNECTIONS
+      capacity
     ) {
 
       console.warn(
-        `[LIVE OPTIONS] WARNING: ${allKeys.length} contracts found but maximum normal capacity is ${
-          LTPC_CONNECTION_LIMIT *
-          MAX_WEBSOCKET_CONNECTIONS
-        }.`
+        `[LIVE OPTIONS] WARNING: ${allKeys.length} contracts found but maximum normal capacity is ${capacity}.`
       );
     }
 
@@ -2157,8 +2693,7 @@ async function startLiveOptionWebSocket() {
     const socket2Keys =
       allKeys.slice(
         LTPC_CONNECTION_LIMIT,
-        LTPC_CONNECTION_LIMIT *
-        MAX_WEBSOCKET_CONNECTIONS
+        capacity
       );
 
 
@@ -2881,7 +3416,9 @@ async function getOptionAnalysis(
         : null;
 
 
-    /* MAX PAIN */
+    /* =================================================
+       MAX PAIN
+    ================================================= */
 
     if (
       strikes.length
@@ -3092,6 +3629,10 @@ async function getEraAnalysis() {
   const reasons = [];
 
 
+  /* =================================================
+     TECHNICAL CONFIRMATION
+  ================================================= */
+
   if (
     technical.success
   ) {
@@ -3152,33 +3693,41 @@ async function getEraAnalysis() {
 
 
     if (
-      technical.vwap &&
-      technical.current >
-      technical.vwap
+      technical.vwap !== null &&
+      technical.current !== null
     ) {
 
-      confidence +=
-        10;
+      if (
+        technical.current >
+        technical.vwap
+      ) {
 
-      reasons.push(
-        "Price above VWAP"
-      );
+        confidence +=
+          10;
 
-    } else if (
-      technical.vwap &&
-      technical.current <
-      technical.vwap
-    ) {
+        reasons.push(
+          "Price above VWAP"
+        );
 
-      confidence +=
-        10;
+      } else if (
+        technical.current <
+        technical.vwap
+      ) {
 
-      reasons.push(
-        "Price below VWAP"
-      );
+        confidence +=
+          10;
+
+        reasons.push(
+          "Price below VWAP"
+        );
+      }
     }
   }
 
+
+  /* =================================================
+     OPTION CONFIRMATION
+  ================================================= */
 
   if (
     options.success
@@ -3223,6 +3772,10 @@ async function getEraAnalysis() {
       : "UNKNOWN";
 
 
+  /*
+    Both technical + options must agree.
+  */
+
   if (
     technicalTrend ===
       "BULLISH" &&
@@ -3257,9 +3810,14 @@ async function getEraAnalysis() {
   let target3 = null;
 
 
+  /* =================================================
+     TRADE LEVELS
+  ================================================= */
+
   if (
     technical.success &&
-    direction !== "WAIT"
+    direction !== "WAIT" &&
+    technical.current !== null
   ) {
 
     entry =
@@ -3267,7 +3825,8 @@ async function getEraAnalysis() {
 
 
     if (
-      direction === "BUY"
+      direction === "BUY" &&
+      technical.support !== null
     ) {
 
       stopLoss =
@@ -3284,21 +3843,35 @@ async function getEraAnalysis() {
       ) {
 
         target1 =
-          entry + risk;
+          Number(
+            (
+              entry +
+              risk
+            ).toFixed(2)
+          );
 
         target2 =
-          entry +
-          risk * 2;
+          Number(
+            (
+              entry +
+              risk * 2
+            ).toFixed(2)
+          );
 
         target3 =
-          entry +
-          risk * 3;
+          Number(
+            (
+              entry +
+              risk * 3
+            ).toFixed(2)
+          );
       }
     }
 
 
     if (
-      direction === "SELL"
+      direction === "SELL" &&
+      technical.resistance !== null
     ) {
 
       stopLoss =
@@ -3315,36 +3888,60 @@ async function getEraAnalysis() {
       ) {
 
         target1 =
-          entry - risk;
+          Number(
+            (
+              entry -
+              risk
+            ).toFixed(2)
+          );
 
         target2 =
-          entry -
-          risk * 2;
+          Number(
+            (
+              entry -
+              risk * 2
+            ).toFixed(2)
+          );
 
         target3 =
-          entry -
-          risk * 3;
+          Number(
+            (
+              entry -
+              risk * 3
+            ).toFixed(2)
+          );
       }
     }
   }
 
 
   const riskReward =
-    entry &&
-    stopLoss &&
-    target2
+    entry !== null &&
+    stopLoss !== null &&
+    target2 !== null &&
+    Math.abs(
+      entry - stopLoss
+    ) > 0
 
-      ? Math.abs(
-          target2 -
-          entry
-        ) /
-        Math.abs(
-          entry -
-          stopLoss
+      ? Number(
+          (
+            Math.abs(
+              target2 -
+              entry
+            ) /
+            Math.abs(
+              entry -
+              stopLoss
+            )
+          ).toFixed(2)
         )
 
       : null;
 
+
+  /*
+    Confidence safeguard.
+  */
 
   if (
     confidence < 55
@@ -3359,6 +3956,18 @@ async function getEraAnalysis() {
     target2 = null;
     target3 = null;
   }
+
+
+  const invalidation =
+    direction === "BUY"
+
+      ? "Bullish setup invalid if price loses key support and confirmation fails."
+
+      : direction === "SELL"
+
+        ? "Bearish setup invalid if price breaks key resistance and confirmation fails."
+
+        : "No trade until technical and option confirmation align.";
 
 
   return {
@@ -3395,17 +4004,7 @@ async function getEraAnalysis() {
 
     reasons,
 
-    invalidation:
-
-      direction === "BUY"
-
-        ? "Bullish setup invalid if price loses key support and confirmation fails."
-
-        : direction === "SELL"
-
-          ? "Bearish setup invalid if price breaks key resistance and confirmation fails."
-
-          : "No trade until technical and option confirmation align."
+    invalidation
   };
 }
 
@@ -3710,6 +4309,9 @@ ${analysis.technical?.support ?? "N/A"}
 RESISTANCE:
 ${analysis.technical?.resistance ?? "N/A"}
 
+CANDLE COUNT:
+${analysis.technical?.candles ?? "N/A"}
+
 OPTION BIAS:
 ${analysis.options?.bias ?? "N/A"}
 
@@ -3948,25 +4550,43 @@ app.listen(
   () => {
 
     console.log(
+      "======================================"
+    );
+
+    console.log(
       `Era AI V5 backend running on port ${PORT}`
     );
 
-
     console.log(
-      `[ELEVENLABS] API key configured: ${
-        Boolean(
-          process.env.ELEVENLABS_API_KEY
-        )
-      }`
+      "[ELEVENLABS] API key configured:",
+      Boolean(
+        process.env.ELEVENLABS_API_KEY
+      )
     );
 
+    console.log(
+      "[ELEVENLABS] Voice ID configured:",
+      Boolean(
+        process.env.ELEVENLABS_VOICE_ID
+      )
+    );
 
     console.log(
-      `[ELEVENLABS] Voice ID configured: ${
-        Boolean(
-          process.env.ELEVENLABS_VOICE_ID
-        )
-      }`
+      "[UPSTOX] Access token configured:",
+      Boolean(
+        process.env.UPSTOX_ACCESS_TOKEN
+      )
+    );
+
+    console.log(
+      "[OPENROUTER] API key configured:",
+      Boolean(
+        process.env.OPENROUTER_API_KEY
+      )
+    );
+
+    console.log(
+      "======================================"
     );
 
 
