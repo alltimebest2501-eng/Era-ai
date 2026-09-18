@@ -1,17 +1,14 @@
 {
-  "name": "era-ai-backend",
-  "version": "1.0.0",
-  "description": "Era AI secure market backend",
+  "name": "era-ai-v6",
+  "version": "6.0.0",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "axios": "^1.7.9",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "upstox-js-sdk": "^2.31.0",
-    "web-push": "^3.6.7"
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "web-push": "^3.6.6"
   }
 }
