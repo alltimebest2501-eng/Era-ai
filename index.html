@@ -4195,6 +4195,85 @@ console.log(
 );
 
 </script>
+<!-- ERA V6 SMART POPUP & PWA EXTENSION -->
+<style>
+.era-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+.era-modal {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; width: 90%; max-width: 500px; padding: 20px;
+  box-shadow: var(--shadow); color: var(--text);
+}
+.trade-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 12px; border-radius: 12px; margin-top: 10px;
+}
+.badge-hit { color: var(--green); font-weight: bold; }
+.badge-sl { color: var(--red); font-weight: bold; }
+</style>
+
+<div id="eraSignalModal" class="era-modal-overlay" style="display:none;">
+  <div class="era-modal">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>🎯 ERA Active Trade Signals</h3>
+      <button onclick="document.getElementById('eraSignalModal').style.display='none'" style="background:none; color:var(--text); font-size:18px;">✕</button>
+    </div>
+    <div id="modalSignalsList" style="max-height: 350px; overflow-y: auto; margin-top: 10px;">
+      <!-- Dynamic Signal Items -->
+    </div>
+  </div>
+</div>
+
+<script>
+// Service Worker & Push Notification Setup
+async function requestNotificationPermission() {
+  if ('Notification' in window && 'serviceWorker' in navigator) {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      console.log('Notification permission granted.');
+    }
+  }
+}
+
+function sendEraNotification(title, body, data = {}) {
+  if (Notification.permission === 'granted') {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification(title, {
+        body: body,
+        icon: '/icon.png',
+        badge: '/badge.png',
+        data: data
+      });
+    });
+  }
+}
+
+// SMC Signal Engine (Example Calculation)
+function analyzeSMC(marketData) {
+  const { currentPrice, previousHigh, previousLow, fvgZone } = marketData;
+  let signal = "HOLD";
+  
+  if (currentPrice > previousHigh) {
+    signal = "STRONG BUY"; // Break of Structure
+  } else if (fvgZone && currentPrice <= fvgZone.high && currentPrice >= fvgZone.low) {
+    signal = "BUY"; // FVG Fill Entry
+  }
+  
+  return signal;
+}
+
+// Auto Open Modal if Navigated from Notification
+window.addEventListener('DOMContentLoaded', () => {
+  requestNotificationPermission();
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('from') === 'notification') {
+    document.getElementById('eraSignalModal').style.display = 'flex';
+  }
+});
+</script>
 
 </body>
 </html>
