@@ -1,637 +1,1344 @@
-const axios = require("axios");
+"use strict";
 
-const UPSTOX_V2 = "https://api.upstox.com/v2";
+/*
+=========================================================
+ERA AI V6 — LIVE OPTIONS ENGINE
+=========================================================
+
+Supported:
+- NIFTY
+- BANKNIFTY
+- FINNIFTY
+- SENSEX
+
+Features:
+- Live option contracts
+- Expiry discovery
+- CE / PE
+- Strike prices
+- LTP
+- OI
+- Change OI
+- Volume
+- IV
+- Greeks
+- ATM detection
+- Nearby strike scanning
+- PCR
+- Option-side comparison
+- Autonomous scanner helpers
+=========================================================
+*/
+
+const axios = require("axios");
 
 const UPSTOX_ACCESS_TOKEN =
   process.env.UPSTOX_ACCESS_TOKEN || "";
 
-/* =========================================================
-   SUPPORTED OPTION INDICES
-========================================================= */
+const UPSTOX_BASE_URL =
+  "https://api.upstox.com";
 
-const OPTION_UNDERLYINGS = [
-  {
+/* =========================================================
+   INDEX CONFIG
+   ========================================================= */
+
+const INDEX_CONFIG = {
+  NIFTY: {
     name: "NIFTY",
-    key: "NSE_INDEX|Nifty 50",
+    instrumentKey: "NSE_INDEX|Nifty 50",
+    exchange: "NSE"
   },
-  {
+
+  BANKNIFTY: {
     name: "BANKNIFTY",
-    key: "NSE_INDEX|Nifty Bank",
+    instrumentKey: "NSE_INDEX|Nifty Bank",
+    exchange: "NSE"
   },
-  {
+
+  FINNIFTY: {
     name: "FINNIFTY",
-    key: "NSE_INDEX|Nifty Fin Service",
+    instrumentKey: "NSE_INDEX|Nifty Fin Service",
+    exchange: "NSE"
   },
-  {
+
+  SENSEX: {
     name: "SENSEX",
-    key: "BSE_INDEX|SENSEX",
-  },
-];
-
-/* =========================================================
-   RUNTIME CACHE
-========================================================= */
-
-const optionContracts = new Map();
-
-const liveOptionData = new Map();
-
-let initialized = false;
-let lastRefresh = null;
-let lastError = null;
+    instrumentKey: "BSE_INDEX|SENSEX",
+    exchange: "BSE"
+  }
+};
 
 /* =========================================================
    HELPERS
-========================================================= */
+   ========================================================= */
 
-function getHeaders() {
-  if (!UPSTOX_ACCESS_TOKEN) {
+function normalizeIndex(index) {
+  const key = String(index || "NIFTY")
+    .trim()
+    .toUpperCase();
+
+  if (!INDEX_CONFIG[key]) {
     throw new Error(
-      "UPSTOX_ACCESS_TOKEN is missing"
+      `Unsupported index: ${index}`
     );
   }
 
-  return {
-    Accept: "application/json",
-    Authorization:
-      `Bearer ${UPSTOX_ACCESS_TOKEN}`,
-  };
+  return key;
 }
 
-function normalizeNumber(
-  value,
-  fallback = null
-) {
-  const number = Number(value);
+function num(value, fallback = 0) {
+  const n = Number(value);
 
-  return Number.isFinite(number)
-    ? number
+  return Number.isFinite(n)
+    ? n
     : fallback;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) =>
-    setTimeout(resolve, ms)
-  );
-}
-
-/* =========================================================
-   FETCH CONTRACTS
-========================================================= */
-
-async function fetchContracts(
-  underlying
-) {
-  const response =
-    await axios.get(
-      `${UPSTOX_V2}/option/contract`,
-      {
-        params: {
-          instrument_key:
-            underlying.key,
-        },
-
-        headers: getHeaders(),
-
-        timeout: 15000,
-      }
-    );
-
-  const contracts =
-    Array.isArray(response?.data?.data)
-      ? response.data.data
-      : [];
-
-  return contracts;
-}
-
-/* =========================================================
-   NORMALIZE CONTRACT
-========================================================= */
-
-function normalizeContract(
-  contract,
-  underlying
-) {
-  return {
-    underlying:
-      underlying.name,
-
-    underlyingKey:
-      underlying.key,
-
-    instrumentKey:
-      contract.instrument_key ||
-      contract.instrumentKey ||
-      null,
-
-    tradingSymbol:
-      contract.trading_symbol ||
-      contract.tradingSymbol ||
-      contract.symbol ||
-      null,
-
-    expiry:
-      contract.expiry ||
-      contract.expiry_date ||
-      contract.expiryDate ||
-      null,
-
-    strikePrice:
-      normalizeNumber(
-        contract.strike_price ??
-          contract.strikePrice
-      ),
-
-    optionType:
-      (
-        contract.option_type ||
-        contract.optionType ||
-        ""
-      ).toUpperCase(),
-
-    lotSize:
-      normalizeNumber(
-        contract.lot_size ??
-          contract.lotSize,
-        null
-      ),
-
-    freezeQuantity:
-      normalizeNumber(
-        contract.freeze_quantity ??
-          contract.freezeQuantity,
-        null
-      ),
-
-    tickSize:
-      normalizeNumber(
-        contract.tick_size ??
-          contract.tickSize,
-        null
-      ),
-
-    raw: contract,
-  };
-}
-
-/* =========================================================
-   LOAD ALL CONTRACTS
-========================================================= */
-
-async function loadAllOptionContracts() {
-  if (!UPSTOX_ACCESS_TOKEN) {
-    throw new Error(
-      "UPSTOX_ACCESS_TOKEN is missing"
-    );
-  }
-
-  const loaded = new Map();
-
-  for (
-    const underlying of OPTION_UNDERLYINGS
+function round(value, decimals = 2) {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(Number(value))
   ) {
-    try {
-      const contracts =
-        await fetchContracts(
-          underlying
-        );
-
-      const normalized =
-        contracts
-          .map((contract) =>
-            normalizeContract(
-              contract,
-              underlying
-            )
-          )
-          .filter(
-            (contract) =>
-              contract.instrumentKey
-          );
-
-      loaded.set(
-        underlying.name,
-        normalized
-      );
-
-      console.log(
-        `[OPTIONS] ${underlying.name}: ${normalized.length} contracts`
-      );
-
-      await sleep(100);
-    } catch (error) {
-      console.error(
-        `[OPTIONS] ${underlying.name} contract error:`,
-        error.response?.data ||
-          error.message
-      );
-
-      loaded.set(
-        underlying.name,
-        []
-      );
-    }
+    return null;
   }
 
-  for (const [
-    name,
-    contracts,
-  ] of loaded.entries()) {
-    optionContracts.set(
-      name,
-      contracts
-    );
-  }
-
-  lastRefresh =
-    new Date().toISOString();
-
-  lastError = null;
-
-  return getContractStats();
-}
-
-/* =========================================================
-   CONTRACT STATS
-========================================================= */
-
-function getContractStats() {
-  const stats = {};
-
-  for (
-    const underlying of OPTION_UNDERLYINGS
-  ) {
-    const contracts =
-      optionContracts.get(
-        underlying.name
-      ) || [];
-
-    stats[underlying.name] = {
-      contracts:
-        contracts.length,
-
-      expiries:
-        [
-          ...new Set(
-            contracts
-              .map(
-                (x) => x.expiry
-              )
-              .filter(Boolean)
-          ),
-        ].sort(),
-    };
-  }
-
-  return stats;
-}
-
-/* =========================================================
-   GET CONTRACTS
-========================================================= */
-
-function getContracts(
-  index
-) {
-  const key =
-    String(index || "NIFTY")
-      .trim()
-      .toUpperCase();
+  const factor =
+    Math.pow(10, decimals);
 
   return (
-    optionContracts.get(key) ||
-    []
+    Math.round(
+      Number(value) * factor
+    ) / factor
   );
 }
 
-/* =========================================================
-   GET EXPIRIES
-========================================================= */
-
-function getExpiries(
-  index
-) {
-  const contracts =
-    getContracts(index);
-
+function uniqueSorted(values) {
   return [
     ...new Set(
-      contracts
-        .map(
-          (contract) =>
-            contract.expiry
+      values
+        .filter(
+          (v) =>
+            v !== null &&
+            v !== undefined &&
+            v !== ""
         )
-        .filter(Boolean)
-    ),
+        .map(String)
+    )
   ].sort();
 }
 
 /* =========================================================
-   GET NEAREST EXPIRY
-========================================================= */
+   UPSTOX REQUEST
+   ========================================================= */
 
-function getNearestExpiry(
+async function upstoxGet(
+  endpoint,
+  params = {}
+) {
+  if (!UPSTOX_ACCESS_TOKEN) {
+    throw new Error(
+      "UPSTOX_ACCESS_TOKEN is not configured"
+    );
+  }
+
+  const response =
+    await axios.get(
+      `${UPSTOX_BASE_URL}${endpoint}`,
+      {
+        params,
+        timeout: 15000,
+
+        headers: {
+          Accept:
+            "application/json",
+
+          Authorization:
+            `Bearer ${UPSTOX_ACCESS_TOKEN}`
+        }
+      }
+    );
+
+  return response.data;
+}
+
+/* =========================================================
+   OPTION CONTRACTS
+   ========================================================= */
+
+async function getOptionContracts(
   index
 ) {
-  const expiries =
-    getExpiries(index);
+  const key =
+    normalizeIndex(index);
 
-  if (!expiries.length) {
+  const config =
+    INDEX_CONFIG[key];
+
+  const data =
+    await upstoxGet(
+      "/v2/option/contract",
+      {
+        instrument_key:
+          config.instrumentKey
+      }
+    );
+
+  return Array.isArray(data?.data)
+    ? data.data
+    : [];
+}
+
+/* =========================================================
+   CONTRACT NORMALIZER
+   ========================================================= */
+
+function normalizeContract(
+  contract,
+  index
+) {
+  const optionType =
+    String(
+      contract.option_type ??
+      contract.optionType ??
+      contract.instrument_type ??
+      contract.instrumentType ??
+      ""
+    ).toUpperCase();
+
+  const strikePrice =
+    contract.strike_price ??
+    contract.strikePrice ??
+    contract.strike ??
+    null;
+
+  const expiry =
+    contract.expiry ??
+    contract.expiry_date ??
+    contract.expiryDate ??
+    null;
+
+  return {
+    index,
+
+    instrumentKey:
+      contract.instrument_key ??
+      contract.instrumentKey ??
+      null,
+
+    tradingSymbol:
+      contract.trading_symbol ??
+      contract.tradingSymbol ??
+      contract.tradingsymbol ??
+      null,
+
+    optionType:
+      optionType === "CALL"
+        ? "CE"
+        : optionType === "PUT"
+        ? "PE"
+        : optionType,
+
+    strikePrice:
+      round(num(strikePrice)),
+
+    expiry,
+
+    lotSize:
+      num(
+        contract.lot_size ??
+        contract.lotSize
+      ),
+
+    tickSize:
+      num(
+        contract.tick_size ??
+        contract.tickSize
+      ),
+
+    underlyingKey:
+      contract.underlying_key ??
+      contract.underlyingKey ??
+      INDEX_CONFIG[index]
+        .instrumentKey
+  };
+}
+
+/* =========================================================
+   NORMALIZED CONTRACT LIST
+   ========================================================= */
+
+async function getNormalizedContracts(
+  index
+) {
+  const key =
+    normalizeIndex(index);
+
+  const contracts =
+    await getOptionContracts(key);
+
+  return contracts
+    .map(
+      (contract) =>
+        normalizeContract(
+          contract,
+          key
+        )
+    )
+    .filter(
+      (contract) =>
+        contract.instrumentKey &&
+        contract.strikePrice
+    );
+}
+
+/* =========================================================
+   EXPIRIES
+   ========================================================= */
+
+async function getExpiries(
+  index
+) {
+  const contracts =
+    await getNormalizedContracts(
+      index
+    );
+
+  return uniqueSorted(
+    contracts.map(
+      (contract) =>
+        contract.expiry
+    )
+  );
+}
+
+/* =========================================================
+   OPTION CHAIN
+   ========================================================= */
+
+async function getOptionChain(
+  index,
+  expiry = null
+) {
+  const key =
+    normalizeIndex(index);
+
+  const config =
+    INDEX_CONFIG[key];
+
+  const params = {
+    instrument_key:
+      config.instrumentKey
+  };
+
+  if (expiry) {
+    params.expiry_date =
+      expiry;
+  }
+
+  const data =
+    await upstoxGet(
+      "/v2/option/chain",
+      params
+    );
+
+  return Array.isArray(data?.data)
+    ? data.data
+    : [];
+}
+
+/* =========================================================
+   MARKET DATA EXTRACTION
+   ========================================================= */
+
+function extractMarketData(
+  option
+) {
+  const market =
+    option?.market_data ??
+    option?.marketData ??
+    option ??
+    {};
+
+  const greeks =
+    option?.option_greeks ??
+    option?.optionGreeks ??
+    option?.greeks ??
+    {};
+
+  return {
+    ltp: round(
+      num(
+        market.ltp ??
+        market.last_price ??
+        market.lastPrice
+      )
+    ),
+
+    closePrice: round(
+      num(
+        market.close_price ??
+        market.closePrice
+      )
+    ),
+
+    volume: num(
+      market.volume
+    ),
+
+    oi: num(
+      market.oi ??
+      market.open_interest ??
+      market.openInterest
+    ),
+
+    changeOi: num(
+      market.change_in_oi ??
+      market.changeOi ??
+      market.oi_change ??
+      market.oiChange
+    ),
+
+    bidPrice: round(
+      num(
+        market.bid_price ??
+        market.bidPrice
+      )
+    ),
+
+    askPrice: round(
+      num(
+        market.ask_price ??
+        market.askPrice
+      )
+    ),
+
+    iv: round(
+      num(
+        market.iv ??
+        market.implied_volatility ??
+        market.impliedVolatility
+      )
+    ),
+
+    delta: round(
+      num(
+        greeks.delta
+      ),
+      4
+    ),
+
+    gamma: round(
+      num(
+        greeks.gamma
+      ),
+      6
+    ),
+
+    theta: round(
+      num(
+        greeks.theta
+      ),
+      4
+    ),
+
+    vega: round(
+      num(
+        greeks.vega
+      ),
+      4
+    ),
+
+    rho: round(
+      num(
+        greeks.rho
+      ),
+      4
+    )
+  };
+}
+
+/* =========================================================
+   CHAIN NORMALIZATION
+   ========================================================= */
+
+function normalizeChain(
+  rawChain,
+  index
+) {
+  const rows = [];
+
+  for (
+    const item of rawChain || []
+  ) {
+    const strike =
+      item.strike_price ??
+      item.strikePrice ??
+      item.strike;
+
+    if (
+      strike === null ||
+      strike === undefined
+    ) {
+      continue;
+    }
+
+    const call =
+      item.call_options ??
+      item.callOptions ??
+      item.CE ??
+      item.ce ??
+      item.call ??
+      null;
+
+    const put =
+      item.put_options ??
+      item.putOptions ??
+      item.PE ??
+      item.pe ??
+      item.put ??
+      null;
+
+    const ce =
+      call
+        ? {
+            instrumentKey:
+              call.instrument_key ??
+              call.instrumentKey ??
+              null,
+
+            tradingSymbol:
+              call.trading_symbol ??
+              call.tradingSymbol ??
+              null,
+
+            data:
+              extractMarketData(
+                call
+              )
+          }
+        : null;
+
+    const pe =
+      put
+        ? {
+            instrumentKey:
+              put.instrument_key ??
+              put.instrumentKey ??
+              null,
+
+            tradingSymbol:
+              put.trading_symbol ??
+              put.tradingSymbol ??
+              null,
+
+            data:
+              extractMarketData(
+                put
+              )
+          }
+        : null;
+
+    rows.push({
+      index,
+
+      strikePrice:
+        round(num(strike)),
+
+      expiry:
+        item.expiry ??
+        item.expiry_date ??
+        item.expiryDate ??
+        null,
+
+      underlyingSpot:
+        round(
+          num(
+            item.underlying_spot_price ??
+            item.underlyingSpotPrice ??
+            item.underlying_value
+          )
+        ),
+
+      CE: ce,
+      PE: pe
+    });
+  }
+
+  return rows.sort(
+    (a, b) =>
+      a.strikePrice -
+      b.strikePrice
+  );
+}
+
+/* =========================================================
+   ATM STRIKE
+   ========================================================= */
+
+function findATM(
+  chain,
+  spot
+) {
+  if (
+    !chain.length ||
+    !spot
+  ) {
     return null;
   }
 
-  const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
+  return chain.reduce(
+    (closest, row) => {
+      if (!closest) {
+        return row;
+      }
 
-  const future =
-    expiries.filter(
-      (expiry) =>
-        expiry >= today
-    );
+      const currentDistance =
+        Math.abs(
+          row.strikePrice -
+          spot
+        );
 
-  return (
-    future[0] ||
-    expiries[0] ||
+      const closestDistance =
+        Math.abs(
+          closest.strikePrice -
+          spot
+        );
+
+      return currentDistance <
+        closestDistance
+        ? row
+        : closest;
+    },
     null
   );
 }
 
 /* =========================================================
-   FILTER CONTRACTS
-========================================================= */
+   NEARBY STRIKES
+   ========================================================= */
 
-function filterContracts({
-  index = "NIFTY",
-  expiry = null,
-  optionType = null,
-}) {
-  let contracts =
-    getContracts(index);
-
-  if (expiry) {
-    contracts =
-      contracts.filter(
-        (contract) =>
-          contract.expiry ===
-          expiry
-      );
+function getNearbyStrikes(
+  chain,
+  spot,
+  count = 9
+) {
+  if (
+    !chain.length ||
+    !spot
+  ) {
+    return [];
   }
 
-  if (optionType) {
-    const type =
-      String(optionType)
-        .toUpperCase();
-
-    contracts =
-      contracts.filter(
-        (contract) =>
-          contract.optionType ===
-          type
-      );
-  }
-
-  return contracts;
+  return [
+    ...chain
+  ]
+    .sort(
+      (a, b) =>
+        Math.abs(
+          a.strikePrice -
+          spot
+        ) -
+        Math.abs(
+          b.strikePrice -
+          spot
+        )
+    )
+    .slice(
+      0,
+      count
+    )
+    .sort(
+      (a, b) =>
+        a.strikePrice -
+        b.strikePrice
+    );
 }
 
 /* =========================================================
-   SAVE LIVE DATA
-========================================================= */
+   PCR
+   ========================================================= */
 
-function updateLiveOption(
-  instrumentKey,
-  data
+function calculatePCR(
+  chain
 ) {
-  if (!instrumentKey) {
-    return;
+  let callOI = 0;
+  let putOI = 0;
+
+  for (
+    const row of chain
+  ) {
+    callOI += num(
+      row.CE?.data?.oi
+    );
+
+    putOI += num(
+      row.PE?.data?.oi
+    );
   }
 
-  const previous =
-    liveOptionData.get(
-      instrumentKey
-    ) || {};
+  const pcr =
+    callOI > 0
+      ? putOI / callOI
+      : null;
 
-  liveOptionData.set(
-    instrumentKey,
-    {
-      ...previous,
-      ...data,
+  let sentiment =
+    "NEUTRAL";
 
-      instrumentKey,
-
-      updatedAt:
-        new Date().toISOString(),
+  if (
+    pcr !== null
+  ) {
+    if (pcr >= 1.05) {
+      sentiment =
+        "BULLISH";
+    } else if (
+      pcr <= 0.80
+    ) {
+      sentiment =
+        "BEARISH";
     }
-  );
-}
-
-/* =========================================================
-   GET LIVE OPTION
-========================================================= */
-
-function getLiveOption(
-  instrumentKey
-) {
-  return (
-    liveOptionData.get(
-      instrumentKey
-    ) || null
-  );
-}
-
-/* =========================================================
-   GET LIVE OPTIONS
-========================================================= */
-
-function getLiveOptions({
-  index = "NIFTY",
-  expiry = null,
-} = {}) {
-  const contracts =
-    filterContracts({
-      index,
-      expiry,
-    });
-
-  return contracts.map(
-    (contract) => ({
-      ...contract,
-
-      live:
-        getLiveOption(
-          contract.instrumentKey
-        ),
-    })
-  );
-}
-
-/* =========================================================
-   GET STATUS
-========================================================= */
-
-function getStatus() {
-  let totalContracts = 0;
-
-  for (const contracts of optionContracts.values()) {
-    totalContracts +=
-      contracts.length;
   }
 
   return {
-    initialized,
+    callOI,
+    putOI,
+    pcr:
+      pcr === null
+        ? null
+        : round(pcr, 3),
 
-    lastRefresh,
-
-    lastError,
-
-    totalContracts,
-
-    liveDataCount:
-      liveOptionData.size,
-
-    indices:
-      getContractStats(),
+    sentiment
   };
 }
 
 /* =========================================================
-   INITIALIZE
-========================================================= */
+   MAX OI LEVELS
+   ========================================================= */
 
-async function initializeLiveOptions() {
-  if (initialized) {
-    return getStatus();
+function findOILevels(
+  chain
+) {
+  let maxCall = null;
+  let maxPut = null;
+
+  for (
+    const row of chain
+  ) {
+    const callOI =
+      num(
+        row.CE?.data?.oi
+      );
+
+    const putOI =
+      num(
+        row.PE?.data?.oi
+      );
+
+    if (
+      !maxCall ||
+      callOI >
+        maxCall.oi
+    ) {
+      maxCall = {
+        strike:
+          row.strikePrice,
+        oi: callOI
+      };
+    }
+
+    if (
+      !maxPut ||
+      putOI >
+        maxPut.oi
+    ) {
+      maxPut = {
+        strike:
+          row.strikePrice,
+        oi: putOI
+      };
+    }
   }
 
-  try {
-    console.log(
-      "[OPTIONS] Initializing option contracts..."
-    );
+  return {
+    highestCallOI:
+      maxCall,
 
-    initialized = false;
-
-    await loadAllOptionContracts();
-
-    initialized = true;
-
-    console.log(
-      "[OPTIONS] Option contracts initialized."
-    );
-
-    return getStatus();
-  } catch (error) {
-    initialized = false;
-
-    lastError =
-      error.message;
-
-    console.error(
-      "[OPTIONS] Initialization failed:",
-      error.response?.data ||
-        error.message
-    );
-
-    throw error;
-  }
+    highestPutOI:
+      maxPut
+  };
 }
 
 /* =========================================================
-   REFRESH
-========================================================= */
+   OPTION PRESSURE
+   ========================================================= */
 
-async function refreshOptionContracts() {
-  try {
-    console.log(
-      "[OPTIONS] Refreshing contracts..."
-    );
+function calculateOptionPressure(
+  row
+) {
+  const ce =
+    row.CE?.data || {};
 
-    await loadAllOptionContracts();
+  const pe =
+    row.PE?.data || {};
 
-    console.log(
-      "[OPTIONS] Contracts refreshed."
-    );
+  let score = 0;
 
-    return getStatus();
-  } catch (error) {
-    lastError =
-      error.message;
-
-    console.error(
-      "[OPTIONS] Refresh failed:",
-      error.response?.data ||
-        error.message
-    );
-
-    return getStatus();
+  if (
+    ce.ltp &&
+    ce.volume
+  ) {
+    score += 1;
   }
+
+  if (
+    pe.ltp &&
+    pe.volume
+  ) {
+    score -= 1;
+  }
+
+  if (
+    ce.changeOi > 0 &&
+    ce.ltp > ce.closePrice
+  ) {
+    score += 2;
+  }
+
+  if (
+    pe.changeOi > 0 &&
+    pe.ltp > pe.closePrice
+  ) {
+    score -= 2;
+  }
+
+  let bias =
+    "NEUTRAL";
+
+  if (score >= 2) {
+    bias =
+      "CALL_SUPPORT";
+  }
+
+  if (score <= -2) {
+    bias =
+      "PUT_SUPPORT";
+  }
+
+  return {
+    score,
+    bias
+  };
 }
 
 /* =========================================================
-   AUTO REFRESH
-========================================================= */
+   STRIKE SCORING
+   ========================================================= */
 
-let refreshTimer = null;
+function scoreStrike(
+  row,
+  spot,
+  direction
+) {
+  const optionType =
+    direction === "BUY"
+      ? "CE"
+      : "PE";
 
-function startOptionRefresh() {
-  if (refreshTimer) {
-    clearInterval(refreshTimer);
+  const option =
+    row[optionType];
+
+  if (!option) {
+    return null;
   }
 
-  refreshTimer =
-    setInterval(
-      refreshOptionContracts,
-      30 * 60 * 1000
+  const data =
+    option.data || {};
+
+  let score = 0;
+
+  const distance =
+    Math.abs(
+      row.strikePrice -
+      spot
     );
 
-  console.log(
-    "[OPTIONS] Auto-refresh enabled: 30 minutes"
+  /*
+   * Prefer ATM / nearby strikes.
+   */
+  if (
+    distance <=
+    Math.max(
+      50,
+      spot * 0.002
+    )
+  ) {
+    score += 20;
+  } else if (
+    distance <=
+    Math.max(
+      100,
+      spot * 0.004
+    )
+  ) {
+    score += 12;
+  } else {
+    score += 5;
+  }
+
+  if (
+    data.volume > 0
+  ) {
+    score += 10;
+  }
+
+  if (
+    data.oi > 0
+  ) {
+    score += 10;
+  }
+
+  if (
+    data.changeOi > 0
+  ) {
+    score += 5;
+  }
+
+  if (
+    data.ltp > 0
+  ) {
+    score += 10;
+  }
+
+  return {
+    score:
+      Math.min(
+        score,
+        55
+      ),
+
+    strike:
+      row.strikePrice,
+
+    optionType,
+
+    instrumentKey:
+      option.instrumentKey,
+
+    tradingSymbol:
+      option.tradingSymbol,
+
+    ltp:
+      data.ltp,
+
+    oi:
+      data.oi,
+
+    changeOi:
+      data.changeOi,
+
+    volume:
+      data.volume,
+
+    iv:
+      data.iv,
+
+    greeks: {
+      delta:
+        data.delta,
+
+      gamma:
+        data.gamma,
+
+      theta:
+        data.theta,
+
+      vega:
+        data.vega,
+
+      rho:
+        data.rho
+    }
+  };
+}
+
+/* =========================================================
+   BEST STRIKES
+   ========================================================= */
+
+function findBestStrikes(
+  chain,
+  spot,
+  direction
+) {
+  return chain
+    .map(
+      (row) =>
+        scoreStrike(
+          row,
+          spot,
+          direction
+        )
+    )
+    .filter(Boolean)
+    .sort(
+      (a, b) =>
+        b.score -
+        a.score
+    );
+}
+
+/* =========================================================
+   FULL OPTION SNAPSHOT
+   ========================================================= */
+
+async function getOptionSnapshot(
+  index,
+  expiry = null,
+  spot = null
+) {
+  const key =
+    normalizeIndex(index);
+
+  const rawChain =
+    await getOptionChain(
+      key,
+      expiry
+    );
+
+  const chain =
+    normalizeChain(
+      rawChain,
+      key
+    );
+
+  let underlyingSpot =
+    spot;
+
+  if (
+    !underlyingSpot &&
+    chain.length
+  ) {
+    underlyingSpot =
+      chain.find(
+        (row) =>
+          row.underlyingSpot
+      )
+        ?.underlyingSpot ||
+      null;
+  }
+
+  const atm =
+    findATM(
+      chain,
+      underlyingSpot
+    );
+
+  const nearby =
+    getNearbyStrikes(
+      chain,
+      underlyingSpot,
+      11
+    );
+
+  const pcr =
+    calculatePCR(
+      chain
+    );
+
+  const oiLevels =
+    findOILevels(
+      chain
+    );
+
+  const callCandidates =
+    findBestStrikes(
+      nearby,
+      underlyingSpot,
+      "BUY"
+    );
+
+  const putCandidates =
+    findBestStrikes(
+      nearby,
+      underlyingSpot,
+      "SELL"
+    );
+
+  return {
+    index: key,
+
+    expiry,
+
+    spot:
+      underlyingSpot,
+
+    atmStrike:
+      atm?.strikePrice ||
+      null,
+
+    pcr,
+
+    oiLevels,
+
+    chain,
+
+    nearbyStrikes:
+      nearby,
+
+    scanner: {
+      callCandidates,
+      putCandidates
+    },
+
+    generatedAt:
+      new Date().toISOString()
+  };
+}
+
+/* =========================================================
+   AUTONOMOUS OPTION SCAN
+   ========================================================= */
+
+async function scanOptionSetups({
+  index,
+  expiry = null,
+  spot,
+  marketDirection = null,
+  minimumScore = 20
+}) {
+  const snapshot =
+    await getOptionSnapshot(
+      index,
+      expiry,
+      spot
+    );
+
+  const results = [];
+
+  if (
+    !snapshot.spot
+  ) {
+    return {
+      ...snapshot,
+      setups: []
+    };
+  }
+
+  /*
+   * Scan BOTH sides.
+   *
+   * Even if underlying market is moving UP,
+   * Era still checks PE for reversal/opposite setups.
+   */
+  const callCandidates =
+    findBestStrikes(
+      snapshot.nearbyStrikes,
+      snapshot.spot,
+      "BUY"
+    );
+
+  const putCandidates =
+    findBestStrikes(
+      snapshot.nearbyStrikes,
+      snapshot.spot,
+      "SELL"
+    );
+
+  for (
+    const candidate of
+      callCandidates
+  ) {
+    if (
+      candidate.score >=
+      minimumScore
+    ) {
+      results.push({
+        index,
+
+        strikePrice:
+          candidate.strike,
+
+        optionType:
+          "CE",
+
+        signal:
+          "BUY",
+
+        score:
+          candidate.score,
+
+        entry:
+          candidate.ltp,
+
+        oi:
+          candidate.oi,
+
+        changeOi:
+          candidate.changeOi,
+
+        volume:
+          candidate.volume,
+
+        iv:
+          candidate.iv,
+
+        greeks:
+          candidate.greeks,
+
+        tradingSymbol:
+          candidate.tradingSymbol,
+
+        instrumentKey:
+          candidate.instrumentKey
+      });
+    }
+  }
+
+  for (
+    const candidate of
+      putCandidates
+  ) {
+    if (
+      candidate.score >=
+      minimumScore
+    ) {
+      results.push({
+        index,
+
+        strikePrice:
+          candidate.strike,
+
+        optionType:
+          "PE",
+
+        signal:
+          "BUY",
+
+        score:
+          candidate.score,
+
+        entry:
+          candidate.ltp,
+
+        oi:
+          candidate.oi,
+
+        changeOi:
+          candidate.changeOi,
+
+        volume:
+          candidate.volume,
+
+        iv:
+          candidate.iv,
+
+        greeks:
+          candidate.greeks,
+
+        tradingSymbol:
+          candidate.tradingSymbol,
+
+        instrumentKey:
+          candidate.instrumentKey
+      });
+    }
+  }
+
+  /*
+   * Highest-quality setups first,
+   * but keep multiple qualifying setups.
+   */
+  results.sort(
+    (a, b) =>
+      b.score -
+      a.score
   );
+
+  return {
+    ...snapshot,
+
+    marketDirection,
+
+    setups:
+      results
+  };
 }
 
-function stopOptionRefresh() {
-  if (refreshTimer) {
-    clearInterval(
-      refreshTimer
+/* =========================================================
+   OPTION EXPIRY + CHAIN API HELPER
+   ========================================================= */
+
+async function getOptionData(
+  index,
+  expiry = null,
+  spot = null
+) {
+  const key =
+    normalizeIndex(index);
+
+  let selectedExpiry =
+    expiry;
+
+  const expiries =
+    await getExpiries(
+      key
     );
 
-    refreshTimer = null;
+  if (
+    !selectedExpiry &&
+    expiries.length
+  ) {
+    selectedExpiry =
+      expiries[0];
   }
+
+  const snapshot =
+    await getOptionSnapshot(
+      key,
+      selectedExpiry,
+      spot
+    );
+
+  return {
+    ...snapshot,
+
+    availableExpiries:
+      expiries,
+
+    selectedExpiry
+  };
 }
 
 /* =========================================================
    EXPORTS
-========================================================= */
+   ========================================================= */
 
 module.exports = {
-  OPTION_UNDERLYINGS,
+  INDEX_CONFIG,
 
-  initializeLiveOptions,
+  normalizeIndex,
 
-  refreshOptionContracts,
+  getOptionContracts,
 
-  startOptionRefresh,
-
-  stopOptionRefresh,
-
-  loadAllOptionContracts,
-
-  getContracts,
+  getNormalizedContracts,
 
   getExpiries,
 
-  getNearestExpiry,
+  getOptionChain,
 
-  filterContracts,
+  normalizeChain,
 
-  updateLiveOption,
+  findATM,
 
-  getLiveOption,
+  getNearbyStrikes,
 
-  getLiveOptions,
+  calculatePCR,
 
-  getContractStats,
+  findOILevels,
 
-  getStatus,
+  getOptionSnapshot,
+
+  scanOptionSetups,
+
+  getOptionData
 };
