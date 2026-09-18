@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#080a0f">
-<title>Era AI V5</title>
+<meta name="description" content="Era AI - AI Market Copilot">
+<title>Era AI V6</title>
 
 <style>
 *{
@@ -72,6 +73,11 @@ button{
 
 button:active{
   transform:scale(.98);
+}
+
+button:disabled{
+  opacity:.55;
+  cursor:not-allowed;
 }
 
 .app{
@@ -264,11 +270,6 @@ body.light header{
   0%{box-shadow:0 0 0 0 rgba(130,110,255,.45)}
   70%{box-shadow:0 0 0 18px rgba(130,110,255,0)}
   100%{box-shadow:0 0 0 0 rgba(130,110,255,0)}
-}
-
-.mic:disabled{
-  opacity:.5;
-  cursor:not-allowed;
 }
 
 .voice-test{
@@ -682,12 +683,6 @@ td{
   font-size:12px;
 }
 
-.chat-speaking{
-  margin-top:7px;
-  font-size:9px;
-  color:var(--accent2);
-}
-
 /* NEWS */
 
 .news-item{
@@ -710,17 +705,92 @@ td{
   margin-top:5px;
 }
 
-/* OPTIONS HEADER */
+/* NOTIFICATION */
 
-.options-info{
-  padding:12px;
-  margin-bottom:12px;
+.notification-box{
+  margin-top:12px;
+  padding:13px;
+  border:1px solid var(--border);
   border-radius:14px;
   background:var(--card);
-  border:1px solid var(--border);
+}
+
+.notification-title{
+  font-size:12px;
+  font-weight:bold;
+}
+
+.notification-text{
   color:var(--muted);
-  font-size:11px;
+  font-size:10px;
   line-height:1.5;
+  margin-top:5px;
+}
+
+.notification-btn{
+  width:100%;
+  padding:11px;
+  margin-top:9px;
+  border-radius:11px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  font-size:11px;
+  font-weight:bold;
+}
+
+/* MODAL */
+
+.era-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.78);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  backdrop-filter:blur(7px);
+  padding:20px;
+}
+
+.era-modal{
+  width:100%;
+  max-width:480px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:18px;
+  box-shadow:var(--shadow);
+  color:var(--text);
+}
+
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.modal-close{
+  background:transparent;
+  color:var(--text);
+  font-size:20px;
+}
+
+.trade-card{
+  background:var(--bg2);
+  border:1px solid var(--border);
+  padding:12px;
+  border-radius:12px;
+  margin-top:10px;
+}
+
+.badge-hit{
+  color:var(--green);
+  font-weight:bold;
+}
+
+.badge-sl{
+  color:var(--red);
+  font-weight:bold;
 }
 
 /* BOTTOM NAV */
@@ -769,17 +839,6 @@ body.light .bottom-nav{
   font-size:12px;
 }
 
-.premium-divider{
-  height:1px;
-  background:linear-gradient(
-    90deg,
-    transparent,
-    var(--border),
-    transparent
-  );
-  margin:17px 0;
-}
-
 @media(max-width:380px){
 
 .grid{
@@ -809,11 +868,8 @@ body.light .bottom-nav{
 <div class="logo-mark">✦</div>
 
 <div>
-
 <div class="logo">Era AI</div>
-
 <div class="logo-sub">AI MARKET COPILOT</div>
-
 </div>
 
 </div>
@@ -836,7 +892,7 @@ title="Change theme"
 </header>
 
 
-<!-- HOME -->
+<!-- ================= HOME ================= -->
 
 <section id="home" class="screen active">
 
@@ -872,17 +928,9 @@ Era Language
 
 <select id="languageSelect">
 
-<option value="hi-IN">
-🇮🇳 Hindi
-</option>
-
-<option value="gu-IN">
-🟢 Gujarati
-</option>
-
-<option value="en-IN">
-🇬🇧 English
-</option>
+<option value="hi-IN">🇮🇳 Hindi</option>
+<option value="gu-IN">🟢 Gujarati</option>
+<option value="en-IN">🇬🇧 English</option>
 
 </select>
 
@@ -930,6 +978,29 @@ Ask me anything.
 </div>
 
 
+<!-- NOTIFICATIONS -->
+
+<div class="notification-box">
+
+<div class="notification-title">
+🔔 Era Signal Notifications
+</div>
+
+<div class="notification-text">
+Enable notifications to receive Era AI signal alerts on supported devices.
+</div>
+
+<button
+id="notificationBtn"
+class="notification-btn"
+type="button"
+>
+Enable Notifications
+</button>
+
+</div>
+
+
 <!-- LIVE MARKET -->
 
 <div class="section-title" style="margin-top:20px;">
@@ -965,10 +1036,7 @@ class="market-select"
 <option value="NIFTY">NIFTY 50</option>
 <option value="BANKNIFTY">BANKNIFTY</option>
 <option value="FINNIFTY">FINNIFTY</option>
-<option value="MIDCPNIFTY">MIDCPNIFTY</option>
-<option value="NIFTYNEXT50">NIFTY NEXT 50</option>
 <option value="SENSEX">SENSEX</option>
-<option value="BANKEX">BANKEX</option>
 
 </select>
 
@@ -979,7 +1047,9 @@ class="market-select"
 
 <div class="card">
 
-<h3 id="selectedIndexTitle">NIFTY 50</h3>
+<h3 id="selectedIndexTitle">
+NIFTY 50
+</h3>
 
 <div class="value" id="niftyValue">--</div>
 
@@ -1089,38 +1159,67 @@ Confidence: --
 
 <div class="metric">
 
-<div class="metric-title" id="analysisIndexLabel">
+<div
+class="metric-title"
+id="analysisIndexLabel"
+>
 NIFTY
 </div>
 
-<div id="analysisNifty" class="metric-value">--</div>
+<div
+id="analysisNifty"
+class="metric-value"
+>
+--
+</div>
 
 </div>
 
 
 <div class="metric">
 
-<div class="metric-title">GIFT NIFTY</div>
+<div class="metric-title">
+GIFT NIFTY
+</div>
 
-<div id="analysisGift" class="metric-value">--</div>
+<div
+id="analysisGift"
+class="metric-value"
+>
+--
+</div>
 
 </div>
 
 
 <div class="metric">
 
-<div class="metric-title">INDIA VIX</div>
+<div class="metric-title">
+INDIA VIX
+</div>
 
-<div id="analysisVix" class="metric-value">--</div>
+<div
+id="analysisVix"
+class="metric-value"
+>
+--
+</div>
 
 </div>
 
 
 <div class="metric">
 
-<div class="metric-title">TREND</div>
+<div class="metric-title">
+TREND
+</div>
 
-<div id="analysisTrend" class="metric-value">--</div>
+<div
+id="analysisTrend"
+class="metric-value"
+>
+--
+</div>
 
 </div>
 
@@ -1259,7 +1358,9 @@ NIFTY
 
 <div class="trade-row">
 <span>Status</span>
-<strong id="tradeStatus" class="yellow">NO TRADE</strong>
+<strong id="tradeStatus" class="yellow">
+NO TRADE
+</strong>
 </div>
 
 <div class="reason-box">
@@ -1284,19 +1385,10 @@ Invalidation: --
 
 </div>
 
-
-<div
-id="chatOutput"
-class="message"
-style="display:none;"
->
-Era is ready.
-</div>
-
 </section>
 
 
-<!-- NEWS -->
+<!-- ================= NEWS ================= -->
 
 <section id="news" class="screen">
 
@@ -1311,7 +1403,7 @@ Relevant market news from Era backend.
 <div id="newsContainer">
 
 <div class="empty">
-Loading market news...
+Open this section to load market news.
 </div>
 
 </div>
@@ -1319,7 +1411,7 @@ Loading market news...
 </section>
 
 
-<!-- OPTIONS -->
+<!-- ================= OPTIONS ================= -->
 
 <section id="options" class="screen">
 
@@ -1328,18 +1420,26 @@ Loading market news...
 </div>
 
 <div class="options-info">
-Select any supported index, choose its expiry and load the available live option chain.
+Select a supported index, choose its expiry and load the available option chain.
 </div>
 
 <select id="indexSelect">
 
-<option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
-<option value="NSE_INDEX|Nifty Bank">BANKNIFTY</option>
-<option value="NSE_INDEX|Nifty Fin Service">FINNIFTY</option>
-<option value="NSE_INDEX|Nifty Midcap Select">MIDCPNIFTY</option>
-<option value="NSE_INDEX|Nifty Next 50">NIFTY NEXT 50</option>
-<option value="BSE_INDEX|SENSEX">SENSEX</option>
-<option value="BSE_INDEX|BANKEX">BANKEX</option>
+<option value="NSE_INDEX|Nifty 50">
+NIFTY 50
+</option>
+
+<option value="NSE_INDEX|Nifty Bank">
+BANKNIFTY
+</option>
+
+<option value="NSE_INDEX|Nifty Fin Service">
+FINNIFTY
+</option>
+
+<option value="BSE_INDEX|SENSEX">
+SENSEX
+</option>
 
 </select>
 
@@ -1367,7 +1467,15 @@ type="button"
 Load Live Option Chain
 </button>
 
-<div id="optionStatus" class="message">
+<div
+id="optionStatus"
+class="message"
+style="
+font-size:11px;
+color:var(--muted);
+margin-bottom:8px;
+"
+>
 Select expiry to load option chain.
 </div>
 
@@ -1382,9 +1490,17 @@ style="margin-top:12px;"
 
 <tr>
 
-<th colspan="5" class="ce">CALL / CE</th>
-<th>STRIKE</th>
-<th colspan="5" class="pe">PUT / PE</th>
+<th colspan="5" class="ce">
+CALL / CE
+</th>
+
+<th>
+STRIKE
+</th>
+
+<th colspan="5" class="pe">
+PUT / PE
+</th>
 
 </tr>
 
@@ -1395,7 +1511,9 @@ style="margin-top:12px;"
 <th>VOL</th>
 <th>IV</th>
 <th>LTP</th>
+
 <th>STRIKE</th>
+
 <th>LTP</th>
 <th>IV</th>
 <th>VOL</th>
@@ -1425,7 +1543,7 @@ No data loaded
 </section>
 
 
-<!-- HISTORY -->
+<!-- ================= HISTORY ================= -->
 
 <section id="history" class="screen">
 
@@ -1467,7 +1585,7 @@ No trade history yet.
 </section>
 
 
-<!-- PERFORMANCE -->
+<!-- ================= PERFORMANCE ================= -->
 
 <section id="performance" class="screen">
 
@@ -1489,18 +1607,28 @@ No trade history yet.
 
 <div class="card">
 <h3>ERA SETUPS</h3>
-<div class="value">0</div>
+<div
+class="value"
+id="eraSetupCount"
+>
+0
+</div>
 </div>
 
 <div class="card">
 <h3>MY TRADES</h3>
-<div class="value">0</div>
+<div
+class="value"
+id="myTradeCount"
+>
+0
+</div>
 </div>
 
 </div>
 
 <div class="empty">
-Performance tracking backend connect hone ke baad automatically update hoga.
+Performance tracking will update as trade-history functionality is connected.
 </div>
 
 </section>
@@ -1508,31 +1636,51 @@ Performance tracking backend connect hone ke baad automatically update hoga.
 </div>
 
 
-<!-- NAV -->
+<!-- ================= NAV ================= -->
 
 <nav class="bottom-nav">
 
-<button class="nav-btn active" data-screen="home" type="button">
+<button
+class="nav-btn active"
+data-screen="home"
+type="button"
+>
 <span class="nav-icon">⌂</span>
 Home
 </button>
 
-<button class="nav-btn" data-screen="news" type="button">
+<button
+class="nav-btn"
+data-screen="news"
+type="button"
+>
 <span class="nav-icon">📰</span>
 News
 </button>
 
-<button class="nav-btn" data-screen="options" type="button">
+<button
+class="nav-btn"
+data-screen="options"
+type="button"
+>
 <span class="nav-icon">📊</span>
 Options
 </button>
 
-<button class="nav-btn" data-screen="history" type="button">
+<button
+class="nav-btn"
+data-screen="history"
+type="button"
+>
 <span class="nav-icon">📚</span>
 History
 </button>
 
-<button class="nav-btn" data-screen="performance" type="button">
+<button
+class="nav-btn"
+data-screen="performance"
+type="button"
+>
 <span class="nav-icon">📈</span>
 Performance
 </button>
@@ -1540,20 +1688,63 @@ Performance
 </nav>
 
 
+<!-- ================= SIGNAL MODAL ================= -->
+
+<div
+id="eraSignalModal"
+class="era-modal-overlay"
+>
+
+<div class="era-modal">
+
+<div class="modal-header">
+
+<h3>
+🎯 ERA Active Trade Signal
+</h3>
+
+<button
+id="closeModalBtn"
+class="modal-close"
+type="button"
+>
+✕
+</button>
+
+</div>
+
+<div
+id="modalSignalsList"
+style="
+max-height:350px;
+overflow-y:auto;
+margin-top:10px;
+"
+>
+</div>
+
+</div>
+
+</div>
+
+
 <script>
 
 "use strict";
 
 /* =========================================
-   BACKEND
+   CONFIG
 ========================================= */
 
 const BACKEND_URL =
 "https://era-ai.onrender.com";
 
+const APP_VERSION =
+"6.0.0";
+
 
 /* =========================================
-   BASIC ELEMENTS
+   ELEMENTS
 ========================================= */
 
 const state =
@@ -1601,9 +1792,19 @@ document.getElementById("micBtn");
 const orb =
 document.getElementById("orb");
 
+const notificationBtn =
+document.getElementById("notificationBtn");
+
+const eraSignalModal =
+document.getElementById("eraSignalModal");
+
+const modalSignalsList =
+document.getElementById("modalSignalsList");
+
 
 /* =========================================
    INDEX CONFIG
+   Backend currently supports these 4.
 ========================================= */
 
 const INDEX_CONFIG = {
@@ -1626,31 +1827,32 @@ FINNIFTY:{
   instrumentKey:"NSE_INDEX|Nifty Fin Service"
 },
 
-MIDCPNIFTY:{
-  label:"MIDCPNIFTY",
-  short:"MIDCPNIFTY",
-  instrumentKey:"NSE_INDEX|Nifty Midcap Select"
-},
-
-NIFTYNEXT50:{
-  label:"NIFTY NEXT 50",
-  short:"NIFTY NEXT 50",
-  instrumentKey:"NSE_INDEX|Nifty Next 50"
-},
-
 SENSEX:{
   label:"SENSEX",
   short:"SENSEX",
   instrumentKey:"BSE_INDEX|SENSEX"
-},
-
-BANKEX:{
-  label:"BANKEX",
-  short:"BANKEX",
-  instrumentKey:"BSE_INDEX|BANKEX"
 }
 
 };
+
+
+/* =========================================
+   SAFE JSON
+========================================= */
+
+async function readJSON(response){
+
+try{
+
+return await response.json();
+
+}catch(error){
+
+return null;
+
+}
+
+}
 
 
 /* =========================================
@@ -1662,12 +1864,16 @@ function applyTheme(theme){
 if(theme === "light"){
 
 document.body.classList.add("light");
-themeBtn.textContent = "☀️";
+
+themeBtn.textContent =
+"☀️";
 
 }else{
 
 document.body.classList.remove("light");
-themeBtn.textContent = "🌙";
+
+themeBtn.textContent =
+"🌙";
 
 }
 
@@ -1698,15 +1904,26 @@ isLight ? "dark" : "light"
 
 
 /* =========================================
-   HOME INDEX
+   SELECTED INDEX
 ========================================= */
 
 function getSelectedIndex(){
 
-return (
-localStorage.getItem("era_selected_index") ||
-"NIFTY"
+const saved =
+localStorage.getItem(
+"era_selected_index"
 );
+
+if(
+saved &&
+INDEX_CONFIG[saved]
+){
+
+return saved;
+
+}
+
+return "NIFTY";
 
 }
 
@@ -1735,12 +1952,28 @@ selectedMarketBadge.textContent =
 }
 
 
+function configForState(index){
+
+const config =
+INDEX_CONFIG[index] ||
+INDEX_CONFIG.NIFTY;
+
+return config.label +
+" selected";
+
+}
+
+
 homeIndexSelect.addEventListener(
 "change",
-async ()=>{
+async()=>{
 
 const selected =
 homeIndexSelect.value;
+
+if(!INDEX_CONFIG[selected]){
+return;
+}
 
 localStorage.setItem(
 "era_selected_index",
@@ -1757,18 +1990,6 @@ await loadEraAnalysis();
 }
 );
 
-
-function configForState(index){
-
-const config =
-INDEX_CONFIG[index] ||
-INDEX_CONFIG.NIFTY;
-
-return config.label +
-" selected";
-
-}
-
 updateHomeIndexUI();
 
 
@@ -1782,9 +2003,11 @@ document.querySelectorAll(".nav-btn");
 const screens =
 document.querySelectorAll(".screen");
 
-navButtons.forEach(button => {
+navButtons.forEach(button=>{
 
-button.addEventListener("click",()=>{
+button.addEventListener(
+"click",
+async()=>{
 
 const screenName =
 button.dataset.screen;
@@ -1794,7 +2017,9 @@ screen.classList.remove("active");
 });
 
 const targetScreen =
-document.getElementById(screenName);
+document.getElementById(
+screenName
+);
 
 if(targetScreen){
 targetScreen.classList.add("active");
@@ -1807,18 +2032,19 @@ btn.classList.remove("active");
 button.classList.add("active");
 
 if(screenName === "options"){
-loadExpiries();
+await loadExpiries();
 }
 
 if(screenName === "news"){
-loadNews();
+await loadNews();
 }
 
 if(screenName === "home"){
-loadEraAnalysis();
+await loadEraAnalysis();
 }
 
-});
+}
+);
 
 });
 
@@ -1828,16 +2054,24 @@ loadEraAnalysis();
 ========================================= */
 
 const indexSelect =
-document.getElementById("indexSelect");
+document.getElementById(
+"indexSelect"
+);
 
 const expirySelect =
-document.getElementById("expirySelect");
+document.getElementById(
+"expirySelect"
+);
 
 const optionBody =
-document.getElementById("optionBody");
+document.getElementById(
+"optionBody"
+);
 
 const optionStatus =
-document.getElementById("optionStatus");
+document.getElementById(
+"optionStatus"
+);
 
 
 async function loadExpiries(){
@@ -1866,12 +2100,15 @@ cache:"no-store"
 );
 
 const result =
-await response.json();
+await readJSON(response);
 
-if(!response.ok || !result.success){
+if(
+!response.ok ||
+!result?.success
+){
 
 throw new Error(
-result.error ||
+result?.error ||
 "Unable to load contracts"
 );
 
@@ -1885,8 +2122,7 @@ Array.isArray(result.data)
 const expiries = [
 ...new Set(
 contracts
-.map(
-item =>
+.map(item=>
 item.expiry ||
 item.expiry_date
 )
@@ -1981,18 +2217,23 @@ cache:"no-store"
 );
 
 const result =
-await response.json();
+await readJSON(response);
 
-if(!response.ok || !result.success){
+if(
+!response.ok ||
+!result?.success
+){
 
 throw new Error(
-result.error ||
+result?.error ||
 "Unable to load option chain"
 );
 
 }
 
-renderOptionChain(result.data);
+renderOptionChain(
+result.data
+);
 
 optionStatus.textContent =
 "Live option-chain data loaded.";
@@ -2105,71 +2346,120 @@ put.greeks ||
 const tr =
 document.createElement("tr");
 
-tr.innerHTML = `
+appendCell(
+tr,
+callMarket.oi,
+"ce"
+);
 
-<td class="ce">
-${formatNumber(callMarket.oi)}
-</td>
-
-<td class="ce">
-${formatNumber(
+appendCell(
+tr,
 callMarket.oi_change ??
-callMarket.change_in_oi
-)}
-</td>
+callMarket.change_in_oi,
+"ce"
+);
 
-<td class="ce">
-${formatNumber(callMarket.volume)}
-</td>
+appendCell(
+tr,
+callMarket.volume,
+"ce"
+);
 
-<td class="ce">
-${formatNumber(
+appendCell(
+tr,
 callGreeks.iv ??
-callMarket.iv
-)}
-</td>
+callMarket.iv,
+"ce"
+);
 
-<td class="ce">
-${formatNumber(callMarket.ltp)}
-</td>
+appendCell(
+tr,
+callMarket.ltp,
+"ce"
+);
 
-<td>
-<strong>
-${formatNumber(strike)}
-</strong>
-</td>
+appendCell(
+tr,
+strike,
+""
+,true
+);
 
-<td class="pe">
-${formatNumber(putMarket.ltp)}
-</td>
+appendCell(
+tr,
+putMarket.ltp,
+"pe"
+);
 
-<td class="pe">
-${formatNumber(
+appendCell(
+tr,
 putGreeks.iv ??
-putMarket.iv
-)}
-</td>
+putMarket.iv,
+"pe"
+);
 
-<td class="pe">
-${formatNumber(putMarket.volume)}
-</td>
+appendCell(
+tr,
+putMarket.volume,
+"pe"
+);
 
-<td class="pe">
-${formatNumber(
+appendCell(
+tr,
 putMarket.oi_change ??
-putMarket.change_in_oi
-)}
-</td>
+putMarket.change_in_oi,
+"pe"
+);
 
-<td class="pe">
-${formatNumber(putMarket.oi)}
-</td>
-
-`;
+appendCell(
+tr,
+putMarket.oi,
+"pe"
+);
 
 optionBody.appendChild(tr);
 
 });
+
+}
+
+
+function appendCell(
+row,
+value,
+className="",
+strong=false
+){
+
+const td =
+document.createElement("td");
+
+if(className){
+td.className =
+className;
+}
+
+const text =
+formatNumber(value);
+
+if(strong){
+
+const element =
+document.createElement("strong");
+
+element.textContent =
+text;
+
+td.appendChild(element);
+
+}else{
+
+td.textContent =
+text;
+
+}
+
+row.appendChild(td);
 
 }
 
@@ -2194,7 +2484,7 @@ return Number.isInteger(value)
 
 }
 
-return value;
+return String(value);
 
 }
 
@@ -2248,7 +2538,10 @@ maximumFractionDigits:2
 }
 
 
-function setDirectionStyle(element,direction){
+function setDirectionStyle(
+element,
+direction
+){
 
 if(!element){
 return;
@@ -2293,6 +2586,10 @@ value;
 }
 
 
+/* =========================================
+   SELECTED MARKET
+========================================= */
+
 function getIndexMarketFromResponse(
 market,
 selected
@@ -2311,13 +2608,119 @@ return market.indices[selected];
 
 }
 
-if(selected === "NIFTY"){
+if(
+selected === "NIFTY" &&
+market.nifty
+){
 
-return market.nifty || null;
+return market.nifty;
 
 }
 
 return null;
+
+}
+
+
+/* =========================================
+   CLEAR ANALYSIS
+========================================= */
+
+function clearAnalysisUI(){
+
+const ids = [
+
+"niftyValue",
+"niftyChange",
+"giftValue",
+"giftChange",
+"vixValue",
+"vixChange",
+"analysisNifty",
+"analysisGift",
+"analysisVix",
+"analysisTrend",
+"rsiValue",
+"vwapValue",
+"ema9Value",
+"ema20Value",
+"ema50Value",
+"momentumValue",
+"pcrValue",
+"maxPainValue",
+"optionBiasValue",
+"expiryValue",
+"entry",
+"sl",
+"target1",
+"target2",
+"target3",
+"rr",
+"tradeConfidence"
+
+];
+
+ids.forEach(id=>{
+setText(id,"--");
+});
+
+setText(
+"directionBig",
+"WAIT"
+);
+
+setText(
+"direction",
+"WAIT"
+);
+
+setText(
+"confidenceBig",
+"Confidence: --"
+);
+
+setText(
+"marketStatus",
+"DATA UNAVAILABLE"
+);
+
+setText(
+"tradeStatus",
+"NO TRADE"
+);
+
+setText(
+"invalidation",
+"Invalidation: --"
+);
+
+setDirectionStyle(
+document.getElementById(
+"directionBig"
+),
+"WAIT"
+);
+
+setDirectionStyle(
+document.getElementById(
+"direction"
+),
+"WAIT"
+);
+
+document
+.getElementById("tradeStatus")
+.className =
+"yellow";
+
+document
+.getElementById("reasonsList")
+.innerHTML =
+`
+<div class="reason">
+Waiting for live analysis...
+</div>
+`;
 
 }
 
@@ -2341,27 +2744,35 @@ status.textContent =
 
 try{
 
+const selectedIndex =
+getSelectedIndex();
+
 const response =
 await fetch(
-`${BACKEND_URL}/api/analysis`,
+`${BACKEND_URL}/api/analysis?index=${encodeURIComponent(selectedIndex)}`,
 {
 cache:"no-store"
 }
 );
 
 const result =
-await response.json();
+await readJSON(response);
 
-if(!response.ok || !result.success){
+if(
+!response.ok ||
+!result?.success
+){
 
 throw new Error(
-result.error ||
+result?.error ||
 "Analysis unavailable"
 );
 
 }
 
-renderEraAnalysis(result);
+renderEraAnalysis(
+result
+);
 
 if(
 !isListening &&
@@ -2381,33 +2792,13 @@ console.error(
 error
 );
 
-setText(
-"marketStatus",
-"DATA UNAVAILABLE"
-);
-
-setText(
-"directionBig",
-"WAIT"
-);
-
-setText(
-"direction",
-"WAIT"
-);
-
-setDirectionStyle(
-document.getElementById("directionBig"),
-"WAIT"
-);
-
-setDirectionStyle(
-document.getElementById("direction"),
-"WAIT"
-);
+clearAnalysisUI();
 
 status.textContent =
 "● Ready";
+
+state.textContent =
+"Live analysis unavailable";
 
 }finally{
 
@@ -2437,28 +2828,24 @@ const options =
 data.options || {};
 
 const direction =
+String(
 signal.direction ||
-"WAIT";
+"WAIT"
+).toUpperCase();
 
 const confidence =
-signal.confidence ??
-0;
+Number(
+signal.confidence ?? 0
+);
 
 const selectedIndex =
 getSelectedIndex();
-
-const selectedConfig =
-INDEX_CONFIG[selectedIndex] ||
-INDEX_CONFIG.NIFTY;
 
 const selectedMarket =
 getIndexMarketFromResponse(
 market,
 selectedIndex
 );
-
-const nifty =
-market.nifty || {};
 
 const gift =
 market.giftNifty || {};
@@ -2467,22 +2854,27 @@ const vix =
 market.indiaVix || {};
 
 const primaryMarket =
-selectedMarket ||
-nifty;
+selectedMarket || {};
 
 
 /* MARKET */
 
 setText(
 "niftyValue",
-formatPrice(primaryMarket.lastPrice)
+formatPrice(
+primaryMarket.lastPrice
+)
 );
 
 const primaryChange =
-Number(primaryMarket.netChange);
+Number(
+primaryMarket.netChange
+);
 
-const niftyChangeElement =
-document.getElementById("niftyChange");
+const primaryChangeElement =
+document.getElementById(
+"niftyChange"
+);
 
 setText(
 "niftyChange",
@@ -2492,9 +2884,9 @@ primaryChange.toFixed(2)
 : "--"
 );
 
-if(niftyChangeElement){
+if(primaryChangeElement){
 
-niftyChangeElement.className =
+primaryChangeElement.className =
 "small-value " +
 (
 Number.isFinite(primaryChange)
@@ -2506,21 +2898,18 @@ Number.isFinite(primaryChange)
 
 }
 
-setText(
-"giftValue",
-formatPrice(gift.lastPrice)
-);
+
+/* GIFT */
 
 setText(
-"vixValue",
-formatPrice(vix.lastPrice)
+"giftValue",
+formatPrice(
+gift.lastPrice
+)
 );
 
 const giftChange =
 Number(gift.netChange);
-
-const vixChange =
-Number(vix.netChange);
 
 setText(
 "giftChange",
@@ -2530,19 +2919,10 @@ giftChange.toFixed(2)
 : "--"
 );
 
-setText(
-"vixChange",
-Number.isFinite(vixChange)
-? (vixChange >= 0 ? "+" : "") +
-vixChange.toFixed(2)
-: "--"
-);
-
 const giftChangeElement =
-document.getElementById("giftChange");
-
-const vixChangeElement =
-document.getElementById("vixChange");
+document.getElementById(
+"giftChange"
+);
 
 if(giftChangeElement){
 
@@ -2558,6 +2938,32 @@ Number.isFinite(giftChange)
 
 }
 
+
+/* VIX */
+
+setText(
+"vixValue",
+formatPrice(
+vix.lastPrice
+)
+);
+
+const vixChange =
+Number(vix.netChange);
+
+setText(
+"vixChange",
+Number.isFinite(vixChange)
+? (vixChange >= 0 ? "+" : "") +
+vixChange.toFixed(2)
+: "--"
+);
+
+const vixChangeElement =
+document.getElementById(
+"vixChange"
+);
+
 if(vixChangeElement){
 
 vixChangeElement.className =
@@ -2572,6 +2978,9 @@ Number.isFinite(vixChange)
 
 }
 
+
+/* STATUS */
+
 setText(
 "marketStatus",
 direction === "BUY"
@@ -2583,17 +2992,23 @@ direction === "BUY"
 
 setText(
 "analysisNifty",
-formatPrice(primaryMarket.lastPrice)
+formatPrice(
+primaryMarket.lastPrice
+)
 );
 
 setText(
 "analysisGift",
-formatPrice(gift.lastPrice)
+formatPrice(
+gift.lastPrice
+)
 );
 
 setText(
 "analysisVix",
-formatPrice(vix.lastPrice)
+formatPrice(
+vix.lastPrice
+)
 );
 
 
@@ -2605,14 +3020,20 @@ direction
 );
 
 setDirectionStyle(
-document.getElementById("directionBig"),
+document.getElementById(
+"directionBig"
+),
 direction
 );
 
 setText(
 "confidenceBig",
 "Confidence: " +
-confidence +
+(
+Number.isFinite(confidence)
+? confidence
+: 0
+) +
 "%"
 );
 
@@ -2622,7 +3043,9 @@ direction
 );
 
 setDirectionStyle(
-document.getElementById("direction"),
+document.getElementById(
+"direction"
+),
 direction
 );
 
@@ -2644,22 +3067,30 @@ technical.rsi !== undefined
 
 setText(
 "vwapValue",
-formatPrice(technical.vwap)
+formatPrice(
+technical.vwap
+)
 );
 
 setText(
 "ema9Value",
-formatPrice(technical.ema9)
+formatPrice(
+technical.ema9
+)
 );
 
 setText(
 "ema20Value",
-formatPrice(technical.ema20)
+formatPrice(
+technical.ema20
+)
 );
 
 setText(
 "ema50Value",
-formatPrice(technical.ema50)
+formatPrice(
+technical.ema50
+)
 );
 
 setText(
@@ -2680,7 +3111,9 @@ options.pcr !== undefined
 
 setText(
 "maxPainValue",
-formatPrice(options.maxPain)
+formatPrice(
+options.maxPain
+)
 );
 
 setText(
@@ -2698,27 +3131,37 @@ options.expiry || "--"
 
 setText(
 "entry",
-formatPrice(signal.entry)
+formatPrice(
+signal.entry
+)
 );
 
 setText(
 "sl",
-formatPrice(signal.stopLoss)
+formatPrice(
+signal.stopLoss
+)
 );
 
 setText(
 "target1",
-formatPrice(signal.target1)
+formatPrice(
+signal.target1
+)
 );
 
 setText(
 "target2",
-formatPrice(signal.target2)
+formatPrice(
+signal.target2
+)
 );
 
 setText(
 "target3",
-formatPrice(signal.target3)
+formatPrice(
+signal.target3
+)
 );
 
 setText(
@@ -2731,11 +3174,18 @@ signal.riskReward !== undefined
 
 setText(
 "tradeConfidence",
-confidence + "%"
+Number.isFinite(confidence)
+? confidence + "%"
+: "--"
 );
 
+
+/* TRADE STATUS */
+
 const tradeStatus =
-document.getElementById("tradeStatus");
+document.getElementById(
+"tradeStatus"
+);
 
 if(direction === "BUY"){
 
@@ -2767,7 +3217,9 @@ tradeStatus.className =
 /* REASONS */
 
 const reasonsList =
-document.getElementById("reasonsList");
+document.getElementById(
+"reasonsList"
+);
 
 const reasons =
 Array.isArray(data.reasons)
@@ -2786,16 +3238,22 @@ No strong confirmation yet.
 }else{
 
 reasonsList.innerHTML =
-reasons
-.map(
-reason =>
-`
-<div class="reason">
-• ${escapeHTML(reason)}
-</div>
-`
-)
-.join("");
+"";
+
+reasons.forEach(reason=>{
+
+const div =
+document.createElement("div");
+
+div.className =
+"reason";
+
+div.textContent =
+"• " + String(reason);
+
+reasonsList.appendChild(div);
+
+});
 
 }
 
@@ -2811,6 +3269,19 @@ data.invalidation ||
 )
 );
 
+
+/* SAVE LAST SIGNAL */
+
+localStorage.setItem(
+"era_last_signal",
+JSON.stringify({
+index:selectedIndex,
+direction,
+confidence,
+time:new Date().toISOString()
+})
+);
+
 }
 
 
@@ -2819,7 +3290,9 @@ data.invalidation ||
 ========================================= */
 
 document
-.getElementById("refreshAnalysisBtn")
+.getElementById(
+"refreshAnalysisBtn"
+)
 .addEventListener(
 "click",
 async()=>{
@@ -2853,7 +3326,9 @@ setInterval(
 ()=>{
 
 const home =
-document.getElementById("home");
+document.getElementById(
+"home"
+);
 
 if(
 home &&
@@ -2878,6 +3353,40 @@ function getSelectedLanguage(){
 return languageSelect.value;
 
 }
+
+
+languageSelect.addEventListener(
+"change",
+()=>{
+
+const names = {
+
+"hi-IN":
+"Hindi selected",
+
+"gu-IN":
+"Gujarati selected",
+
+"en-IN":
+"English selected"
+
+};
+
+if(recognition){
+
+recognition.lang =
+getSelectedLanguage();
+
+}
+
+state.textContent =
+names[
+getSelectedLanguage()
+] ||
+"Language selected";
+
+}
+);
 
 
 /* =========================================
@@ -2986,8 +3495,16 @@ document.createElement("div");
 bubble.className =
 "chat-bubble";
 
-bubble.innerHTML =
-'<span class="chat-thinking">Thinking...</span>';
+const thinking =
+document.createElement("span");
+
+thinking.className =
+"chat-thinking";
+
+thinking.textContent =
+"Thinking...";
+
+bubble.appendChild(thinking);
 
 content.appendChild(label);
 
@@ -3019,22 +3536,19 @@ thinking.remove();
 }
 
 
-function getAnswerFromResponse(result){
+function getAnswerFromResponse(
+result
+){
 
 if(!result){
-
 return "";
-
 }
 
 if(typeof result === "string"){
-
 return result;
-
 }
 
 return (
-
 result.reply ||
 result.response ||
 result.answer ||
@@ -3048,7 +3562,6 @@ result.data?.message ||
 result.data?.text ||
 result.data?.content ||
 ""
-
 );
 
 }
@@ -3059,10 +3572,12 @@ result.data?.content ||
 ========================================= */
 
 let currentAudio = null;
+
 let isSpeaking = false;
 let isThinking = false;
 
 let audioRequestId = 0;
+
 
 function stopEraVoice(){
 
@@ -3075,7 +3590,7 @@ try{
 currentAudio.pause();
 currentAudio.currentTime = 0;
 
-}catch(e){}
+}catch(error){}
 
 currentAudio = null;
 
@@ -3083,11 +3598,18 @@ currentAudio = null;
 
 isSpeaking = false;
 
-orb.classList.remove("speaking");
+orb.classList.remove(
+"speaking"
+);
 
-micBtn.classList.remove("speaking");
+micBtn.classList.remove(
+"speaking"
+);
 
-if(!isListening && !isThinking){
+if(
+!isListening &&
+!isThinking
+){
 
 state.textContent =
 "Ready";
@@ -3106,9 +3628,7 @@ const cleanText =
 String(text || "").trim();
 
 if(!cleanText){
-
 return false;
-
 }
 
 stopEraVoice();
@@ -3125,11 +3645,17 @@ orb.classList.remove(
 "thinking"
 );
 
-orb.classList.add("speaking");
+orb.classList.add(
+"speaking"
+);
 
-micBtn.classList.remove("listening");
+micBtn.classList.remove(
+"listening"
+);
 
-micBtn.classList.add("speaking");
+micBtn.classList.add(
+"speaking"
+);
 
 state.textContent =
 "Speaking...";
@@ -3157,7 +3683,9 @@ getSelectedLanguage()
 }
 );
 
-if(requestId !== audioRequestId){
+if(
+requestId !== audioRequestId
+){
 
 return false;
 
@@ -3165,23 +3693,13 @@ return false;
 
 if(!response.ok){
 
-let errorMessage =
-"Natural voice unavailable";
-
-try{
-
-const data =
-await response.json();
-
-errorMessage =
-data?.error ||
-data?.message ||
-errorMessage;
-
-}catch(e){}
+const result =
+await readJSON(response);
 
 throw new Error(
-errorMessage
+result?.error ||
+result?.message ||
+"Natural voice unavailable"
 );
 
 }
@@ -3189,7 +3707,9 @@ errorMessage
 const blob =
 await response.blob();
 
-if(requestId !== audioRequestId){
+if(
+requestId !== audioRequestId
+){
 
 return false;
 
@@ -3220,23 +3740,34 @@ audio.preload =
 
 audio.onended = ()=>{
 
-if(requestId !== audioRequestId){
+if(
+requestId !== audioRequestId
+){
 
 return;
 
 }
 
-URL.revokeObjectURL(audioUrl);
+URL.revokeObjectURL(
+audioUrl
+);
 
 currentAudio = null;
 
 isSpeaking = false;
 
-orb.classList.remove("speaking");
+orb.classList.remove(
+"speaking"
+);
 
-micBtn.classList.remove("speaking");
+micBtn.classList.remove(
+"speaking"
+);
 
-if(!isListening && !isThinking){
+if(
+!isListening &&
+!isThinking
+){
 
 state.textContent =
 "Ready";
@@ -3250,21 +3781,29 @@ status.textContent =
 
 audio.onerror = ()=>{
 
-if(requestId !== audioRequestId){
+if(
+requestId !== audioRequestId
+){
 
 return;
 
 }
 
-URL.revokeObjectURL(audioUrl);
+URL.revokeObjectURL(
+audioUrl
+);
 
 currentAudio = null;
 
 isSpeaking = false;
 
-orb.classList.remove("speaking");
+orb.classList.remove(
+"speaking"
+);
 
-micBtn.classList.remove("speaking");
+micBtn.classList.remove(
+"speaking"
+);
 
 state.textContent =
 "Voice playback error";
@@ -3285,7 +3824,9 @@ console.error(
 error
 );
 
-if(requestId !== audioRequestId){
+if(
+requestId !== audioRequestId
+){
 
 return false;
 
@@ -3293,9 +3834,13 @@ return false;
 
 isSpeaking = false;
 
-orb.classList.remove("speaking");
+orb.classList.remove(
+"speaking"
+);
 
-micBtn.classList.remove("speaking");
+micBtn.classList.remove(
+"speaking"
+);
 
 state.textContent =
 "Voice unavailable";
@@ -3315,7 +3860,9 @@ return false;
 ========================================= */
 
 document
-.getElementById("voiceTestBtn")
+.getElementById(
+"voiceTestBtn"
+)
 .addEventListener(
 "click",
 async()=>{
@@ -3344,7 +3891,7 @@ getSelectedLanguage()
 
 
 /* =========================================
-   MAIN CHAT
+   CHAT REQUEST
 ========================================= */
 
 async function handleUserMessage(text){
@@ -3353,15 +3900,11 @@ const cleanText =
 String(text || "").trim();
 
 if(!cleanText){
-
 return;
-
 }
 
 if(isSpeaking){
-
 stopEraVoice();
-
 }
 
 addChatMessage(
@@ -3387,14 +3930,15 @@ orb.classList.remove(
 "speaking"
 );
 
-orb.classList.add("thinking");
+orb.classList.add(
+"thinking"
+);
 
 state.textContent =
 "Thinking...";
 
 status.textContent =
 "● Thinking";
-
 
 try{
 
@@ -3416,24 +3960,17 @@ language:
 getSelectedLanguage(),
 
 history:
-chatConversation.slice(-10)
+chatConversation.slice(-10),
+
+index:
+getSelectedIndex()
 
 })
 }
 );
 
-let result = null;
-
-try{
-
-result =
-await response.json();
-
-}catch{
-
-result = null;
-
-}
+const result =
+await readJSON(response);
 
 if(!response.ok){
 
@@ -3462,7 +3999,9 @@ removeThinking();
 
 isThinking = false;
 
-orb.classList.remove("thinking");
+orb.classList.remove(
+"thinking"
+);
 
 addChatMessage(
 "era",
@@ -3474,11 +4013,15 @@ role:"assistant",
 content:answer
 });
 
+if(chatOutput){
+
 chatOutput.textContent =
 answer;
 
 chatOutput.style.display =
 "block";
+
+}
 
 await speak(answer);
 
@@ -3503,23 +4046,31 @@ removeThinking();
 
 isThinking = false;
 
-orb.classList.remove("thinking");
+orb.classList.remove(
+"thinking"
+);
 
 const errorMessage =
 "Era se connection nahi ho pa raha: " +
-(error.message ||
-"Unknown error");
+(
+error.message ||
+"Unknown error"
+);
 
 addChatMessage(
 "era",
 errorMessage
 );
 
+if(chatOutput){
+
 chatOutput.textContent =
 errorMessage;
 
 chatOutput.style.display =
 "block";
+
+}
 
 state.textContent =
 "Ready";
@@ -3544,9 +4095,7 @@ const text =
 textInput.value.trim();
 
 if(!text){
-
 return;
-
 }
 
 textInput.value = "";
@@ -3561,7 +4110,9 @@ textInput.addEventListener(
 "keydown",
 event=>{
 
-if(event.key === "Enter"){
+if(event.key !== "Enter"){
+return;
+}
 
 event.preventDefault();
 
@@ -3569,16 +4120,12 @@ const text =
 textInput.value.trim();
 
 if(!text){
-
 return;
-
 }
 
 textInput.value = "";
 
 handleUserMessage(text);
-
-}
 
 }
 );
@@ -3593,8 +4140,8 @@ window.SpeechRecognition ||
 window.webkitSpeechRecognition;
 
 let recognition = null;
-let listening = false;
 
+let listening = false;
 let isListening = false;
 
 
@@ -3622,9 +4169,7 @@ listening = true;
 isListening = true;
 
 if(isSpeaking){
-
 stopEraVoice();
-
 }
 
 orb.classList.remove(
@@ -3632,9 +4177,13 @@ orb.classList.remove(
 "thinking"
 );
 
-orb.classList.add("listening");
+orb.classList.add(
+"listening"
+);
 
-micBtn.classList.add("listening");
+micBtn.classList.add(
+"listening"
+);
 
 state.textContent =
 "Listening...";
@@ -3652,9 +4201,7 @@ const text =
 event.results[0][0].transcript;
 
 if(!text){
-
 return;
-
 }
 
 textInput.value =
@@ -3695,7 +4242,9 @@ orb.classList.remove(
 "listening"
 );
 
-if(event.error === "not-allowed"){
+if(
+event.error === "not-allowed"
+){
 
 state.textContent =
 "Microphone permission required";
@@ -3794,10 +4343,10 @@ error
 }
 );
 
-
 }else{
 
-micBtn.disabled = true;
+micBtn.disabled =
+true;
 
 state.textContent =
 "Voice recognition not supported";
@@ -3806,46 +4355,10 @@ state.textContent =
 
 
 /* =========================================
-   LANGUAGE CHANGE
-========================================= */
-
-languageSelect.addEventListener(
-"change",
-()=>{
-
-if(recognition){
-
-recognition.lang =
-getSelectedLanguage();
-
-}
-
-const names = {
-
-"hi-IN":
-"Hindi selected",
-
-"gu-IN":
-"Gujarati selected",
-
-"en-IN":
-"English selected"
-
-};
-
-state.textContent =
-names[
-getSelectedLanguage()
-] ||
-"Language selected";
-
-}
-);
-
-
-/* =========================================
    NEWS
 ========================================= */
+
+let newsLoaded = false;
 
 async function loadNews(){
 
@@ -3853,6 +4366,12 @@ const container =
 document.getElementById(
 "newsContainer"
 );
+
+if(newsLoaded){
+
+return;
+
+}
 
 container.innerHTML =
 '<div class="empty">Loading market news...</div>';
@@ -3867,18 +4386,8 @@ cache:"no-store"
 }
 );
 
-let result = null;
-
-try{
-
-result =
-await response.json();
-
-}catch{
-
-result = null;
-
-}
+const result =
+await readJSON(response);
 
 if(!response.ok){
 
@@ -3912,11 +4421,14 @@ No live news available right now.
 </div>
 `;
 
+newsLoaded = true;
+
 return;
 
 }
 
-container.innerHTML = "";
+container.innerHTML =
+"";
 
 articles.forEach(article=>{
 
@@ -3949,7 +4461,9 @@ description.style.cssText =
 description.textContent =
 article.description;
 
-item.appendChild(description);
+item.appendChild(
+description
+);
 
 }
 
@@ -4013,6 +4527,8 @@ container.appendChild(item);
 
 });
 
+newsLoaded = true;
+
 }catch(error){
 
 console.error(
@@ -4058,12 +4574,22 @@ error.message ||
 
 function saveChat(message){
 
-const history =
+let history = [];
+
+try{
+
+history =
 JSON.parse(
 localStorage.getItem(
 "era_chat_history"
 ) || "[]"
 );
+
+}catch(error){
+
+history = [];
+
+}
 
 history.push({
 
@@ -4075,6 +4601,9 @@ new Date().toLocaleString(
 message
 
 });
+
+history =
+history.slice(-100);
 
 localStorage.setItem(
 "era_chat_history",
@@ -4093,12 +4622,22 @@ document.getElementById(
 "chatHistory"
 );
 
-const history =
+let history = [];
+
+try{
+
+history =
 JSON.parse(
 localStorage.getItem(
 "era_chat_history"
 ) || "[]"
 );
+
+}catch(error){
+
+history = [];
+
+}
 
 if(!history.length){
 
@@ -4110,38 +4649,43 @@ return;
 }
 
 container.innerHTML =
+"";
+
 history
 .slice()
 .reverse()
-.map(
-item=>`
+.forEach(item=>{
 
-<div style="
-padding:10px 0;
-border-bottom:1px solid var(--border);
-">
+const wrapper =
+document.createElement("div");
 
-<small style="
-color:var(--muted);
-">
+wrapper.style.cssText =
+"padding:10px 0;border-bottom:1px solid var(--border);";
 
-${escapeHTML(item.time)}
+const time =
+document.createElement("small");
 
-</small>
+time.style.color =
+"var(--muted)";
 
-<div style="
-margin-top:5px;
-">
+time.textContent =
+item.time || "";
 
-${escapeHTML(item.message)}
+const message =
+document.createElement("div");
 
-</div>
+message.style.marginTop =
+"5px";
 
-</div>
+message.textContent =
+item.message || "";
 
-`
-)
-.join("");
+wrapper.appendChild(time);
+wrapper.appendChild(message);
+
+container.appendChild(wrapper);
+
+});
 
 }
 
@@ -4183,186 +4727,439 @@ return String(text)
 
 
 /* =========================================
+   SERVICE WORKER
+========================================= */
+
+let serviceWorkerRegistration =
+null;
+
+
+async function registerServiceWorker(){
+
+if(
+!("serviceWorker" in navigator)
+){
+
+console.log(
+"Service Worker not supported."
+);
+
+return null;
+
+}
+
+try{
+
+serviceWorkerRegistration =
+await navigator.serviceWorker.register(
+"/sw.js",
+{
+scope:"/"
+}
+);
+
+console.log(
+"Era AI Service Worker registered:",
+serviceWorkerRegistration.scope
+);
+
+return serviceWorkerRegistration;
+
+}catch(error){
+
+console.error(
+"Service Worker registration error:",
+error
+);
+
+return null;
+
+}
+
+}
+
+
+/* =========================================
+   PUSH SUBSCRIPTION
+========================================= */
+
+function urlBase64ToUint8Array(
+base64String
+){
+
+const padding =
+"=".repeat(
+(4 - base64String.length % 4) % 4
+);
+
+const base64 =
+(
+base64String +
+padding
+)
+.replace(/-/g,"+")
+.replace(/_/g,"/");
+
+const rawData =
+window.atob(base64);
+
+const outputArray =
+new Uint8Array(
+rawData.length
+);
+
+for(
+let i = 0;
+i < rawData.length;
+++i
+){
+
+outputArray[i] =
+rawData.charCodeAt(i);
+
+}
+
+return outputArray;
+
+}
+
+
+async function enableNotifications(){
+
+if(
+!("Notification" in window)
+){
+
+alert(
+"Is browser/device par notifications supported nahi hain."
+);
+
+return;
+
+}
+
+if(
+!("serviceWorker" in navigator) ||
+!("PushManager" in window)
+){
+
+alert(
+"Push notifications supported nahi hain."
+);
+
+return;
+
+}
+
+try{
+
+const permission =
+await Notification.requestPermission();
+
+if(permission !== "granted"){
+
+notificationBtn.textContent =
+"Notifications Blocked";
+
+return;
+
+}
+
+const registration =
+serviceWorkerRegistration ||
+await registerServiceWorker();
+
+if(!registration){
+
+throw new Error(
+"Service Worker unavailable"
+);
+
+}
+
+const publicKeyResponse =
+await fetch(
+`${BACKEND_URL}/api/push/public-key`,
+{
+cache:"no-store"
+}
+);
+
+const publicKeyResult =
+await readJSON(
+publicKeyResponse
+);
+
+if(
+!publicKeyResponse.ok ||
+!publicKeyResult?.success ||
+!publicKeyResult?.publicKey
+){
+
+throw new Error(
+publicKeyResult?.error ||
+"Push public key unavailable"
+);
+
+}
+
+let subscription =
+await registration.pushManager.getSubscription();
+
+if(!subscription){
+
+subscription =
+await registration.pushManager.subscribe({
+
+userVisibleOnly:true,
+
+applicationServerKey:
+urlBase64ToUint8Array(
+publicKeyResult.publicKey
+)
+
+});
+
+}
+
+const subscribeResponse =
+await fetch(
+`${BACKEND_URL}/api/subscribe`,
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+subscription
+})
+}
+);
+
+const subscribeResult =
+await readJSON(
+subscribeResponse
+);
+
+if(
+!subscribeResponse.ok ||
+!subscribeResult?.success
+){
+
+throw new Error(
+subscribeResult?.error ||
+"Subscription registration failed"
+);
+
+}
+
+notificationBtn.textContent =
+"✓ Notifications Enabled";
+
+notificationBtn.disabled =
+true;
+
+}catch(error){
+
+console.error(
+"Notification setup error:",
+error
+);
+
+notificationBtn.textContent =
+"Enable Notifications";
+
+alert(
+"Notifications enable nahi ho paayi: " +
+error.message
+);
+
+}
+
+}
+
+
+notificationBtn.addEventListener(
+"click",
+enableNotifications
+);
+
+
+/* =========================================
+   MODAL
+========================================= */
+
+function closeSignalModal(){
+
+eraSignalModal.style.display =
+"none";
+
+}
+
+document
+.getElementById(
+"closeModalBtn"
+)
+.addEventListener(
+"click",
+closeSignalModal
+);
+
+eraSignalModal.addEventListener(
+"click",
+event=>{
+
+if(
+event.target ===
+eraSignalModal
+){
+
+closeSignalModal();
+
+}
+
+}
+);
+
+
+/* =========================================
+   NOTIFICATION LANDING
+========================================= */
+
+function checkNotificationLanding(){
+
+const params =
+new URLSearchParams(
+window.location.search
+);
+
+if(
+params.get("from") !==
+"notification"
+){
+
+return;
+
+}
+
+modalSignalsList.innerHTML =
+`
+<div class="trade-card">
+
+<div style="
+font-weight:bold;
+">
+🎯 Era AI Signal
+</div>
+
+<div style="
+margin-top:7px;
+color:var(--muted);
+font-size:11px;
+">
+Era AI notification se app open hua hai.
+Live analysis neeche available hai.
+</div>
+
+<button
+id="modalRefreshBtn"
+class="notification-btn"
+type="button"
+>
+Open Live Analysis
+</button>
+
+</div>
+`;
+
+eraSignalModal.style.display =
+"flex";
+
+const modalRefreshBtn =
+document.getElementById(
+"modalRefreshBtn"
+);
+
+if(modalRefreshBtn){
+
+modalRefreshBtn.addEventListener(
+"click",
+async()=>{
+
+closeSignalModal();
+
+await loadEraAnalysis();
+
+window.scrollTo({
+top:0,
+behavior:"smooth"
+});
+
+}
+);
+
+}
+
+}
+
+
+function checkNotificationButtonState(){
+
+if(
+!("Notification" in window)
+){
+
+notificationBtn.style.display =
+"none";
+
+return;
+
+}
+
+if(
+Notification.permission ===
+"granted"
+){
+
+notificationBtn.textContent =
+"✓ Notifications Enabled";
+
+notificationBtn.disabled =
+true;
+
+}
+
+}
+
+
+/* =========================================
    START
 ========================================= */
 
+async function initEra(){
+
 renderChatHistory();
 
-loadEraAnalysis();
+updateHomeIndexUI();
+
+checkNotificationButtonState();
+
+await registerServiceWorker();
+
+checkNotificationLanding();
+
+await loadEraAnalysis();
 
 console.log(
-"Era AI V5 frontend loaded successfully."
+`Era AI ${APP_VERSION} frontend loaded successfully.`
 );
 
-</script>
-<!-- ERA V6 SMART POPUP & PWA EXTENSION -->
-<style>
-.era-modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
-  display: flex; align-items: center; justify-content: center; z-index: 1000;
-  backdrop-filter: blur(5px);
-}
-.era-modal {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 18px; width: 90%; max-width: 500px; padding: 20px;
-  box-shadow: var(--shadow); color: var(--text);
-}
-.trade-card {
-  background: var(--bg2); border: 1px solid var(--border);
-  padding: 12px; border-radius: 12px; margin-top: 10px;
-}
-.badge-hit { color: var(--green); font-weight: bold; }
-.badge-sl { color: var(--red); font-weight: bold; }
-</style>
-
-<div id="eraSignalModal" class="era-modal-overlay" style="display:none;">
-  <div class="era-modal">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3>🎯 ERA Active Trade Signals</h3>
-      <button onclick="document.getElementById('eraSignalModal').style.display='none'" style="background:none; color:var(--text); font-size:18px;">✕</button>
-    </div>
-    <div id="modalSignalsList" style="max-height: 350px; overflow-y: auto; margin-top: 10px;">
-      <!-- Dynamic Signal Items -->
-    </div>
-  </div>
-</div>
-
-<script>
-// Service Worker & Push Notification Setup
-async function requestNotificationPermission() {
-  if ('Notification' in window && 'serviceWorker' in navigator) {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      console.log('Notification permission granted.');
-    }
-  }
 }
 
-function sendEraNotification(title, body, data = {}) {
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker.ready.then(registration => {
-      registration.showNotification(title, {
-        body: body,
-        icon: '/icon.png',
-        badge: '/badge.png',
-        data: data
-      });
-    });
-  }
-}
+initEra();
 
-// SMC Signal Engine (Example Calculation)
-function analyzeSMC(marketData) {
-  const { currentPrice, previousHigh, previousLow, fvgZone } = marketData;
-  let signal = "HOLD";
-  
-  if (currentPrice > previousHigh) {
-    signal = "STRONG BUY"; // Break of Structure
-  } else if (fvgZone && currentPrice <= fvgZone.high && currentPrice >= fvgZone.low) {
-    signal = "BUY"; // FVG Fill Entry
-  }
-  
-  return signal;
-}
-
-// Auto Open Modal if Navigated from Notification
-window.addEventListener('DOMContentLoaded', () => {
-  requestNotificationPermission();
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('from') === 'notification') {
-    document.getElementById('eraSignalModal').style.display = 'flex';
-  }
-});
-</script>
-<!-- ERA AI V6 NOTIFICATION, VOICE & SMART POPUP SCRIPT -->
-<script>
-// 1. Service Worker & Push Notification Register
-if ('serviceWorker' in navigator && 'PushManager' in window) {
-  navigator.serviceWorker.register('/sw.js')
-    .then(reg => console.log('ERA V6 Service Worker Registered:', reg.scope))
-    .catch(err => console.error('Service Worker Error:', err));
-}
-
-async function enableNotifications() {
-  if ('Notification' in window) {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted' && navigator.serviceWorker.controller) {
-      // Backend ko subscriber registration request bhejna
-      fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device: navigator.userAgent })
-      });
-    }
-  }
-}
-
-// 2. Fixed Voice Speech Engine
-function speakEraMessage(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel(); // Reset audio queue
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = 'hi-IN'; // Hindi-English Natural Voice
-    speech.rate = 1.0;
-    speech.pitch = 1.0;
-    window.speechSynthesis.speak(speech);
-  }
-}
-
-// 3. Fixed VWAP Logic Calculation
-function calculateVWAP(ticks) {
-  if (!ticks || ticks.length === 0) return 0;
-  let totalPV = 0;
-  let totalVolume = 0;
-  
-  ticks.forEach(tick => {
-    const typicalPrice = (tick.high + tick.low + tick.close) / 3;
-    totalPV += typicalPrice * tick.volume;
-    totalVolume += tick.volume;
-  });
-  
-  return totalVolume > 0 ? (totalPV / totalVolume) : 0;
-}
-
-// 4. Notification Tap Event & Dynamic Pop-up Handler
-window.addEventListener('DOMContentLoaded', () => {
-  enableNotifications();
-
-  // Check if opened via notification click
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('from') === 'notification') {
-    const modal = document.getElementById('eraSignalModal');
-    if (modal) modal.style.display = 'flex';
-    speakEraMessage("Era AI V6 system active. Welcome back.");
-  }
-});
 </script>
 
 </body>
-  <!-- ERA V6 POPUP UI -->
-<style>
-.era-modal-overlay {
-  position: fixed; top:0; left:0; width:100%; height:100%; 
-  background: rgba(0,0,0,0.8); display: flex; align-items: center; 
-  justify-content: center; z-index: 9999;
-}
-.era-modal {
-  background: #111827; border: 1px solid #374151; border-radius: 16px; 
-  width: 90%; max-width: 450px; padding: 20px; color: white; font-family: sans-serif;
-}
-</style>
-
-<div id="eraSignalModal" class="era-modal-overlay" style="display:none;">
-  <div class="era-modal">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="margin:0;">🎯 ERA Active Trade Signals</h3>
-      <button onclick="document.getElementById('eraSignalModal').style.display='none'" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;">✕</button>
-    </div>
-    <div style="margin-top:15px; font-size:14px; color:#9ca3af;">
-      <p>🟢 <b>BUY Call:</b> Nifty 24500 CE | Target: Hit ✅</p>
-      <p>🔴 <b>SELL Call:</b> BankNifty 52200 PE | SL: Hit ❌</p>
-    </div>
-  </div>
-</div>
-
-</html>
+  </html>
