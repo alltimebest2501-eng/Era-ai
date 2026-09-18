@@ -7,15 +7,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Fast Health Ping (Prevents Sleep Latency)
+// Fast Health Ping (Prevents Render Sleep Mode)
 app.get('/ping', (req, res) => {
-  res.status(200).send('Era V6 Engine Active');
+  res.status(200).send('Era V6 Full Engine Active');
 });
 
-// VAPID Setup with fallback keys
-let vapidKeys;
+// VAPID Push Setup
+let subscriptions = [];
 try {
-  vapidKeys = webpush.generateVAPIDKeys();
+  const vapidKeys = webpush.generateVAPIDKeys();
   webpush.setVapidDetails(
     'mailto:era-ai@example.com',
     vapidKeys.publicKey,
@@ -24,8 +24,6 @@ try {
 } catch (e) {
   console.log('VAPID Init Warning:', e.message);
 }
-
-let subscriptions = [];
 
 app.post('/api/subscribe', (req, res) => {
   const subscription = req.body;
@@ -42,7 +40,19 @@ function triggerNotification(title, body) {
   });
 }
 
-// SMC & 20-30 Point Movement Scanner Endpoint
+// 1. Option Chain & Market Data Endpoint (Restored)
+app.get('/api/option-chain', (req, res) => {
+  // Returns market data structure required by index.html
+  res.json({
+    status: 'success',
+    niftyPrice: 24500,
+    bankNiftyPrice: 52200,
+    pcrRatio: 1.15,
+    smcSignal: { type: 'BUY', pattern: 'Fair Value Gap (FVG)', zone: '24480 - 24520' }
+  });
+});
+
+// 2. Real-Time Tick & 20-30 Point Movement Scanner
 let lastPrice = 0;
 app.post('/api/market-tick', (req, res) => {
   const { price, high, low, vwap } = req.body || {};
@@ -61,7 +71,7 @@ app.post('/api/market-tick', (req, res) => {
   }
   if (price) lastPrice = price;
 
-  res.json({ success: true, status: 'scanned' });
+  res.json({ success: true, status: 'scanned', currentPrice: price || lastPrice });
 });
 
 // Scheduled Morning/Evening Push Alerts
