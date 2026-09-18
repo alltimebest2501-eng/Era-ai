@@ -2,129 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#08090d">
-<title>Era AI — Intelligent Market System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080a0f">
+<title>Era AI V5</title>
 
 <style>
-:root{
-  --bg:#07080b;
-  --bg2:#0b0d12;
-  --panel:#101218;
-  --panel2:#141720;
-  --line:rgba(255,255,255,.075);
-  --line2:rgba(255,255,255,.12);
-  --text:#f4f5f7;
-  --muted:#8d94a3;
-  --muted2:#626a78;
-  --purple:#8b72ff;
-  --purple2:#6e54e9;
-  --green:#31d39b;
-  --red:#ff637a;
-  --yellow:#e7b95b;
-  --blue:#5aa9ff;
-  --radius:22px;
-  --nav:82px;
-}
-
-*{box-sizing:border-box}
-html,body{
+*{
+  box-sizing:border-box;
   margin:0;
   padding:0;
-  background:var(--bg);
-  color:var(--text);
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-family:Arial,sans-serif;
 }
-body{
-  min-height:100vh;
-  overflow-x:hidden;
-  background:
-    radial-gradient(circle at 15% -5%,rgba(119,87,255,.12),transparent 28%),
-    radial-gradient(circle at 100% 15%,rgba(74,105,255,.07),transparent 25%),
-    linear-gradient(180deg,#08090d 0%,#07080b 100%);
-}
-button,input,select{font:inherit}
-button{cursor:pointer}
-button:focus,input:focus,select:focus{outline:none}
 
-body:before{
-  content:"";
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  opacity:.025;
-  background-image:
-    linear-gradient(rgba(255,255,255,.7) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.7) 1px,transparent 1px);
-  background-size:40px 40px;
-  mask-image:linear-gradient(to bottom,black,transparent 80%);
+:root{
+  --bg:#080a0f;
+  --bg2:#0d1017;
+  --card:#11151d;
+  --card2:#151a23;
+  --border:#242b36;
+  --text:#f5f7fb;
+  --muted:#89919f;
+  --muted2:#606978;
+  --accent:#8b7cff;
+  --accent2:#b59cff;
+  --green:#48e6a1;
+  --red:#ff667d;
+  --yellow:#ffd166;
+  --blue:#6bb7ff;
+  --shadow:0 12px 35px rgba(0,0,0,.28);
+}
+
+body.light{
+  --bg:#f4f6fb;
+  --bg2:#ffffff;
+  --card:#ffffff;
+  --card2:#f7f8fc;
+  --border:#e1e5ed;
+  --text:#11141a;
+  --muted:#687181;
+  --muted2:#8b93a1;
+  --accent:#635bff;
+  --accent2:#7b73ff;
+  --green:#099268;
+  --red:#e03152;
+  --yellow:#b77900;
+  --blue:#2677c9;
+  --shadow:0 10px 30px rgba(30,40,70,.10);
+}
+
+body{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(120,100,255,.12),transparent 35%),
+    var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:.25s;
+}
+
+button,
+select,
+input{
+  font:inherit;
+}
+
+button{
+  border:0;
+  cursor:pointer;
+}
+
+button:active{
+  transform:scale(.98);
 }
 
 .app{
-  width:min(1500px,100%);
-  min-height:100vh;
+  max-width:600px;
   margin:auto;
-  position:relative;
+  min-height:100vh;
+  padding-bottom:90px;
 }
 
-/* ---------- TOP BAR ---------- */
+/* HEADER */
 
-.topbar{
-  height:78px;
-  padding:16px 24px;
+header{
+  padding:20px 17px 10px;
   display:flex;
-  align-items:center;
   justify-content:space-between;
+  align-items:center;
   position:sticky;
   top:0;
-  z-index:50;
-  background:rgba(7,8,11,.82);
-  backdrop-filter:blur(24px);
-  border-bottom:1px solid var(--line);
+  z-index:20;
+  background:rgba(8,10,15,.88);
+  backdrop-filter:blur(18px);
 }
 
-.brand{
+body.light header{
+  background:rgba(244,246,251,.88);
+}
+
+.logo-wrap{
   display:flex;
   align-items:center;
-  gap:12px;
+  gap:10px;
 }
 
-.era-mark{
-  width:40px;
-  height:40px;
-  border-radius:13px;
-  display:grid;
-  place-items:center;
-  background:
-    linear-gradient(145deg,rgba(139,114,255,.25),rgba(139,114,255,.05)),
-    #11131a;
-  border:1px solid rgba(139,114,255,.28);
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-  position:relative;
-  overflow:hidden;
+.logo-mark{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 7px 25px rgba(110,95,255,.28);
+  font-size:18px;
 }
 
-.era-mark:after{
-  content:"";
-  width:16px;
-  height:16px;
-  border:2px solid var(--purple);
-  border-radius:50%;
-  border-left-color:transparent;
-  transform:rotate(-30deg);
-}
-
-.brand-title{
-  font-size:15px;
+.logo{
+  font-size:22px;
   font-weight:800;
-  letter-spacing:.2px;
+  letter-spacing:-.5px;
 }
-.brand-sub{
-  font-size:10px;
+
+.logo-sub{
+  font-size:9px;
   color:var(--muted);
   margin-top:2px;
-  letter-spacing:.7px;
-  text-transform:uppercase;
+  letter-spacing:1px;
 }
 
 .header-right{
@@ -133,1154 +136,664 @@ body:before{
   gap:9px;
 }
 
-.live-pill,
-.engine-pill{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  padding:8px 11px;
-  border-radius:999px;
-  border:1px solid var(--line2);
-  background:rgba(255,255,255,.035);
-  color:#cdd2dc;
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:.4px;
+.status{
+  font-size:11px;
+  color:var(--green);
 }
 
-.live-dot{
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:var(--green);
-  box-shadow:0 0 12px rgba(49,211,155,.7);
-}
-
-.icon-btn{
-  width:38px;
-  height:38px;
+.theme-btn{
+  width:36px;
+  height:36px;
   border-radius:12px;
-  border:1px solid var(--line);
-  background:#101218;
-  color:#dce0e8;
-  display:grid;
-  place-items:center;
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--text);
 }
 
-/* ---------- PAGE SYSTEM ---------- */
+/* SCREEN */
 
-.pages{
-  padding:24px 24px calc(var(--nav) + 30px);
-}
-
-.page{
+.screen{
   display:none;
-  animation:pageIn .28s ease;
-}
-.page.active{display:block}
-
-@keyframes pageIn{
-  from{opacity:0;transform:translateY(7px)}
-  to{opacity:1;transform:none}
+  padding:10px 15px;
 }
 
-.section-head{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:20px;
-  margin-bottom:18px;
+.screen.active{
+  display:block;
 }
 
-.eyebrow{
-  font-size:10px;
-  color:#747c8d;
-  letter-spacing:1.6px;
-  text-transform:uppercase;
-  font-weight:800;
-  margin-bottom:7px;
-}
-
-h1,h2,h3,p{margin:0}
-.section-title{
-  font-size:26px;
-  letter-spacing:-.8px;
-}
-.section-desc{
-  color:var(--muted);
-  font-size:12px;
-  margin-top:5px;
-}
-
-.card{
-  background:
-    linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.012)),
-    rgba(14,16,22,.92);
-  border:1px solid var(--line);
-  border-radius:var(--radius);
-  box-shadow:
-    0 18px 50px rgba(0,0,0,.18),
-    inset 0 1px rgba(255,255,255,.025);
-}
-
-.grid{
-  display:grid;
-  gap:14px;
-}
-
-.two{grid-template-columns:repeat(2,minmax(0,1fr))}
-.three{grid-template-columns:repeat(3,minmax(0,1fr))}
-.four{grid-template-columns:repeat(4,minmax(0,1fr))}
-
-/* ---------- HOME ---------- */
-
-.home-top{
-  display:grid;
-  grid-template-columns:minmax(0,1.5fr) minmax(320px,.75fr);
-  gap:15px;
-}
+/* HERO */
 
 .hero{
-  min-height:445px;
-  padding:28px;
-  position:relative;
-  overflow:hidden;
-  background:
-    radial-gradient(circle at 50% 55%,rgba(139,114,255,.08),transparent 34%),
-    linear-gradient(145deg,#12141c,#0c0e13);
+  text-align:center;
+  padding:24px 8px 18px;
 }
 
-.hero:before{
+.orb{
+  width:118px;
+  height:118px;
+  margin:auto;
+  border-radius:50%;
+  background:
+    radial-gradient(
+      circle,
+      #ffffff 0%,
+      #b9a8ff 8%,
+      #5146a7 22%,
+      #191735 48%,
+      #0b0d14 72%
+    );
+  box-shadow:
+    0 0 30px rgba(125,108,255,.25),
+    0 0 75px rgba(125,108,255,.10);
+  position:relative;
+  transition:.3s;
+}
+
+.orb:after{
   content:"";
   position:absolute;
-  inset:0;
-  background:
-    linear-gradient(90deg,transparent 49.8%,rgba(255,255,255,.035) 50%,transparent 50.2%),
-    linear-gradient(0deg,transparent 49.8%,rgba(255,255,255,.035) 50%,transparent 50.2%);
-  background-size:85px 85px;
-  opacity:.25;
+  inset:-8px;
+  border-radius:50%;
+  border:1px solid rgba(170,155,255,.20);
 }
 
-.hero-content{
-  position:relative;
-  z-index:2;
+.orb.listening{
+  animation:orbPulse 1.2s infinite;
 }
 
-.hero-line{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
+.orb.thinking{
+  animation:orbThink 1.8s infinite;
 }
 
-.hero-title{
-  font-size:clamp(31px,4vw,48px);
-  line-height:1.02;
-  letter-spacing:-2px;
-  max-width:580px;
-  margin-top:8px;
+.orb.speaking{
+  animation:orbSpeak .75s infinite;
 }
 
-.hero-title span{
-  color:#969ba8;
+@keyframes orbPulse{
+  0%,100%{
+    transform:scale(1);
+    box-shadow:
+      0 0 30px rgba(125,108,255,.25),
+      0 0 75px rgba(125,108,255,.10);
+  }
+  50%{
+    transform:scale(1.05);
+    box-shadow:
+      0 0 45px rgba(125,108,255,.45),
+      0 0 100px rgba(125,108,255,.18);
+  }
 }
 
-.hero-status{
-  display:flex;
-  align-items:center;
-  gap:7px;
-  padding:7px 10px;
-  border:1px solid rgba(49,211,155,.15);
-  background:rgba(49,211,155,.045);
-  border-radius:999px;
-  color:#91d9bf;
-  font-size:9px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:.7px;
+@keyframes orbThink{
+  0%,100%{transform:scale(1) rotate(0deg)}
+  50%{transform:scale(1.035) rotate(3deg)}
 }
 
-.core-shell{
-  margin-top:48px;
-  height:148px;
-  position:relative;
-  border:1px solid rgba(255,255,255,.06);
-  background:rgba(0,0,0,.14);
-  border-radius:20px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  overflow:hidden;
+@keyframes orbSpeak{
+  0%,100%{transform:scale(1)}
+  50%{transform:scale(1.045)}
 }
 
-.core-label{
-  position:absolute;
-  left:17px;
-  top:15px;
-  color:#666d7c;
-  font-size:9px;
-  font-weight:800;
-  letter-spacing:1.3px;
-}
-
-.wave{
-  width:92%;
-  height:90px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:4px;
-}
-
-.wave i{
-  width:3px;
-  height:var(--h);
-  border-radius:8px;
-  background:linear-gradient(180deg,#a694ff,#5f4bd5);
-  opacity:var(--o);
-  animation:wave 1.5s ease-in-out infinite alternate;
-  animation-delay:var(--d);
-}
-
-@keyframes wave{
-  from{transform:scaleY(.65)}
-  to{transform:scaleY(1.1)}
-}
-
-.voice-row{
-  margin-top:19px;
-  display:flex;
-  align-items:center;
-  gap:13px;
-}
-
-.voice-btn{
-  width:54px;
-  height:54px;
-  border:0;
-  border-radius:17px;
-  background:linear-gradient(145deg,#9078ff,#634ed5);
-  color:white;
-  box-shadow:0 12px 30px rgba(104,79,218,.3);
-  font-size:20px;
-}
-
-.voice-text{
-  color:#d5d9e1;
+.state{
+  margin-top:15px;
+  color:var(--muted);
   font-size:13px;
 }
-.voice-text small{
-  display:block;
-  color:#666e7d;
-  font-size:10px;
-  margin-top:3px;
-}
 
-.engine-card{
-  padding:22px;
-  min-height:445px;
-}
-
-.engine-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-
-.engine-title{
-  font-size:15px;
-  font-weight:800;
-}
-.engine-sub{
-  color:var(--muted);
-  font-size:10px;
-  margin-top:4px;
-}
-
-.engine-heart{
-  width:10px;
-  height:10px;
+.mic{
+  margin-top:19px;
+  width:68px;
+  height:68px;
   border-radius:50%;
-  background:var(--green);
-  box-shadow:0 0 0 5px rgba(49,211,155,.08),0 0 18px rgba(49,211,155,.6);
+  background:linear-gradient(145deg,var(--accent),var(--accent2));
+  color:#fff;
+  font-size:25px;
+  box-shadow:0 10px 30px rgba(100,85,255,.28);
+  transition:.2s;
 }
 
-.engine-state{
-  margin:22px 0;
-  padding:16px;
-  border-radius:17px;
-  background:#0b0d12;
-  border:1px solid var(--line);
+.mic.listening{
+  animation:pulse 1.2s infinite;
 }
 
-.state-main{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.state-main strong{font-size:18px}
-.state-main span{
-  font-size:9px;
-  color:var(--green);
-  letter-spacing:1px;
+.mic.speaking{
+  background:linear-gradient(145deg,#5d4cff,#a48fff);
 }
 
-.engine-bars{
-  margin-top:15px;
-  display:grid;
-  gap:8px;
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(130,110,255,.45)}
+  70%{box-shadow:0 0 0 18px rgba(130,110,255,0)}
+  100%{box-shadow:0 0 0 0 rgba(130,110,255,0)}
 }
 
-.engine-bar{
-  display:flex;
-  justify-content:space-between;
-  color:#8b92a0;
-  font-size:10px;
+.mic:disabled{
+  opacity:.5;
+  cursor:not-allowed;
 }
-.engine-bar b{color:#d6dae2}
 
-.progress{
-  height:4px;
-  border-radius:99px;
-  background:#1b1e27;
-  overflow:hidden;
-  margin-top:5px;
-}
-.progress span{
+.voice-test{
   display:block;
-  height:100%;
-  width:78%;
-  background:linear-gradient(90deg,#6852df,#a28fff);
-  border-radius:inherit;
-}
-
-.monitor-list{
-  display:grid;
-  gap:7px;
-}
-.monitor-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:11px 12px;
-  border:1px solid var(--line);
-  background:rgba(255,255,255,.018);
-  border-radius:12px;
-}
-.monitor-left{
-  display:flex;
-  align-items:center;
-  gap:9px;
-}
-.monitor-dot{
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:var(--green);
-}
-.monitor-item strong{font-size:11px}
-.monitor-item span{font-size:9px;color:#747b89}
-
-.chat-card{
-  margin-top:15px;
-  padding:20px;
-}
-
-.chat-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:15px;
-}
-.chat-head strong{font-size:13px}
-.chat-head span{
-  font-size:9px;
-  color:#707887;
-}
-
-.chat-area{
-  min-height:115px;
-  display:grid;
-  gap:9px;
-}
-
-.bubble{
-  max-width:80%;
-  padding:12px 14px;
-  border-radius:15px;
+  margin:12px auto 0;
+  padding:10px 16px;
+  border-radius:11px;
+  background:var(--card);
+  color:var(--accent2);
+  border:1px solid var(--border);
   font-size:11px;
-  line-height:1.55;
-}
-.bubble.era{
-  background:#151821;
-  border:1px solid var(--line);
-  color:#d9dde5;
-}
-.bubble.user{
-  justify-self:end;
-  background:#604bcf;
-  color:white;
+  font-weight:bold;
 }
 
-.chat-input{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin-top:14px;
-  padding:8px;
-  border:1px solid var(--line2);
-  border-radius:15px;
-  background:#0a0c10;
-}
-.chat-input input{
-  flex:1;
-  min-width:0;
-  border:0;
-  outline:0;
-  background:transparent;
-  color:white;
-  padding:8px;
-  font-size:11px;
-}
-.send-btn{
-  width:35px;
-  height:35px;
-  border:0;
-  border-radius:10px;
-  background:#eeeaff;
-  color:#31256f;
+/* LANGUAGE */
+
+.language-box{
+  margin:18px auto 0;
+  max-width:260px;
+  text-align:left;
 }
 
-.quick-row{
-  display:flex;
-  gap:7px;
-  margin-top:10px;
-  overflow-x:auto;
-  scrollbar-width:none;
-}
-.quick-row::-webkit-scrollbar{display:none}
-.quick{
-  white-space:nowrap;
-  padding:8px 11px;
-  border-radius:999px;
-  border:1px solid var(--line);
-  color:#9da4b1;
-  background:rgba(255,255,255,.025);
-  font-size:9px;
-}
-
-/* ---------- MARKET SNAPSHOT ---------- */
-
-.snapshot{
-  margin-top:15px;
-}
-.snapshot-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:11px;
-}
-.snapshot-head strong{font-size:13px}
-.snapshot-head span{font-size:9px;color:#68707e}
-
-.market-cards{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-}
-
-.market-mini{
-  padding:15px;
-  min-width:0;
-}
-.market-mini .name{
-  color:#858c9a;
-  font-size:9px;
-  font-weight:700;
-}
-.market-mini .price{
-  font-size:17px;
-  font-weight:800;
-  margin:7px 0 4px;
-}
-.market-mini .change{
-  font-size:9px;
-  color:var(--green);
-}
-.market-mini.down .change{color:var(--red)}
-
-.mini-chart{
-  height:35px;
-  margin-top:8px;
-}
-.mini-chart svg{
-  width:100%;
-  height:100%;
-}
-
-/* ---------- CONTROLS ---------- */
-
-.segment{
-  display:flex;
-  gap:5px;
-  padding:4px;
-  border:1px solid var(--line);
-  border-radius:13px;
-  background:#0c0e13;
-  overflow:auto;
-}
-.segment button{
-  white-space:nowrap;
-  border:0;
-  background:transparent;
-  color:#777f8e;
-  padding:8px 12px;
-  border-radius:9px;
-  font-size:10px;
-  font-weight:700;
-}
-.segment button.active{
-  color:#f5f4ff;
-  background:#211c3b;
-  box-shadow:inset 0 0 0 1px rgba(139,114,255,.18);
-}
-
-/* ---------- MARKETS ---------- */
-
-.market-terminal{
-  padding:20px;
-}
-.terminal-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-}
-.symbol{
-  font-size:11px;
-  color:#8c93a0;
-}
-.big-price{
-  font-size:34px;
-  font-weight:850;
-  letter-spacing:-1.4px;
-  margin-top:4px;
-}
-.big-change{
-  color:var(--green);
-  font-size:11px;
-  margin-top:4px;
-}
-
-.chart{
-  height:300px;
-  margin-top:20px;
-  border-top:1px solid var(--line);
-  border-bottom:1px solid var(--line);
-  position:relative;
-  overflow:hidden;
-  background:
-    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
-  background-size:60px 50px;
-}
-.chart svg{
-  width:100%;
-  height:100%;
-}
-.chart-label{
-  position:absolute;
-  right:10px;
-  top:10px;
-  font-size:8px;
-  color:#656c79;
-}
-
-.stat-box{
-  padding:15px;
-}
-.stat-box span{
-  color:#6f7684;
-  font-size:9px;
-}
-.stat-box strong{
+.language-label{
   display:block;
-  margin-top:7px;
-  font-size:16px;
-}
-.signal-tag{
-  display:inline-flex;
-  margin-top:8px;
-  padding:5px 7px;
-  border-radius:6px;
-  background:rgba(49,211,155,.08);
-  color:#68d8b4;
-  font-size:8px;
-  font-weight:800;
-}
-
-/* ---------- OPTIONS ---------- */
-
-.option-summary{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:10px;
-  margin:14px 0;
-}
-.option-stat{
-  padding:15px;
-}
-.option-stat span{
-  font-size:8px;
-  color:#737b89;
+  font-size:10px;
+  color:var(--muted2);
+  margin-bottom:7px;
   text-transform:uppercase;
   letter-spacing:.8px;
 }
-.option-stat strong{
-  display:block;
-  margin-top:6px;
-  font-size:17px;
-}
 
-.option-intel{
-  padding:17px;
-  margin-bottom:14px;
-  border-left:2px solid var(--purple);
-}
-.option-intel strong{
-  display:block;
-  font-size:11px;
-  margin-bottom:5px;
-}
-.option-intel p{
-  color:#9299a6;
-  font-size:10px;
-  line-height:1.6;
-}
+/* INPUT */
 
-.chain-wrap{
-  overflow:auto;
-  border-radius:18px;
-}
-.chain{
-  width:100%;
-  min-width:700px;
-  border-collapse:collapse;
-  font-size:9px;
-}
-.chain th{
-  color:#69717f;
-  font-weight:700;
-  text-transform:uppercase;
-  font-size:8px;
-  letter-spacing:.5px;
-  padding:11px 9px;
-  border-bottom:1px solid var(--line);
-  background:#0d0f14;
-}
-.chain td{
-  padding:10px 9px;
-  text-align:center;
-  border-bottom:1px solid rgba(255,255,255,.035);
-}
-.chain tr:hover{background:rgba(255,255,255,.025)}
-.ce{color:#69dcb8}
-.pe{color:#ff7387}
-.strike{
-  font-weight:800;
-  color:#e9ebf0;
-  background:#141720;
-}
-.atm .strike{
-  color:#a797ff;
-  background:#211c3b;
-}
-
-/* ---------- ALERTS ---------- */
-
-.alert-list{
-  display:grid;
-  gap:11px;
-}
-.alert-card{
-  padding:17px;
-  display:grid;
-  grid-template-columns:4px 1fr auto;
-  gap:14px;
-  cursor:pointer;
-}
-.alert-rail{
-  border-radius:10px;
-  background:var(--green);
-}
-.alert-rail.sell{background:var(--red)}
-.alert-content h3{
-  font-size:13px;
-}
-.alert-meta{
-  margin-top:4px;
-  color:#727987;
-  font-size:9px;
-}
-.level-row{
+.input-row{
   display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  margin-top:12px;
-}
-.level{
-  padding:6px 8px;
-  background:#0b0d12;
-  border:1px solid var(--line);
-  border-radius:8px;
-  font-size:8px;
-  color:#969daa;
-}
-.level b{color:#e5e7ec;margin-left:3px}
-.conf{
-  width:100px;
-  text-align:right;
-}
-.conf strong{
-  display:block;
-  font-size:14px;
-}
-.conf small{
-  color:#737b88;
-  font-size:8px;
-}
-.conf .progress{margin-top:8px}
-
-/* ---------- ANALYSIS ---------- */
-
-.thesis{
-  padding:23px;
-}
-.thesis-head{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.direction{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:9px;
-  background:rgba(49,211,155,.09);
-  color:#72d9ba;
-  font-size:10px;
-  font-weight:900;
-  letter-spacing:.6px;
-}
-.direction.sell{
-  color:#ff788b;
-  background:rgba(255,99,122,.08);
-}
-.conf-big{
-  font-size:38px;
-  font-weight:850;
-  letter-spacing:-2px;
-}
-.conf-big span{
-  color:#737a87;
-  font-size:10px;
-  letter-spacing:0;
-}
-.reason-list{
-  display:grid;
   gap:8px;
   margin-top:18px;
 }
-.reason{
-  display:flex;
-  gap:9px;
-  align-items:flex-start;
-  padding:11px;
-  background:#0c0e13;
-  border:1px solid var(--line);
-  border-radius:11px;
-  font-size:10px;
-  color:#9da4b1;
-}
-.reason-dot{
-  width:6px;
-  height:6px;
-  flex:none;
-  margin-top:4px;
-  border-radius:50%;
-  background:var(--green);
+
+input{
+  flex:1;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:14px;
+  outline:none;
 }
 
-/* ---------- NEWS ---------- */
+input:focus,
+select:focus{
+  border-color:var(--accent);
+}
 
-.news-grid{
+.send{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  padding:0 17px;
+  border-radius:13px;
+  font-weight:bold;
+}
+
+/* COMMON */
+
+.grid{
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:11px;
-}
-.news-card{
-  padding:17px;
-}
-.news-source{
-  display:flex;
-  justify-content:space-between;
-  color:#737b88;
-  font-size:8px;
-}
-.news-card h3{
-  font-size:13px;
-  line-height:1.4;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
   margin-top:12px;
 }
-.news-card p{
-  color:#858d9b;
-  font-size:10px;
-  line-height:1.5;
-  margin-top:7px;
+
+.card{
+  background:linear-gradient(145deg,var(--card),var(--bg2));
+  border:1px solid var(--border);
+  border-radius:17px;
+  padding:15px;
+  box-shadow:var(--shadow);
 }
-.news-tag{
-  display:inline-block;
-  margin-top:12px;
-  color:#a391ff;
-  font-size:8px;
+
+.card h3{
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:8px;
+  letter-spacing:.3px;
+}
+
+.value{
+  font-size:20px;
   font-weight:800;
 }
 
-/* ---------- PERFORMANCE ---------- */
-
-.kpi{
-  padding:18px;
-}
-.kpi span{
-  color:#737a88;
-  font-size:9px;
-}
-.kpi strong{
-  display:block;
-  font-size:23px;
-  margin-top:6px;
-}
-.kpi em{
-  display:block;
-  margin-top:4px;
-  color:var(--green);
-  font-size:9px;
-  font-style:normal;
+.small-value{
+  font-size:12px;
+  font-weight:bold;
 }
 
-.history{
-  margin-top:14px;
-  overflow:auto;
-}
-.history table{
-  width:100%;
-  min-width:600px;
-  border-collapse:collapse;
-  font-size:9px;
-}
-.history th{
-  text-align:left;
-  color:#6c7482;
-  padding:12px;
-  border-bottom:1px solid var(--line);
-}
-.history td{
-  padding:12px;
-  border-bottom:1px solid var(--line);
-}
-.profit{color:var(--green)}
-.loss{color:var(--red)}
-
-/* ---------- PROFILE ---------- */
-
-.profile-card{
-  padding:24px;
-}
-.profile-head{
-  display:flex;
-  align-items:center;
-  gap:14px;
-}
-.profile-avatar{
-  width:52px;
-  height:52px;
+.analysis,
+.trade{
+  margin-top:12px;
+  background:linear-gradient(145deg,var(--card),var(--bg2));
+  border:1px solid var(--border);
   border-radius:17px;
-  display:grid;
-  place-items:center;
-  background:#211c3b;
-  border:1px solid rgba(139,114,255,.2);
-  color:#a796ff;
-  font-weight:900;
+  padding:16px;
+  box-shadow:var(--shadow);
 }
-.settings{
-  margin-top:20px;
-  display:grid;
+
+.section-title{
+  font-size:16px;
+  font-weight:800;
+  margin-bottom:12px;
+  letter-spacing:-.2px;
 }
-.setting{
+
+.section-sub{
+  font-size:10px;
+  color:var(--muted);
+  margin-top:-7px;
+  margin-bottom:12px;
+}
+
+.trade-row{
   display:flex;
-  align-items:center;
   justify-content:space-between;
-  gap:15px;
-  padding:15px 0;
-  border-bottom:1px solid var(--line);
+  padding:9px 0;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
 }
-.setting:last-child{border-bottom:0}
-.setting strong{
-  display:block;
+
+.trade-row:last-child{
+  border-bottom:0;
+}
+
+.green{color:var(--green)}
+.red{color:var(--red)}
+.yellow{color:var(--yellow)}
+.blue{color:var(--blue)}
+
+/* MARKET SELECTOR */
+
+.market-selector{
+  margin-top:14px;
+  padding:13px;
+  border-radius:16px;
+  background:linear-gradient(
+    135deg,
+    rgba(105,90,255,.12),
+    var(--card)
+  );
+  border:1px solid rgba(130,115,255,.25);
+}
+
+.market-selector-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:9px;
+}
+
+.market-selector-title{
+  font-size:11px;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.8px;
+}
+
+.market-selector-badge{
+  font-size:10px;
+  color:var(--accent2);
+}
+
+.market-select{
+  margin:0!important;
+  background:var(--bg2)!important;
+}
+
+/* REFRESH */
+
+.refresh-btn{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:12px;
+  background:var(--card2);
+  color:var(--accent2);
+  border:1px solid var(--border);
+  font-weight:bold;
+}
+
+/* SIGNAL */
+
+.signal-box{
+  margin-bottom:12px;
+  padding:16px;
+  border-radius:15px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(120,100,255,.12),transparent 55%),
+    var(--card2);
+  border:1px solid var(--border);
+  text-align:center;
+}
+
+.signal-label{
+  font-size:10px;
+  color:var(--muted2);
+  letter-spacing:1px;
+}
+
+.signal-value{
+  font-size:28px;
+  font-weight:900;
+  margin-top:5px;
+}
+
+.confidence{
+  font-size:11px;
+  color:var(--muted);
+  margin-top:5px;
+}
+
+.metric-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+
+.metric{
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:13px;
+  padding:11px;
+}
+
+.metric-title{
+  font-size:9px;
+  color:var(--muted2);
+  margin-bottom:5px;
+  letter-spacing:.4px;
+}
+
+.metric-value{
+  font-size:13px;
+  font-weight:bold;
+}
+
+/* REASONS */
+
+.reason-box{
+  margin-top:12px;
+  padding:12px;
+  background:var(--card2);
+  border:1px solid var(--border);
+  border-radius:13px;
+}
+
+.reason-title{
+  font-size:10px;
+  color:var(--muted2);
+  margin-bottom:7px;
+  letter-spacing:.5px;
+}
+
+.reason{
+  font-size:12px;
+  color:var(--text);
+  opacity:.86;
+  padding:4px 0;
+}
+
+.invalidation{
+  margin-top:10px;
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+/* SELECT */
+
+select{
+  width:100%;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:13px;
+  margin-bottom:10px;
+  outline:none;
+}
+
+/* OPTIONS */
+
+.option-box{
+  overflow-x:auto;
+  border-radius:14px;
+  border:1px solid var(--border);
+  -webkit-overflow-scrolling:touch;
+}
+
+table{
+  width:100%;
+  min-width:850px;
+  border-collapse:collapse;
   font-size:11px;
 }
-.setting small{
-  display:block;
-  color:#737b88;
-  font-size:9px;
-  margin-top:3px;
-}
-.toggle{
-  width:39px;
-  height:22px;
-  padding:2px;
-  border:0;
-  border-radius:99px;
-  background:#272b34;
-}
-.toggle:after{
-  content:"";
-  display:block;
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:#818896;
-  transition:.2s;
-}
-.toggle.on{
-  background:#493b9b;
-}
-.toggle.on:after{
-  transform:translateX(17px);
-  background:#fff;
+
+th{
+  background:var(--card2);
+  color:var(--muted);
+  padding:10px 5px;
+  position:sticky;
+  top:0;
 }
 
-/* ---------- BOTTOM NAV ---------- */
+td{
+  padding:9px 5px;
+  text-align:center;
+  border-top:1px solid var(--border);
+}
+
+.ce{color:var(--red)}
+.pe{color:var(--green)}
+
+.loading{
+  padding:25px;
+  text-align:center;
+  color:var(--muted);
+}
+
+/* CHAT */
+
+.chat-container{
+  margin-top:15px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:17px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+}
+
+.chat-header{
+  padding:13px 14px;
+  border-bottom:1px solid var(--border);
+  font-size:12px;
+  font-weight:bold;
+  color:var(--text);
+}
+
+.chat-board{
+  height:330px;
+  overflow-y:auto;
+  padding:12px;
+}
+
+.chat-empty{
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color:var(--muted2);
+  font-size:12px;
+}
+
+.chat-message{
+  display:flex;
+  margin:10px 0;
+}
+
+.chat-message.user{
+  justify-content:flex-end;
+}
+
+.chat-message.era{
+  justify-content:flex-start;
+}
+
+.chat-content{
+  max-width:85%;
+}
+
+.chat-label{
+  font-size:9px;
+  color:var(--muted2);
+  margin:0 5px 4px;
+}
+
+.chat-bubble{
+  padding:11px 13px;
+  border-radius:15px;
+  font-size:13px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+
+.chat-message.user .chat-bubble{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;
+  border-bottom-right-radius:5px;
+}
+
+.chat-message.era .chat-bubble{
+  background:var(--card2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-bottom-left-radius:5px;
+}
+
+.chat-thinking{
+  color:var(--muted);
+  font-size:12px;
+}
+
+.chat-speaking{
+  margin-top:7px;
+  font-size:9px;
+  color:var(--accent2);
+}
+
+/* NEWS */
+
+.news-item{
+  margin-top:10px;
+  padding:13px;
+  border:1px solid var(--border);
+  border-radius:13px;
+  background:var(--card);
+}
+
+.news-item a{
+  color:var(--accent2);
+  text-decoration:none;
+  font-weight:bold;
+}
+
+.news-meta{
+  font-size:9px;
+  color:var(--muted2);
+  margin-top:5px;
+}
+
+/* OPTIONS HEADER */
+
+.options-info{
+  padding:12px;
+  margin-bottom:12px;
+  border-radius:14px;
+  background:var(--card);
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+
+/* BOTTOM NAV */
 
 .bottom-nav{
   position:fixed;
-  z-index:80;
+  bottom:0;
   left:50%;
-  bottom:14px;
   transform:translateX(-50%);
-  width:min(calc(100% - 28px),850px);
-  height:67px;
-  display:flex;
-  align-items:center;
-  justify-content:space-around;
-  padding:7px;
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:22px;
-  background:rgba(12,14,19,.88);
-  backdrop-filter:blur(25px);
-  box-shadow:0 18px 55px rgba(0,0,0,.45);
+  width:100%;
+  max-width:600px;
+  background:rgba(11,14,19,.94);
+  backdrop-filter:blur(18px);
+  border-top:1px solid var(--border);
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  padding:8px 5px;
+  z-index:30;
+}
+
+body.light .bottom-nav{
+  background:rgba(255,255,255,.94);
 }
 
 .nav-btn{
-  flex:1;
-  height:53px;
-  border:0;
   background:transparent;
-  color:#686f7d;
-  border-radius:16px;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  gap:4px;
-  font-size:8px;
-  font-weight:700;
+  color:var(--muted2);
+  padding:7px 2px;
+  font-size:10px;
 }
-.nav-btn .ico{
-  font-size:16px;
-  line-height:1;
-}
+
 .nav-btn.active{
-  color:#eeeaff;
-  background:#211c3b;
-}
-.nav-btn.active .ico{
-  color:#a696ff;
+  color:var(--text);
 }
 
-/* ---------- MODAL ---------- */
-
-.modal{
-  position:fixed;
-  inset:0;
-  z-index:200;
-  display:none;
-  align-items:flex-end;
-  justify-content:center;
-  background:rgba(0,0,0,.7);
-  backdrop-filter:blur(8px);
-}
-.modal.show{display:flex}
-.modal-box{
-  width:min(650px,100%);
-  max-height:88vh;
-  overflow:auto;
-  padding:22px;
-  border:1px solid var(--line2);
-  border-radius:28px 28px 0 0;
-  background:#0d0f14;
-  box-shadow:0 -20px 70px rgba(0,0,0,.5);
-}
-.modal-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:18px;
-}
-.close{
-  width:34px;
-  height:34px;
-  border-radius:10px;
-  border:1px solid var(--line);
-  background:#151820;
-  color:#aaa;
-}
-.detail-levels{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:8px;
-  margin:15px 0;
-}
-.detail-level{
-  padding:11px;
-  border-radius:11px;
-  background:#11141a;
-  border:1px solid var(--line);
-}
-.detail-level span{
+.nav-icon{
   display:block;
-  font-size:8px;
-  color:#707887;
-}
-.detail-level strong{
-  display:block;
-  margin-top:5px;
-  font-size:11px;
-}
-.full-btn{
-  width:100%;
-  padding:13px;
-  border:1px solid rgba(139,114,255,.2);
-  background:#211c3b;
-  color:#dcd7ff;
-  border-radius:13px;
-  font-size:10px;
-  font-weight:800;
-}
-
-/* ---------- RESPONSIVE ---------- */
-
-@media(max-width:900px){
-  .home-top{grid-template-columns:1fr}
-  .market-cards{grid-template-columns:repeat(2,1fr)}
-  .four{grid-template-columns:repeat(2,1fr)}
-}
-
-@media(max-width:650px){
-  .topbar{
-    height:69px;
-    padding:13px 15px;
-  }
-  .brand-sub{display:none}
-  .live-pill{display:none}
-  .pages{
-    padding:18px 13px calc(var(--nav) + 20px);
-  }
-  .section-title{font-size:22px}
-  .hero{
-    min-height:425px;
-    padding:21px;
-  }
-  .hero-title{
-    font-size:32px;
-    letter-spacing:-1.4px;
-  }
-  .core-shell{margin-top:40px}
-  .engine-card{min-height:auto}
-  .market-cards{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .option-summary{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .news-grid{
-    grid-template-columns:1fr;
-  }
-  .two,.three{
-    grid-template-columns:1fr;
-  }
-  .detail-levels{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .bottom-nav{
-    width:calc(100% - 16px);
-    bottom:8px;
-    height:64px;
-  }
-  .nav-btn{
-    height:50px;
-  }
-  .nav-btn:nth-child(8){
-    display:none;
-  }
-  .alert-card{
-    grid-template-columns:3px 1fr;
-  }
-  .conf{
-    display:none;
-  }
-}
-
-@media(min-width:1100px){
-  .pages{padding-left:35px;padding-right:35px}
-}
-
-/* ---------- LOADING ---------- */
-
-.loading{
-  padding:30px;
-  text-align:center;
-  color:#69717f;
-  font-size:10px;
+  font-size:18px;
+  margin-bottom:3px;
 }
 
 .empty{
-  padding:28px;
   text-align:center;
-  color:#707887;
-  font-size:10px;
+  padding:40px 15px;
+  color:var(--muted2);
+  font-size:12px;
 }
 
-/* notification */
-.toast{
-  position:fixed;
-  top:90px;
-  right:18px;
-  z-index:300;
-  padding:13px 15px;
-  border-radius:13px;
-  background:#151820;
-  border:1px solid var(--line2);
-  box-shadow:0 15px 40px rgba(0,0,0,.4);
-  color:#dfe2e8;
-  font-size:10px;
-  transform:translateY(-15px);
-  opacity:0;
-  pointer-events:none;
-  transition:.25s;
+.premium-divider{
+  height:1px;
+  background:linear-gradient(
+    90deg,
+    transparent,
+    var(--border),
+    transparent
+  );
+  margin:17px 0;
 }
-.toast.show{
-  transform:none;
-  opacity:1;
+
+@media(max-width:380px){
+
+.grid{
+  grid-template-columns:1fr;
+}
+
+.metric-grid{
+  grid-template-columns:1fr 1fr;
+}
+
+.logo{
+  font-size:20px;
+}
+
 }
 </style>
 </head>
@@ -1289,1879 +802,3399 @@ h1,h2,h3,p{margin:0}
 
 <div class="app">
 
-<header class="topbar">
-  <div class="brand">
-    <div class="era-mark"></div>
-    <div>
-      <div class="brand-title">ERA AI</div>
-      <div class="brand-sub">Intelligent Market System</div>
-    </div>
-  </div>
+<header>
 
-  <div class="header-right">
-    <div class="engine-pill">
-      <span class="live-dot"></span>
-      BACKGROUND ERA
-    </div>
-    <div class="live-pill">
-      <span class="live-dot"></span>
-      MARKET LIVE
-    </div>
-    <button class="icon-btn" onclick="showToast('Notifications are active')">♢</button>
-  </div>
+<div class="logo-wrap">
+
+<div class="logo-mark">✦</div>
+
+<div>
+
+<div class="logo">Era AI</div>
+
+<div class="logo-sub">AI MARKET COPILOT</div>
+
+</div>
+
+</div>
+
+<div class="header-right">
+
+<div id="status" class="status">● Ready</div>
+
+<button
+id="themeBtn"
+class="theme-btn"
+type="button"
+title="Change theme"
+>
+🌙
+</button>
+
+</div>
+
 </header>
 
-<main class="pages">
 
-<!-- ================= HOME ================= -->
-<section id="home" class="page active">
+<!-- HOME -->
 
-  <div class="home-top">
+<section id="home" class="screen active">
 
-    <div class="hero card">
-      <div class="hero-content">
+<div class="hero">
 
-        <div class="hero-line">
-          <div>
-            <div class="eyebrow">YOUR AI MARKET ASSISTANT</div>
-            <div class="hero-title">
-              Good morning.<br>
-              <span>Markets are being watched.</span>
-            </div>
-          </div>
+<div id="orb" class="orb"></div>
 
-          <div class="hero-status">
-            <span class="live-dot"></span>
-            AUTONOMOUS
-          </div>
-        </div>
+<div id="state" class="state">
+Say something to Era
+</div>
 
-        <div class="core-shell">
-          <div class="core-label">ERA CORE / LIVE MARKET INTELLIGENCE</div>
+<button
+id="micBtn"
+class="mic"
+type="button"
+>
+🎙️
+</button>
 
-          <div class="wave" id="wave">
-            <i style="--h:25px;--o:.35;--d:.0s"></i>
-            <i style="--h:40px;--o:.45;--d:.1s"></i>
-            <i style="--h:60px;--o:.65;--d:.2s"></i>
-            <i style="--h:32px;--o:.55;--d:.3s"></i>
-            <i style="--h:75px;--o:.85;--d:.4s"></i>
-            <i style="--h:48px;--o:.65;--d:.5s"></i>
-            <i style="--h:88px;--o:1;--d:.6s"></i>
-            <i style="--h:53px;--o:.75;--d:.7s"></i>
-            <i style="--h:72px;--o:.9;--d:.8s"></i>
-            <i style="--h:34px;--o:.5;--d:.9s"></i>
-            <i style="--h:65px;--o:.8;--d:1s"></i>
-            <i style="--h:90px;--o:1;--d:1.1s"></i>
-            <i style="--h:42px;--o:.6;--d:1.2s"></i>
-            <i style="--h:70px;--o:.85;--d:1.3s"></i>
-            <i style="--h:30px;--o:.45;--d:1.4s"></i>
-            <i style="--h:57px;--o:.7;--d:1.5s"></i>
-            <i style="--h:78px;--o:.9;--d:1.6s"></i>
-            <i style="--h:38px;--o:.55;--d:1.7s"></i>
-            <i style="--h:65px;--o:.8;--d:1.8s"></i>
-            <i style="--h:44px;--o:.6;--d:1.9s"></i>
-            <i style="--h:28px;--o:.4;--d:2s"></i>
-          </div>
-        </div>
+<button
+id="voiceTestBtn"
+class="voice-test"
+type="button"
+>
+🔊 Test Era Voice
+</button>
 
-        <div class="voice-row">
-          <button class="voice-btn" onclick="startVoice()">⌕</button>
-          <div class="voice-text">
-            Talk to Era
-            <small>Voice intelligence • Market-aware responses</small>
-          </div>
-        </div>
+<div class="language-box">
 
-      </div>
-    </div>
+<label class="language-label">
+Era Language
+</label>
 
-    <div class="engine-card card">
+<select id="languageSelect">
 
-      <div class="engine-header">
-        <div>
-          <div class="engine-title">Advanced Trading Engine</div>
-          <div class="engine-sub">Continuous market intelligence</div>
-        </div>
-        <div class="engine-heart"></div>
-      </div>
+<option value="hi-IN">
+🇮🇳 Hindi
+</option>
 
-      <div class="engine-state">
-        <div class="state-main">
-          <strong id="engineStatus">Running</strong>
-          <span>ONLINE</span>
-        </div>
+<option value="gu-IN">
+🟢 Gujarati
+</option>
 
-        <div class="engine-bars">
-          <div class="engine-bar">
-            <span>Market scan</span>
-            <b id="scanTime">Live</b>
-          </div>
-          <div class="progress"><span style="width:88%"></span></div>
+<option value="en-IN">
+🇬🇧 English
+</option>
 
-          <div class="engine-bar">
-            <span>Signal engine</span>
-            <b>Active</b>
-          </div>
-          <div class="progress"><span style="width:76%"></span></div>
+</select>
 
-          <div class="engine-bar">
-            <span>AI reasoning</span>
-            <b>Active</b>
-          </div>
-          <div class="progress"><span style="width:92%"></span></div>
-        </div>
-      </div>
+</div>
 
-      <div class="eyebrow">MONITORED MARKETS</div>
+<div class="input-row">
 
-      <div class="monitor-list">
-        <div class="monitor-item">
-          <div class="monitor-left">
-            <span class="monitor-dot"></span>
-            <strong>NIFTY</strong>
-          </div>
-          <span>Scanning</span>
-        </div>
+<input
+id="textInput"
+type="text"
+placeholder="Ask Era anything..."
+autocomplete="off"
+>
 
-        <div class="monitor-item">
-          <div class="monitor-left">
-            <span class="monitor-dot"></span>
-            <strong>BANKNIFTY</strong>
-          </div>
-          <span>Scanning</span>
-        </div>
+<button
+id="sendBtn"
+class="send"
+type="button"
+>
+Send
+</button>
 
-        <div class="monitor-item">
-          <div class="monitor-left">
-            <span class="monitor-dot"></span>
-            <strong>FINNIFTY</strong>
-          </div>
-          <span>Scanning</span>
-        </div>
+</div>
 
-        <div class="monitor-item">
-          <div class="monitor-left">
-            <span class="monitor-dot"></span>
-            <strong>SENSEX</strong>
-          </div>
-          <span>Scanning</span>
-        </div>
-      </div>
+</div>
 
-    </div>
 
-  </div>
+<!-- CHAT -->
 
-  <div class="chat-card card">
-    <div class="chat-head">
-      <strong>Conversation with Era</strong>
-      <span>VOICE + TEXT INTELLIGENCE</span>
-    </div>
+<div class="chat-container">
 
-    <div class="chat-area" id="chatArea">
-      <div class="bubble era">
-        Era is monitoring the market. Ask me about trend, options,
-        setups, risk or current market structure.
-      </div>
-    </div>
+<div class="chat-header">
+💬 Era Chat
+</div>
 
-    <div class="chat-input">
-      <input id="chatInput" placeholder="Talk to Era about the market..." />
-      <button class="send-btn" onclick="sendChat()">↑</button>
-    </div>
+<div id="chatBoard" class="chat-board">
 
-    <div class="quick-row">
-      <button class="quick" onclick="quickChat('NIFTY ka current trend kya hai?')">NIFTY trend</button>
-      <button class="quick" onclick="quickChat('Best setup kya dikh raha hai?')">Best setup</button>
-      <button class="quick" onclick="quickChat('Option chain explain karo')">Option chain</button>
-      <button class="quick" onclick="quickChat('Market structure batao')">Structure</button>
-    </div>
-  </div>
+<div id="chatEmpty" class="chat-empty">
+Era is ready.<br>
+Ask me anything.
+</div>
 
-  <div class="snapshot">
-    <div class="snapshot-head">
-      <strong>Market Snapshot</strong>
-      <span>LIVE DATA</span>
-    </div>
+</div>
 
-    <div class="market-cards" id="homeMarkets">
-      <div class="market-mini card">
-        <div class="name">NIFTY</div>
-        <div class="price" id="homeNifty">—</div>
-        <div class="change" id="homeNiftyChange">—</div>
-      </div>
+</div>
 
-      <div class="market-mini card">
-        <div class="name">BANKNIFTY</div>
-        <div class="price" id="homeBank">—</div>
-        <div class="change" id="homeBankChange">—</div>
-      </div>
 
-      <div class="market-mini card">
-        <div class="name">FINNIFTY</div>
-        <div class="price" id="homeFin">—</div>
-        <div class="change" id="homeFinChange">—</div>
-      </div>
+<!-- LIVE MARKET -->
 
-      <div class="market-mini card">
-        <div class="name">SENSEX</div>
-        <div class="price" id="homeSensex">—</div>
-        <div class="change" id="homeSensexChange">—</div>
-      </div>
-    </div>
-  </div>
+<div class="section-title" style="margin-top:20px;">
+📡 LIVE MARKET
+</div>
+
+<div class="section-sub">
+Select the market you want Era to analyze.
+</div>
+
+<div class="market-selector">
+
+<div class="market-selector-top">
+
+<div class="market-selector-title">
+Selected Market
+</div>
+
+<div
+id="selectedMarketBadge"
+class="market-selector-badge"
+>
+● NIFTY
+</div>
+
+</div>
+
+<select
+id="homeIndexSelect"
+class="market-select"
+>
+
+<option value="NIFTY">NIFTY 50</option>
+<option value="BANKNIFTY">BANKNIFTY</option>
+<option value="FINNIFTY">FINNIFTY</option>
+<option value="MIDCPNIFTY">MIDCPNIFTY</option>
+<option value="NIFTYNEXT50">NIFTY NEXT 50</option>
+<option value="SENSEX">SENSEX</option>
+<option value="BANKEX">BANKEX</option>
+
+</select>
+
+</div>
+
+
+<div class="grid">
+
+<div class="card">
+
+<h3 id="selectedIndexTitle">NIFTY 50</h3>
+
+<div class="value" id="niftyValue">--</div>
+
+<div
+id="niftyChange"
+class="small-value"
+style="margin-top:5px;"
+>
+--
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>GIFT NIFTY</h3>
+
+<div class="value" id="giftValue">--</div>
+
+<div
+id="giftChange"
+class="small-value"
+style="margin-top:5px;"
+>
+--
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>INDIA VIX</h3>
+
+<div class="value" id="vixValue">--</div>
+
+<div
+id="vixChange"
+class="small-value"
+style="margin-top:5px;"
+>
+--
+</div>
+
+</div>
+
+
+<div class="card">
+
+<h3>MARKET STATUS</h3>
+
+<div
+class="value"
+id="marketStatus"
+style="font-size:15px;"
+>
+--
+</div>
+
+</div>
+
+</div>
+
+
+<button
+id="refreshAnalysisBtn"
+class="refresh-btn"
+type="button"
+>
+↻ Refresh Era Analysis
+</button>
+
+
+<!-- ERA SIGNAL -->
+
+<div class="analysis">
+
+<div class="section-title">
+🤖 ERA MARKET SIGNAL
+</div>
+
+<div class="signal-box">
+
+<div class="signal-label">
+CURRENT SIGNAL
+</div>
+
+<div
+id="directionBig"
+class="signal-value yellow"
+>
+WAIT
+</div>
+
+<div
+id="confidenceBig"
+class="confidence"
+>
+Confidence: --
+</div>
+
+</div>
+
+
+<div class="metric-grid">
+
+<div class="metric">
+
+<div class="metric-title" id="analysisIndexLabel">
+NIFTY
+</div>
+
+<div id="analysisNifty" class="metric-value">--</div>
+
+</div>
+
+
+<div class="metric">
+
+<div class="metric-title">GIFT NIFTY</div>
+
+<div id="analysisGift" class="metric-value">--</div>
+
+</div>
+
+
+<div class="metric">
+
+<div class="metric-title">INDIA VIX</div>
+
+<div id="analysisVix" class="metric-value">--</div>
+
+</div>
+
+
+<div class="metric">
+
+<div class="metric-title">TREND</div>
+
+<div id="analysisTrend" class="metric-value">--</div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- TECHNICAL -->
+
+<div class="analysis">
+
+<div class="section-title">
+📈 TECHNICAL ANALYSIS
+</div>
+
+<div class="metric-grid">
+
+<div class="metric">
+<div class="metric-title">RSI</div>
+<div id="rsiValue" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">VWAP</div>
+<div id="vwapValue" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">EMA 9</div>
+<div id="ema9Value" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">EMA 20</div>
+<div id="ema20Value" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">EMA 50</div>
+<div id="ema50Value" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">MOMENTUM</div>
+<div id="momentumValue" class="metric-value">--</div>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- OPTIONS ANALYSIS -->
+
+<div class="analysis">
+
+<div class="section-title">
+📊 OPTION ANALYSIS
+</div>
+
+<div class="metric-grid">
+
+<div class="metric">
+<div class="metric-title">PCR</div>
+<div id="pcrValue" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">MAX PAIN</div>
+<div id="maxPainValue" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">OPTION BIAS</div>
+<div id="optionBiasValue" class="metric-value">--</div>
+</div>
+
+<div class="metric">
+<div class="metric-title">EXPIRY</div>
+<div id="expiryValue" class="metric-value">--</div>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- TRADE SETUP -->
+
+<div class="trade">
+
+<div class="section-title">
+🎯 TRADE SETUP
+</div>
+
+<div class="trade-row">
+<span>Direction</span>
+<strong id="direction" class="yellow">WAIT</strong>
+</div>
+
+<div class="trade-row">
+<span>Entry</span>
+<strong id="entry">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Stop Loss</span>
+<strong id="sl">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Target 1</span>
+<strong id="target1">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Target 2</span>
+<strong id="target2">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Target 3</span>
+<strong id="target3">--</strong>
+</div>
+
+<div class="trade-row">
+<span>R:R</span>
+<strong id="rr">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Confidence</span>
+<strong id="tradeConfidence">--</strong>
+</div>
+
+<div class="trade-row">
+<span>Status</span>
+<strong id="tradeStatus" class="yellow">NO TRADE</strong>
+</div>
+
+<div class="reason-box">
+
+<div class="reason-title">
+CONFIRMATIONS / REASONS
+</div>
+
+<div id="reasonsList">
+
+<div class="reason">
+Waiting for live analysis...
+</div>
+
+</div>
+
+</div>
+
+<div id="invalidation" class="invalidation">
+Invalidation: --
+</div>
+
+</div>
+
+
+<div
+id="chatOutput"
+class="message"
+style="display:none;"
+>
+Era is ready.
+</div>
 
 </section>
 
-<!-- ================= MARKETS ================= -->
-<section id="markets" class="page">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">MARKET TERMINAL</div>
-      <h2 class="section-title">Markets</h2>
-      <p class="section-desc">Live index data and technical structure.</p>
-    </div>
+<!-- NEWS -->
 
-    <div class="segment" id="marketSelector">
-      <button class="active" onclick="selectMarket('NIFTY',this)">NIFTY</button>
-      <button onclick="selectMarket('BANKNIFTY',this)">BANKNIFTY</button>
-      <button onclick="selectMarket('FINNIFTY',this)">FINNIFTY</button>
-      <button onclick="selectMarket('SENSEX',this)">SENSEX</button>
-    </div>
-  </div>
+<section id="news" class="screen">
 
-  <div class="market-terminal card">
-    <div class="terminal-top">
-      <div>
-        <div class="symbol" id="marketSymbol">NIFTY 50</div>
-        <div class="big-price" id="marketPrice">—</div>
-        <div class="big-change" id="marketChange">Waiting for live data</div>
-      </div>
+<div class="section-title">
+📰 MARKET NEWS
+</div>
 
-      <div class="signal-tag" id="marketSignal">ANALYSING</div>
-    </div>
+<div class="section-sub">
+Relevant market news from Era backend.
+</div>
 
-    <div class="chart">
-      <div class="chart-label">ERA MARKET STRUCTURE</div>
-      <svg viewBox="0 0 1000 300" preserveAspectRatio="none">
-        <polyline
-          id="mainChartLine"
-          points="0,220 70,205 140,218 210,170 280,185 350,130 420,148 490,105 560,125 630,86 700,100 770,68 840,92 910,55 1000,75"
-          fill="none"
-          stroke="#8972ff"
-          stroke-width="3"
-        />
-        <polyline
-          points="0,250 100,238 200,245 300,205 400,220 500,180 600,190 700,155 800,170 900,135 1000,150"
-          fill="none"
-          stroke="rgba(255,255,255,.18)"
-          stroke-width="1.5"
-        />
-      </svg>
-    </div>
-  </div>
+<div id="newsContainer">
 
-  <div class="grid four" style="margin-top:14px">
+<div class="empty">
+Loading market news...
+</div>
 
-    <div class="stat-box card">
-      <span>EMA 20</span>
-      <strong id="ema20">—</strong>
-      <div class="signal-tag">TREND</div>
-    </div>
-
-    <div class="stat-box card">
-      <span>RSI</span>
-      <strong id="rsi">—</strong>
-      <div class="signal-tag">MOMENTUM</div>
-    </div>
-
-    <div class="stat-box card">
-      <span>VWAP</span>
-      <strong id="vwap">—</strong>
-      <div class="signal-tag">PRICE</div>
-    </div>
-
-    <div class="stat-box card">
-      <span>STRUCTURE</span>
-      <strong id="structure">—</strong>
-      <div class="signal-tag">ERA</div>
-    </div>
-
-  </div>
+</div>
 
 </section>
 
-<!-- ================= OPTIONS ================= -->
-<section id="options" class="page">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">DERIVATIVES INTELLIGENCE</div>
-      <h2 class="section-title">Option Chain</h2>
-      <p class="section-desc">OI, PCR, IV, Max Pain and strike intelligence.</p>
-    </div>
+<!-- OPTIONS -->
 
-    <select id="expirySelect"
-      onchange="loadOptions()"
-      style="background:#0d0f14;color:#ddd;border:1px solid var(--line2);border-radius:12px;padding:10px;font-size:10px">
-      <option value="">Loading expiry...</option>
-    </select>
-  </div>
+<section id="options" class="screen">
 
-  <div class="segment" id="optionSelector">
-    <button class="active" onclick="selectOptionIndex('NIFTY',this)">NIFTY</button>
-    <button onclick="selectOptionIndex('BANKNIFTY',this)">BANKNIFTY</button>
-    <button onclick="selectOptionIndex('FINNIFTY',this)">FINNIFTY</button>
-    <button onclick="selectOptionIndex('SENSEX',this)">SENSEX</button>
-  </div>
+<div class="section-title">
+📊 LIVE OPTION CHAIN
+</div>
 
-  <div class="option-summary">
-    <div class="option-stat card">
-      <span>Spot</span>
-      <strong id="optionSpot">—</strong>
-    </div>
-    <div class="option-stat card">
-      <span>PCR</span>
-      <strong id="optionPCR">—</strong>
-    </div>
-    <div class="option-stat card">
-      <span>Max Pain</span>
-      <strong id="maxPain">—</strong>
-    </div>
-    <div class="option-stat card">
-      <span>ATM IV</span>
-      <strong id="atmIV">—</strong>
-    </div>
-  </div>
+<div class="options-info">
+Select any supported index, choose its expiry and load the available live option chain.
+</div>
 
-  <div class="option-intel card">
-    <strong>ERA OPTIONS INTELLIGENCE</strong>
-    <p id="optionIntel">
-      Waiting for live option-chain data. Era will evaluate OI concentration,
-      PCR, IV and strike structure.
-    </p>
-  </div>
+<select id="indexSelect">
 
-  <div class="chain-wrap card">
-    <table class="chain">
-      <thead>
-        <tr>
-          <th>CE OI</th>
-          <th>CE LTP</th>
-          <th>CE IV</th>
-          <th>STRIKE</th>
-          <th>PE IV</th>
-          <th>PE LTP</th>
-          <th>PE OI</th>
-        </tr>
-      </thead>
-      <tbody id="optionRows">
-        <tr>
-          <td colspan="7" class="loading">Loading option chain...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<option value="NSE_INDEX|Nifty 50">NIFTY 50</option>
+<option value="NSE_INDEX|Nifty Bank">BANKNIFTY</option>
+<option value="NSE_INDEX|Nifty Fin Service">FINNIFTY</option>
+<option value="NSE_INDEX|Nifty Midcap Select">MIDCPNIFTY</option>
+<option value="NSE_INDEX|Nifty Next 50">NIFTY NEXT 50</option>
+<option value="BSE_INDEX|SENSEX">SENSEX</option>
+<option value="BSE_INDEX|BANKEX">BANKEX</option>
 
-</section>
+</select>
 
-<!-- ================= ALERTS ================= -->
-<section id="alerts" class="page">
+<select id="expirySelect">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">REAL-TIME SIGNALS</div>
-      <h2 class="section-title">Alerts</h2>
-      <p class="section-desc">Era-generated trade opportunities and confirmations.</p>
-    </div>
+<option value="">
+Select Expiry
+</option>
 
-    <div class="engine-pill">
-      <span class="live-dot"></span>
-      AUTO MONITOR
-    </div>
-  </div>
+</select>
 
-  <div class="alert-list" id="alertsList">
-    <div class="card empty">Waiting for Era alerts...</div>
-  </div>
+<button
+id="loadOptionsBtn"
+style="
+width:100%;
+padding:13px;
+border-radius:12px;
+background:linear-gradient(135deg,var(--accent),var(--accent2));
+color:#fff;
+font-weight:bold;
+margin-bottom:12px;
+"
+type="button"
+>
+Load Live Option Chain
+</button>
 
-</section>
+<div id="optionStatus" class="message">
+Select expiry to load option chain.
+</div>
 
-<!-- ================= ANALYSIS ================= -->
-<section id="analysis" class="page">
+<div
+class="option-box"
+style="margin-top:12px;"
+>
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">AI TRADE THESIS</div>
-      <h2 class="section-title">Analysis</h2>
-      <p class="section-desc">Multi-factor market reasoning.</p>
-    </div>
-  </div>
+<table>
 
-  <div class="thesis card">
+<thead>
 
-    <div class="thesis-head">
-      <div>
-        <div class="eyebrow">CURRENT MARKET VIEW</div>
-        <div class="direction" id="analysisDirection">WAIT</div>
-      </div>
+<tr>
 
-      <div class="conf-big">
-        <span id="analysisConfidence">—</span><span>% confidence</span>
-      </div>
-    </div>
+<th colspan="5" class="ce">CALL / CE</th>
+<th>STRIKE</th>
+<th colspan="5" class="pe">PUT / PE</th>
 
-    <div class="level-row">
-      <div class="level">ENTRY <b id="analysisEntry">—</b></div>
-      <div class="level">SL <b id="analysisSL">—</b></div>
-      <div class="level">T1 <b id="analysisT1">—</b></div>
-      <div class="level">T2 <b id="analysisT2">—</b></div>
-      <div class="level">R:R <b id="analysisRR">—</b></div>
-    </div>
+</tr>
 
-    <div class="reason-list" id="reasonList">
-      <div class="reason">
-        <span class="reason-dot"></span>
-        Era is collecting technical confirmations.
-      </div>
-    </div>
+<tr>
 
-    <div style="margin-top:16px">
-      <div class="eyebrow">INVALIDATION</div>
-      <div style="font-size:10px;color:#9299a6" id="invalidation">
-        Waiting for analysis...
-      </div>
-    </div>
+<th>OI</th>
+<th>ΔOI</th>
+<th>VOL</th>
+<th>IV</th>
+<th>LTP</th>
+<th>STRIKE</th>
+<th>LTP</th>
+<th>IV</th>
+<th>VOL</th>
+<th>ΔOI</th>
+<th>OI</th>
 
-  </div>
+</tr>
+
+</thead>
+
+<tbody id="optionBody">
+
+<tr>
+
+<td colspan="11" class="loading">
+No data loaded
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
 
 </section>
 
-<!-- ================= NEWS ================= -->
-<section id="news" class="page">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">MARKET INTELLIGENCE</div>
-      <h2 class="section-title">News</h2>
-      <p class="section-desc">Relevant market-moving headlines.</p>
-    </div>
-  </div>
+<!-- HISTORY -->
 
-  <div class="news-grid" id="newsGrid">
-    <div class="card empty">Loading market news...</div>
-  </div>
+<section id="history" class="screen">
 
-</section>
+<div class="section-title">
+📚 HISTORY
+</div>
 
-<!-- ================= PERFORMANCE ================= -->
-<section id="performance" class="page">
+<div class="card">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">SYSTEM PERFORMANCE</div>
-      <h2 class="section-title">Performance</h2>
-      <p class="section-desc">Historical Era trade and signal statistics.</p>
-    </div>
-  </div>
+<h3>💬 CHAT HISTORY</h3>
 
-  <div class="grid four">
+<div id="chatHistory">
 
-    <div class="kpi card">
-      <span>TOTAL TRADES</span>
-      <strong id="totalTrades">—</strong>
-      <em>Recorded</em>
-    </div>
+<div class="empty">
+No chat history yet.
+</div>
 
-    <div class="kpi card">
-      <span>WIN RATE</span>
-      <strong id="winRate">—</strong>
-      <em>Historical</em>
-    </div>
+</div>
 
-    <div class="kpi card">
-      <span>NET RESULT</span>
-      <strong id="netResult">—</strong>
-      <em>System history</em>
-    </div>
+</div>
 
-    <div class="kpi card">
-      <span>AVG R:R</span>
-      <strong id="avgRR">—</strong>
-      <em>Risk / Reward</em>
-    </div>
+<div
+class="card"
+style="margin-top:12px;"
+>
 
-  </div>
+<h3>📈 TRADE HISTORY</h3>
 
-  <div class="history card">
-    <table>
-      <thead>
-        <tr>
-          <th>TIME</th>
-          <th>INDEX</th>
-          <th>DIRECTION</th>
-          <th>ENTRY</th>
-          <th>RESULT</th>
-          <th>R:R</th>
-        </tr>
-      </thead>
-      <tbody id="historyRows">
-        <tr>
-          <td colspan="6" class="loading">Loading history...</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<div id="tradeHistory">
+
+<div class="empty">
+No trade history yet.
+</div>
+
+</div>
+
+</div>
 
 </section>
 
-<!-- ================= PROFILE ================= -->
-<section id="profile" class="page">
 
-  <div class="section-head">
-    <div>
-      <div class="eyebrow">ERA SYSTEM</div>
-      <h2 class="section-title">Era Profile</h2>
-      <p class="section-desc">Assistant and monitoring controls.</p>
-    </div>
-  </div>
+<!-- PERFORMANCE -->
 
-  <div class="profile-card card">
+<section id="performance" class="screen">
 
-    <div class="profile-head">
-      <div class="profile-avatar">E</div>
-      <div>
-        <h3>Era AI</h3>
-        <p style="color:#747c8a;font-size:10px;margin-top:3px">
-          Autonomous Market Intelligence
-        </p>
-      </div>
-    </div>
+<div class="section-title">
+📊 PERFORMANCE
+</div>
 
-    <div class="settings">
+<div class="grid">
 
-      <div class="setting">
-        <div>
-          <strong>Voice Assistant</strong>
-          <small>Voice-first interaction with Era</small>
-        </div>
-        <button class="toggle on" onclick="toggleSetting(this)"></button>
-      </div>
+<div class="card">
+<h3>WEEKLY</h3>
+<div class="value">--</div>
+</div>
 
-      <div class="setting">
-        <div>
-          <strong>Background Monitoring</strong>
-          <small>Era continues monitoring on the backend</small>
-        </div>
-        <button class="toggle on" onclick="toggleSetting(this)"></button>
-      </div>
+<div class="card">
+<h3>MONTHLY</h3>
+<div class="value">--</div>
+</div>
 
-      <div class="setting">
-        <div>
-          <strong>Trade Alerts</strong>
-          <small>Push notifications for confirmed setups</small>
-        </div>
-        <button class="toggle on" onclick="toggleSetting(this)"></button>
-      </div>
+<div class="card">
+<h3>ERA SETUPS</h3>
+<div class="value">0</div>
+</div>
 
-      <div class="setting">
-        <div>
-          <strong>Advanced Trading Mode</strong>
-          <small>Multi-factor confirmation engine</small>
-        </div>
-        <button class="toggle on" onclick="toggleSetting(this)"></button>
-      </div>
+<div class="card">
+<h3>MY TRADES</h3>
+<div class="value">0</div>
+</div>
 
-      <div class="setting">
-        <div>
-          <strong>Confirmation Threshold</strong>
-          <small>Only higher-confirmation setups are considered</small>
-        </div>
-        <strong style="color:#a898ff">50%+</strong>
-      </div>
+</div>
 
-      <div class="setting">
-        <div>
-          <strong>Monitored Markets</strong>
-          <small>NIFTY • BANKNIFTY • FINNIFTY • SENSEX</small>
-        </div>
-        <span style="color:#5fd4ae;font-size:9px">ACTIVE</span>
-      </div>
-
-    </div>
-  </div>
+<div class="empty">
+Performance tracking backend connect hone ke baad automatically update hoga.
+</div>
 
 </section>
 
-</main>
+</div>
 
-<!-- ================= NAV ================= -->
+
+<!-- NAV -->
 
 <nav class="bottom-nav">
 
-  <button class="nav-btn active" data-page="home" onclick="showPage('home',this)">
-    <span class="ico">⌂</span>
-    Home
-  </button>
+<button class="nav-btn active" data-screen="home" type="button">
+<span class="nav-icon">⌂</span>
+Home
+</button>
 
-  <button class="nav-btn" data-page="markets" onclick="showPage('markets',this)">
-    <span class="ico">⌁</span>
-    Markets
-  </button>
+<button class="nav-btn" data-screen="news" type="button">
+<span class="nav-icon">📰</span>
+News
+</button>
 
-  <button class="nav-btn" data-page="options" onclick="showPage('options',this)">
-    <span class="ico">◫</span>
-    Options
-  </button>
+<button class="nav-btn" data-screen="options" type="button">
+<span class="nav-icon">📊</span>
+Options
+</button>
 
-  <button class="nav-btn" data-page="alerts" onclick="showPage('alerts',this)">
-    <span class="ico">◇</span>
-    Alerts
-  </button>
+<button class="nav-btn" data-screen="history" type="button">
+<span class="nav-icon">📚</span>
+History
+</button>
 
-  <button class="nav-btn" data-page="analysis" onclick="showPage('analysis',this)">
-    <span class="ico">◈</span>
-    Analysis
-  </button>
-
-  <button class="nav-btn" data-page="news" onclick="showPage('news',this)">
-    <span class="ico">≡</span>
-    News
-  </button>
-
-  <button class="nav-btn" data-page="performance" onclick="showPage('performance',this)">
-    <span class="ico">↗</span>
-    Performance
-  </button>
-
-  <button class="nav-btn" data-page="profile" onclick="showPage('profile',this)">
-    <span class="ico">○</span>
-    Era
-  </button>
+<button class="nav-btn" data-screen="performance" type="button">
+<span class="nav-icon">📈</span>
+Performance
+</button>
 
 </nav>
 
-<!-- ================= ALERT MODAL ================= -->
-
-<div class="modal" id="alertModal" onclick="closeModalOutside(event)">
-
-  <div class="modal-box">
-
-    <div class="modal-top">
-      <div>
-        <div class="eyebrow">ERA SIGNAL</div>
-        <h3 id="modalTitle">Trade Setup</h3>
-      </div>
-
-      <button class="close" onclick="closeAlert()">×</button>
-    </div>
-
-    <div class="direction" id="modalDirection">BUY SETUP</div>
-
-    <p id="modalExplanation"
-      style="font-size:11px;color:#9299a6;line-height:1.6;margin-top:14px">
-      Era generated this setup after evaluating multiple confirmations.
-    </p>
-
-    <div class="detail-levels">
-      <div class="detail-level">
-        <span>ENTRY</span>
-        <strong id="modalEntry">—</strong>
-      </div>
-      <div class="detail-level">
-        <span>SL</span>
-        <strong id="modalSL">—</strong>
-      </div>
-      <div class="detail-level">
-        <span>T1</span>
-        <strong id="modalT1">—</strong>
-      </div>
-      <div class="detail-level">
-        <span>T2</span>
-        <strong id="modalT2">—</strong>
-      </div>
-    </div>
-
-    <div class="level">
-      INVALIDATION <b id="modalInvalidation">—</b>
-    </div>
-
-    <button class="full-btn" style="margin-top:14px"
-      onclick="showPage('analysis');closeAlert()">
-      VIEW FULL ANALYSIS
-    </button>
-
-  </div>
-
-</div>
-
-<div class="toast" id="toast"></div>
-
-</div>
 
 <script>
 
-/* =========================================================
-   ERA AI FRONTEND
-   Existing backend endpoints preserved
-========================================================= */
+"use strict";
 
-const API = "";
+/* =========================================
+   BACKEND
+========================================= */
 
-let selectedMarket = "NIFTY";
-let selectedOptionIndex = "NIFTY";
-let latestMarketData = {};
-let latestAlerts = [];
+const BACKEND_URL =
+"https://era-ai.onrender.com";
 
-/* ---------- NAVIGATION ---------- */
 
-function showPage(page, button){
+/* =========================================
+   BASIC ELEMENTS
+========================================= */
 
-  document.querySelectorAll(".page").forEach(p=>{
-    p.classList.remove("active");
-  });
+const state =
+document.getElementById("state");
 
-  const target=document.getElementById(page);
-  if(target) target.classList.add("active");
+const status =
+document.getElementById("status");
 
-  document.querySelectorAll(".nav-btn").forEach(b=>{
-    b.classList.remove("active");
-  });
+const textInput =
+document.getElementById("textInput");
 
-  if(button){
-    button.classList.add("active");
-  }else{
-    const nav=document.querySelector(
-      `.nav-btn[data-page="${page}"]`
-    );
-    if(nav) nav.classList.add("active");
-  }
+const sendBtn =
+document.getElementById("sendBtn");
 
-  window.scrollTo({
-    top:0,
-    behavior:"smooth"
-  });
+const chatOutput =
+document.getElementById("chatOutput");
 
-  if(page==="options") loadOptions();
-  if(page==="alerts") loadAlerts();
-  if(page==="analysis") loadAnalysis();
-  if(page==="news") loadNews();
-  if(page==="performance") loadPerformance();
-  if(page==="markets") loadMarketTerminal();
+const chatBoard =
+document.getElementById("chatBoard");
+
+const chatEmpty =
+document.getElementById("chatEmpty");
+
+const languageSelect =
+document.getElementById("languageSelect");
+
+const homeIndexSelect =
+document.getElementById("homeIndexSelect");
+
+const selectedIndexTitle =
+document.getElementById("selectedIndexTitle");
+
+const analysisIndexLabel =
+document.getElementById("analysisIndexLabel");
+
+const selectedMarketBadge =
+document.getElementById("selectedMarketBadge");
+
+const themeBtn =
+document.getElementById("themeBtn");
+
+const micBtn =
+document.getElementById("micBtn");
+
+const orb =
+document.getElementById("orb");
+
+
+/* =========================================
+   INDEX CONFIG
+========================================= */
+
+const INDEX_CONFIG = {
+
+NIFTY:{
+  label:"NIFTY 50",
+  short:"NIFTY",
+  instrumentKey:"NSE_INDEX|Nifty 50"
+},
+
+BANKNIFTY:{
+  label:"BANKNIFTY",
+  short:"BANKNIFTY",
+  instrumentKey:"NSE_INDEX|Nifty Bank"
+},
+
+FINNIFTY:{
+  label:"FINNIFTY",
+  short:"FINNIFTY",
+  instrumentKey:"NSE_INDEX|Nifty Fin Service"
+},
+
+MIDCPNIFTY:{
+  label:"MIDCPNIFTY",
+  short:"MIDCPNIFTY",
+  instrumentKey:"NSE_INDEX|Nifty Midcap Select"
+},
+
+NIFTYNEXT50:{
+  label:"NIFTY NEXT 50",
+  short:"NIFTY NEXT 50",
+  instrumentKey:"NSE_INDEX|Nifty Next 50"
+},
+
+SENSEX:{
+  label:"SENSEX",
+  short:"SENSEX",
+  instrumentKey:"BSE_INDEX|SENSEX"
+},
+
+BANKEX:{
+  label:"BANKEX",
+  short:"BANKEX",
+  instrumentKey:"BSE_INDEX|BANKEX"
 }
 
-/* ---------- API ---------- */
+};
 
-async function api(path, options={}){
-  try{
-    const response=await fetch(API+path,{
-      headers:{
-        "Content-Type":"application/json",
-        ...(options.headers||{})
-      },
-      ...options
-    });
 
-    if(!response.ok){
-      throw new Error("HTTP "+response.status);
-    }
+/* =========================================
+   THEME
+========================================= */
 
-    return await response.json();
+function applyTheme(theme){
 
-  }catch(error){
-    console.error("API Error:",path,error);
-    return null;
-  }
+if(theme === "light"){
+
+document.body.classList.add("light");
+themeBtn.textContent = "☀️";
+
+}else{
+
+document.body.classList.remove("light");
+themeBtn.textContent = "🌙";
+
 }
 
-/* ---------- TOAST ---------- */
+localStorage.setItem(
+"era_theme",
+theme
+);
 
-let toastTimer;
-
-function showToast(message){
-
-  const toast=document.getElementById("toast");
-
-  toast.textContent=message;
-  toast.classList.add("show");
-
-  clearTimeout(toastTimer);
-
-  toastTimer=setTimeout(()=>{
-    toast.classList.remove("show");
-  },2600);
 }
 
-/* ---------- MARKET ---------- */
+applyTheme(
+localStorage.getItem("era_theme") || "dark"
+);
 
-function selectMarket(name,button){
+themeBtn.addEventListener(
+"click",
+()=>{
 
-  selectedMarket=name;
+const isLight =
+document.body.classList.contains("light");
 
-  document.querySelectorAll("#marketSelector button")
-    .forEach(b=>b.classList.remove("active"));
+applyTheme(
+isLight ? "dark" : "light"
+);
 
-  if(button) button.classList.add("active");
+}
+);
 
-  loadMarketTerminal();
+
+/* =========================================
+   HOME INDEX
+========================================= */
+
+function getSelectedIndex(){
+
+return (
+localStorage.getItem("era_selected_index") ||
+"NIFTY"
+);
+
 }
 
-async function loadMarket(){
 
-  const data=await api("/api/market");
+function updateHomeIndexUI(){
 
-  if(!data) return;
+const selected =
+getSelectedIndex();
 
-  latestMarketData=data;
+const config =
+INDEX_CONFIG[selected] ||
+INDEX_CONFIG.NIFTY;
 
-  const getIndex=(name)=>{
-    if(data[name]) return data[name];
+homeIndexSelect.value =
+selected;
 
-    if(data.indices && data.indices[name])
-      return data.indices[name];
+selectedIndexTitle.textContent =
+config.label;
 
-    return null;
-  };
+analysisIndexLabel.textContent =
+config.short;
 
-  const n=getIndex("NIFTY");
-  const b=getIndex("BANKNIFTY");
-  const f=getIndex("FINNIFTY");
-  const s=getIndex("SENSEX");
+selectedMarketBadge.textContent =
+"● " + config.short;
 
-  updateMini("homeNifty", "homeNiftyChange", n);
-  updateMini("homeBank", "homeBankChange", b);
-  updateMini("homeFin", "homeFinChange", f);
-  updateMini("homeSensex", "homeSensexChange", s);
-
-  loadMarketTerminal();
 }
 
-function updateMini(priceId,changeId,data){
 
-  if(!data) return;
+homeIndexSelect.addEventListener(
+"change",
+async ()=>{
 
-  const price=
-    data.price ??
-    data.ltp ??
-    data.last_price ??
-    data.lastPrice;
+const selected =
+homeIndexSelect.value;
 
-  const change=
-    data.change ??
-    data.changePercent ??
-    data.percentChange ??
-    data.pctChange;
+localStorage.setItem(
+"era_selected_index",
+selected
+);
 
-  const priceEl=document.getElementById(priceId);
-  const changeEl=document.getElementById(changeId);
+updateHomeIndexUI();
 
-  if(priceEl && price!==undefined){
-    priceEl.textContent=formatNumber(price);
-  }
+state.textContent =
+configForState(selected);
 
-  if(changeEl && change!==undefined){
+await loadEraAnalysis();
 
-    const number=parseFloat(change)||0;
+}
+);
 
-    changeEl.textContent=
-      `${number>=0?"+":""}${number.toFixed(2)}%`;
 
-    changeEl.style.color=
-      number>=0 ? "var(--green)" : "var(--red)";
-  }
+function configForState(index){
+
+const config =
+INDEX_CONFIG[index] ||
+INDEX_CONFIG.NIFTY;
+
+return config.label +
+" selected";
+
 }
 
-async function loadMarketTerminal(){
+updateHomeIndexUI();
 
-  const data=latestMarketData || await api("/api/market");
 
-  if(!data) return;
+/* =========================================
+   NAVIGATION
+========================================= */
 
-  let item=
-    data[selectedMarket] ||
-    data.indices?.[selectedMarket];
+const navButtons =
+document.querySelectorAll(".nav-btn");
 
-  if(!item) return;
+const screens =
+document.querySelectorAll(".screen");
 
-  const price=
-    item.price ??
-    item.ltp ??
-    item.last_price ??
-    item.lastPrice;
+navButtons.forEach(button => {
 
-  const change=
-    item.change ??
-    item.changePercent ??
-    item.percentChange ??
-    item.pctChange;
+button.addEventListener("click",()=>{
 
-  document.getElementById("marketSymbol").textContent=
-    selectedMarket==="NIFTY" ? "NIFTY 50" : selectedMarket;
+const screenName =
+button.dataset.screen;
 
-  document.getElementById("marketPrice").textContent=
-    price!==undefined ? formatNumber(price) : "—";
+screens.forEach(screen=>{
+screen.classList.remove("active");
+});
 
-  if(change!==undefined){
+const targetScreen =
+document.getElementById(screenName);
 
-    const c=parseFloat(change)||0;
-
-    document.getElementById("marketChange").textContent=
-      `${c>=0?"+":""}${c.toFixed(2)}%`;
-
-    document.getElementById("marketChange").style.color=
-      c>=0 ? "var(--green)" : "var(--red)";
-  }
-
-  const technical=
-    item.technical ||
-    data.technical?.[selectedMarket] ||
-    {};
-
-  setText("ema20",technical.ema20 ?? item.ema20 ?? "—");
-  setText("rsi",technical.rsi ?? item.rsi ?? "—");
-  setText("vwap",technical.vwap ?? item.vwap ?? "—");
-  setText(
-    "structure",
-    technical.marketStructure ??
-    technical.structure ??
-    item.marketStructure ??
-    "—"
-  );
+if(targetScreen){
+targetScreen.classList.add("active");
 }
 
-/* ---------- OPTIONS ---------- */
+navButtons.forEach(btn=>{
+btn.classList.remove("active");
+});
 
-function selectOptionIndex(name,button){
+button.classList.add("active");
 
-  selectedOptionIndex=name;
-
-  document.querySelectorAll("#optionSelector button")
-    .forEach(b=>b.classList.remove("active"));
-
-  if(button) button.classList.add("active");
-
-  loadOptionContracts();
-  loadOptions();
+if(screenName === "options"){
+loadExpiries();
 }
 
-async function loadOptionContracts(){
-
-  const data=await api(
-    `/api/options/contracts?index=${encodeURIComponent(selectedOptionIndex)}`
-  );
-
-  if(!data) return;
-
-  const expiries=
-    data.expiries ||
-    data.contracts ||
-    data.data?.expiries ||
-    [];
-
-  const select=document.getElementById("expirySelect");
-
-  if(!Array.isArray(expiries) || !expiries.length)
-    return;
-
-  select.innerHTML="";
-
-  expiries.forEach((expiry,i)=>{
-
-    const value=
-      typeof expiry==="string"
-      ? expiry
-      : expiry.expiry || expiry.date;
-
-    if(!value) return;
-
-    const option=document.createElement("option");
-
-    option.value=value;
-    option.textContent=value;
-
-    if(i===0) option.selected=true;
-
-    select.appendChild(option);
-  });
+if(screenName === "news"){
+loadNews();
 }
 
-async function loadOptions(){
-
-  const expiry=
-    document.getElementById("expirySelect").value;
-
-  let url=
-    `/api/options/chain?index=${encodeURIComponent(selectedOptionIndex)}`;
-
-  if(expiry){
-    url+=`&expiry=${encodeURIComponent(expiry)}`;
-  }
-
-  const data=await api(url);
-
-  if(!data){
-
-    document.getElementById("optionRows").innerHTML=
-      `<tr><td colspan="7" class="empty">
-        Option chain unavailable
-      </td></tr>`;
-
-    return;
-  }
-
-  const spot=
-    data.spot ??
-    data.underlyingPrice ??
-    data.ltp ??
-    data.data?.spot;
-
-  setText("optionSpot",
-    spot!==undefined ? formatNumber(spot) : "—"
-  );
-
-  setText(
-    "optionPCR",
-    data.pcr ?? data.PCR ?? data.data?.pcr ?? "—"
-  );
-
-  setText(
-    "maxPain",
-    data.maxPain ?? data.data?.maxPain ?? "—"
-  );
-
-  setText(
-    "atmIV",
-    data.atmIV ?? data.iv ?? data.data?.atmIV ?? "—"
-  );
-
-  setText(
-    "optionIntel",
-    data.intelligence ??
-    data.optionIntelligence ??
-    data.data?.intelligence ??
-    "Era is evaluating OI concentration, PCR, IV and strike structure."
-  );
-
-  const rows=
-    data.rows ||
-    data.chain ||
-    data.options ||
-    data.data?.chain ||
-    [];
-
-  renderOptionRows(rows);
+if(screenName === "home"){
+loadEraAnalysis();
 }
 
-function renderOptionRows(rows){
+});
 
-  const tbody=document.getElementById("optionRows");
+});
 
-  if(!Array.isArray(rows) || !rows.length){
 
-    tbody.innerHTML=
-      `<tr>
-        <td colspan="7" class="empty">
-          No option-chain rows available
-        </td>
-      </tr>`;
+/* =========================================
+   OPTION CHAIN
+========================================= */
 
-    return;
-  }
+const indexSelect =
+document.getElementById("indexSelect");
 
-  tbody.innerHTML="";
+const expirySelect =
+document.getElementById("expirySelect");
 
-  rows.forEach(row=>{
+const optionBody =
+document.getElementById("optionBody");
 
-    const tr=document.createElement("tr");
+const optionStatus =
+document.getElementById("optionStatus");
 
-    if(row.atm || row.isATM)
-      tr.classList.add("atm");
 
-    const ceOI=
-      row.ce?.oi ??
-      row.ceOI ??
-      row.callOI ??
-      row.CE?.oi ??
-      "—";
+async function loadExpiries(){
 
-    const ceLTP=
-      row.ce?.ltp ??
-      row.ceLTP ??
-      row.callLTP ??
-      "—";
+const instrumentKey =
+indexSelect.value;
 
-    const ceIV=
-      row.ce?.iv ??
-      row.ceIV ??
-      "—";
+optionStatus.textContent =
+"Loading expiry dates...";
 
-    const strike=
-      row.strike ??
-      row.strikePrice ??
-      "—";
+expirySelect.innerHTML =
+'<option value="">Loading...</option>';
 
-    const peIV=
-      row.pe?.iv ??
-      row.peIV ??
-      "—";
+try{
 
-    const peLTP=
-      row.pe?.ltp ??
-      row.peLTP ??
-      row.putLTP ??
-      "—";
+const url =
+`${BACKEND_URL}/api/options/contracts` +
+`?instrument_key=${encodeURIComponent(instrumentKey)}`;
 
-    const peOI=
-      row.pe?.oi ??
-      row.peOI ??
-      row.putOI ??
-      "—";
+const response =
+await fetch(
+url,
+{
+cache:"no-store"
+}
+);
 
-    tr.innerHTML=`
-      <td class="ce">${escapeHTML(ceOI)}</td>
-      <td class="ce">${escapeHTML(ceLTP)}</td>
-      <td class="ce">${escapeHTML(ceIV)}</td>
-      <td class="strike">${escapeHTML(strike)}</td>
-      <td class="pe">${escapeHTML(peIV)}</td>
-      <td class="pe">${escapeHTML(peLTP)}</td>
-      <td class="pe">${escapeHTML(peOI)}</td>
-    `;
+const result =
+await response.json();
 
-    tbody.appendChild(tr);
-  });
+if(!response.ok || !result.success){
+
+throw new Error(
+result.error ||
+"Unable to load contracts"
+);
+
 }
 
-/* ---------- ALERTS ---------- */
+const contracts =
+Array.isArray(result.data)
+? result.data
+: [];
 
-async function loadAlerts(){
+const expiries = [
+...new Set(
+contracts
+.map(
+item =>
+item.expiry ||
+item.expiry_date
+)
+.filter(Boolean)
+)
+].sort();
 
-  const data=await api("/api/alerts");
+expirySelect.innerHTML =
+'<option value="">Select Expiry</option>';
 
-  if(!data) return;
+expiries.forEach(expiry=>{
 
-  const alerts=
-    Array.isArray(data)
-    ? data
-    : data.alerts || data.data || [];
+const option =
+document.createElement("option");
 
-  latestAlerts=alerts;
+option.value =
+expiry;
 
-  renderAlerts(alerts);
+option.textContent =
+expiry;
+
+expirySelect.appendChild(option);
+
+});
+
+optionStatus.textContent =
+expiries.length
+? "Expiry loaded. Select expiry and load option chain."
+: "No expiry data returned.";
+
+}catch(error){
+
+console.error(
+"Expiry error:",
+error
+);
+
+expirySelect.innerHTML =
+'<option value="">Unable to load</option>';
+
+optionStatus.textContent =
+"Option data load nahi ho pa raha: " +
+error.message;
+
 }
 
-function renderAlerts(alerts){
-
-  const box=document.getElementById("alertsList");
-
-  if(!alerts.length){
-
-    box.innerHTML=
-      `<div class="card empty">
-        Era is monitoring. No confirmed setup right now.
-      </div>`;
-
-    return;
-  }
-
-  box.innerHTML="";
-
-  alerts.forEach((alert,index)=>{
-
-    const direction=
-      String(
-        alert.direction ||
-        alert.side ||
-        alert.type ||
-        "BUY"
-      ).toUpperCase();
-
-    const isSell=
-      direction.includes("SELL");
-
-    const confidence=
-      alert.confidence ??
-      alert.score ??
-      0;
-
-    const card=document.createElement("div");
-
-    card.className="alert-card card";
-
-    card.onclick=()=>openAlert(alert);
-
-    card.innerHTML=`
-      <div class="alert-rail ${isSell?"sell":""}"></div>
-
-      <div class="alert-content">
-        <h3>
-          ${escapeHTML(
-            alert.title ||
-            `${alert.index || alert.symbol || "MARKET"} ${direction} SETUP`
-          )}
-        </h3>
-
-        <div class="alert-meta">
-          ${escapeHTML(
-            alert.index ||
-            alert.symbol ||
-            "Market"
-          )}
-          ${alert.expiry ? " • "+escapeHTML(alert.expiry) : ""}
-          ${alert.strike ? " • "+escapeHTML(alert.strike) : ""}
-        </div>
-
-        <div class="level-row">
-          <div class="level">ENTRY <b>${escapeHTML(alert.entry ?? "—")}</b></div>
-          <div class="level">SL <b>${escapeHTML(alert.sl ?? alert.stopLoss ?? "—")}</b></div>
-          <div class="level">T2 <b>${escapeHTML(alert.t2 ?? alert.target2 ?? "—")}</b></div>
-          <div class="level">R:R <b>${escapeHTML(alert.rr ?? alert.riskReward ?? "—")}</b></div>
-        </div>
-      </div>
-
-      <div class="conf">
-        <strong>${escapeHTML(confidence)}%</strong>
-        <small>CONFIDENCE</small>
-        <div class="progress">
-          <span style="width:${Math.min(100,Number(confidence)||0)}%"></span>
-        </div>
-      </div>
-    `;
-
-    box.appendChild(card);
-  });
 }
 
-function openAlert(alert){
 
-  document.getElementById("alertModal").classList.add("show");
+async function loadOptionChain(){
 
-  const direction=
-    String(
-      alert.direction ||
-      alert.side ||
-      "BUY"
-    ).toUpperCase();
+const instrumentKey =
+indexSelect.value;
 
-  const directionEl=document.getElementById("modalDirection");
+const expiry =
+expirySelect.value;
 
-  directionEl.textContent=
-    direction.includes("SELL")
-    ? "SELL SETUP"
-    : "BUY SETUP";
+if(!expiry){
 
-  directionEl.classList.toggle(
-    "sell",
-    direction.includes("SELL")
-  );
+optionStatus.textContent =
+"Pehle expiry select kijiye.";
 
-  setText(
-    "modalTitle",
-    alert.title ||
-    `${alert.index || alert.symbol || "MARKET"} ${direction} SETUP`
-  );
+return;
 
-  setText(
-    "modalExplanation",
-    alert.explanation ||
-    alert.reason ||
-    alert.message ||
-    "Era generated this setup after evaluating multiple market confirmations."
-  );
-
-  setText("modalEntry",alert.entry ?? "—");
-  setText("modalSL",alert.sl ?? alert.stopLoss ?? "—");
-  setText("modalT1",alert.t1 ?? alert.target1 ?? "—");
-  setText("modalT2",alert.t2 ?? alert.target2 ?? "—");
-
-  setText(
-    "modalInvalidation",
-    alert.invalidation ??
-    alert.invalidatedAt ??
-    "Structure invalidation"
-  );
 }
 
-function closeAlert(){
-  document.getElementById("alertModal")
-    .classList.remove("show");
+optionStatus.textContent =
+"Loading live option chain...";
+
+optionBody.innerHTML =
+`
+<tr>
+<td colspan="11" class="loading">
+Loading...
+</td>
+</tr>
+`;
+
+try{
+
+const url =
+`${BACKEND_URL}/api/options/chain` +
+`?instrument_key=${encodeURIComponent(instrumentKey)}` +
+`&expiry_date=${encodeURIComponent(expiry)}`;
+
+const response =
+await fetch(
+url,
+{
+cache:"no-store"
+}
+);
+
+const result =
+await response.json();
+
+if(!response.ok || !result.success){
+
+throw new Error(
+result.error ||
+"Unable to load option chain"
+);
+
 }
 
-function closeModalOutside(event){
-  if(event.target.id==="alertModal")
-    closeAlert();
+renderOptionChain(result.data);
+
+optionStatus.textContent =
+"Live option-chain data loaded.";
+
+}catch(error){
+
+console.error(
+"Option chain error:",
+error
+);
+
+optionBody.innerHTML =
+`
+<tr>
+<td colspan="11" class="loading">
+Live data unavailable
+</td>
+</tr>
+`;
+
+optionStatus.textContent =
+"Option chain error: " +
+error.message;
+
 }
 
-/* ---------- ANALYSIS ---------- */
-
-async function loadAnalysis(){
-
-  const data=await api("/api/analysis");
-
-  if(!data) return;
-
-  const analysis=
-    data.analysis ||
-    data.data ||
-    data;
-
-  const direction=
-    String(
-      analysis.direction ||
-      analysis.signal ||
-      "WAIT"
-    ).toUpperCase();
-
-  const directionEl=
-    document.getElementById("analysisDirection");
-
-  directionEl.textContent=direction;
-  directionEl.classList.toggle(
-    "sell",
-    direction.includes("SELL")
-  );
-
-  setText(
-    "analysisConfidence",
-    analysis.confidence ??
-    analysis.score ??
-    "—"
-  );
-
-  setText("analysisEntry",analysis.entry ?? "—");
-  setText(
-    "analysisSL",
-    analysis.sl ??
-    analysis.stopLoss ??
-    "—"
-  );
-  setText("analysisT1",analysis.t1 ?? analysis.target1 ?? "—");
-  setText("analysisT2",analysis.t2 ?? analysis.target2 ?? "—");
-  setText(
-    "analysisRR",
-    analysis.rr ??
-    analysis.riskReward ??
-    "—"
-  );
-
-  setText(
-    "invalidation",
-    analysis.invalidation ??
-    "No trade if confirmation conditions are lost."
-  );
-
-  const reasons=
-    analysis.reasons ||
-    analysis.confirmations ||
-    [];
-
-  const list=document.getElementById("reasonList");
-
-  if(Array.isArray(reasons) && reasons.length){
-
-    list.innerHTML="";
-
-    reasons.forEach(reason=>{
-
-      const div=document.createElement("div");
-
-      div.className="reason";
-
-      div.innerHTML=`
-        <span class="reason-dot"></span>
-        ${escapeHTML(
-          typeof reason==="string"
-          ? reason
-          : reason.text ||
-            reason.reason ||
-            JSON.stringify(reason)
-        )}
-      `;
-
-      list.appendChild(div);
-    });
-  }
 }
 
-/* ---------- NEWS ---------- */
 
-async function loadNews(){
+function renderOptionChain(data){
 
-  const data=await api("/api/news");
+optionBody.innerHTML = "";
 
-  if(!data) return;
+let rows = [];
 
-  const news=
-    Array.isArray(data)
-    ? data
-    : data.news || data.articles || data.data || [];
+if(Array.isArray(data)){
 
-  const grid=document.getElementById("newsGrid");
+rows = data;
 
-  if(!news.length){
+}else if(
+data &&
+Array.isArray(data.option_chain)
+){
 
-    grid.innerHTML=
-      `<div class="card empty">
-        No current market news available.
-      </div>`;
+rows = data.option_chain;
 
-    return;
-  }
+}else if(
+data &&
+Array.isArray(data.data)
+){
 
-  grid.innerHTML="";
+rows = data.data;
 
-  news.forEach(item=>{
-
-    const card=document.createElement("div");
-
-    card.className="news-card card";
-
-    card.innerHTML=`
-      <div class="news-source">
-        <span>${escapeHTML(item.source || "Market Intelligence")}</span>
-        <span>${escapeHTML(item.time || item.publishedAt || "")}</span>
-      </div>
-
-      <h3>
-        ${escapeHTML(
-          item.title ||
-          item.headline ||
-          "Market update"
-        )}
-      </h3>
-
-      <p>
-        ${escapeHTML(
-          item.description ||
-          item.summary ||
-          ""
-        )}
-      </p>
-
-      <span class="news-tag">
-        ${escapeHTML(item.category || "MARKET")}
-      </span>
-    `;
-
-    grid.appendChild(card);
-  });
 }
 
-/* ---------- PERFORMANCE ---------- */
+if(!rows.length){
 
-async function loadPerformance(){
+optionBody.innerHTML =
+`
+<tr>
+<td colspan="11" class="loading">
+API ne option-chain rows return nahi kiye.
+</td>
+</tr>
+`;
 
-  const data=await api("/api/performance");
+return;
 
-  if(!data) return;
-
-  const p=
-    data.performance ||
-    data.data ||
-    data;
-
-  setText(
-    "totalTrades",
-    p.totalTrades ??
-    p.trades ??
-    "—"
-  );
-
-  setText(
-    "winRate",
-    p.winRate!==undefined
-      ? `${p.winRate}%`
-      : "—"
-  );
-
-  setText(
-    "netResult",
-    p.netResult ??
-    p.netPnl ??
-    p.pnl ??
-    "—"
-  );
-
-  setText(
-    "avgRR",
-    p.avgRR ??
-    p.averageRR ??
-    "—"
-  );
-
-  const history=
-    data.history ||
-    p.history ||
-    [];
-
-  renderHistory(history);
 }
 
-function renderHistory(history){
+rows.forEach(row=>{
 
-  const tbody=document.getElementById("historyRows");
+const strike =
+row.strike_price ??
+row.strike ??
+"--";
 
-  if(!Array.isArray(history) || !history.length){
+const call =
+row.call_options ||
+row.CE ||
+row.ce ||
+{};
 
-    tbody.innerHTML=
-      `<tr>
-        <td colspan="6" class="empty">
-          No historical trades available.
-        </td>
-      </tr>`;
+const put =
+row.put_options ||
+row.PE ||
+row.pe ||
+{};
 
-    return;
-  }
+const callMarket =
+call.market_data ||
+call.marketData ||
+{};
 
-  tbody.innerHTML="";
+const putMarket =
+put.market_data ||
+put.marketData ||
+{};
 
-  history.forEach(item=>{
+const callGreeks =
+call.option_greeks ||
+call.greeks ||
+{};
 
-    const result=
-      Number(
-        item.result ??
-        item.pnl ??
-        0
-      );
+const putGreeks =
+put.option_greeks ||
+put.greeks ||
+{};
 
-    const tr=document.createElement("tr");
+const tr =
+document.createElement("tr");
 
-    tr.innerHTML=`
-      <td>${escapeHTML(item.time || item.date || "—")}</td>
-      <td>${escapeHTML(item.index || item.symbol || "—")}</td>
-      <td>${escapeHTML(item.direction || item.side || "—")}</td>
-      <td>${escapeHTML(item.entry || "—")}</td>
-      <td class="${result>=0?"profit":"loss"}">
-        ${result>=0?"+":""}${escapeHTML(result)}
-      </td>
-      <td>${escapeHTML(item.rr || item.riskReward || "—")}</td>
-    `;
+tr.innerHTML = `
 
-    tbody.appendChild(tr);
-  });
+<td class="ce">
+${formatNumber(callMarket.oi)}
+</td>
+
+<td class="ce">
+${formatNumber(
+callMarket.oi_change ??
+callMarket.change_in_oi
+)}
+</td>
+
+<td class="ce">
+${formatNumber(callMarket.volume)}
+</td>
+
+<td class="ce">
+${formatNumber(
+callGreeks.iv ??
+callMarket.iv
+)}
+</td>
+
+<td class="ce">
+${formatNumber(callMarket.ltp)}
+</td>
+
+<td>
+<strong>
+${formatNumber(strike)}
+</strong>
+</td>
+
+<td class="pe">
+${formatNumber(putMarket.ltp)}
+</td>
+
+<td class="pe">
+${formatNumber(
+putGreeks.iv ??
+putMarket.iv
+)}
+</td>
+
+<td class="pe">
+${formatNumber(putMarket.volume)}
+</td>
+
+<td class="pe">
+${formatNumber(
+putMarket.oi_change ??
+putMarket.change_in_oi
+)}
+</td>
+
+<td class="pe">
+${formatNumber(putMarket.oi)}
+</td>
+
+`;
+
+optionBody.appendChild(tr);
+
+});
+
 }
 
-/* ---------- MONITOR ---------- */
-
-async function loadMonitorStatus(){
-
-  const data=await api("/api/monitor/status");
-
-  if(!data) return;
-
-  const running=
-    data.running ??
-    data.monitorRunning ??
-    data.active;
-
-  const status=document.getElementById("engineStatus");
-
-  if(running===false){
-    status.textContent="Paused";
-    status.style.color="var(--yellow)";
-  }else{
-    status.textContent="Running";
-    status.style.color="var(--green)";
-  }
-
-  if(data.lastScan){
-    setText(
-      "scanTime",
-      formatTime(data.lastScan)
-    );
-  }
-}
-
-/* ---------- CHAT ---------- */
-
-async function sendChat(){
-
-  const input=document.getElementById("chatInput");
-
-  const message=input.value.trim();
-
-  if(!message) return;
-
-  addBubble(message,"user");
-
-  input.value="";
-
-  const response=await api("/api/chat",{
-    method:"POST",
-    body:JSON.stringify({
-      message
-    })
-  });
-
-  const reply=
-    response?.reply ||
-    response?.message ||
-    response?.content ||
-    response?.answer ||
-    "Era is unable to respond right now.";
-
-  addBubble(reply,"era");
-}
-
-function quickChat(message){
-
-  document.getElementById("chatInput").value=message;
-
-  sendChat();
-}
-
-function addBubble(text,type){
-
-  const area=document.getElementById("chatArea");
-
-  const div=document.createElement("div");
-
-  div.className=`bubble ${type}`;
-
-  div.textContent=text;
-
-  area.appendChild(div);
-
-  area.scrollTop=area.scrollHeight;
-}
-
-/* ---------- VOICE ---------- */
-
-let recognition=null;
-
-function startVoice(){
-
-  const SpeechRecognition=
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-  if(!SpeechRecognition){
-
-    showToast("Voice recognition is not supported on this browser.");
-    return;
-  }
-
-  if(recognition){
-
-    recognition.stop();
-    recognition=null;
-
-    showToast("Voice input stopped.");
-    return;
-  }
-
-  recognition=new SpeechRecognition();
-
-  recognition.lang="en-IN";
-  recognition.interimResults=false;
-  recognition.maxAlternatives=1;
-
-  recognition.onstart=()=>{
-    showToast("Era is listening...");
-  };
-
-  recognition.onresult=(event)=>{
-
-    const text=
-      event.results[0][0].transcript;
-
-    document.getElementById("chatInput").value=text;
-
-    sendChat();
-  };
-
-  recognition.onerror=()=>{
-    showToast("Voice input could not be completed.");
-    recognition=null;
-  };
-
-  recognition.onend=()=>{
-    recognition=null;
-  };
-
-  recognition.start();
-}
-
-/* ---------- SETTINGS ---------- */
-
-function toggleSetting(button){
-
-  button.classList.toggle("on");
-
-  showToast(
-    button.classList.contains("on")
-    ? "Setting enabled"
-    : "Setting disabled"
-  );
-}
-
-/* ---------- PUSH ---------- */
-
-async function registerPush(){
-
-  try{
-
-    if(!("serviceWorker" in navigator))
-      return;
-
-    if(!("PushManager" in window))
-      return;
-
-    const keyData=
-      await api("/api/push/public-key");
-
-    const publicKey=
-      keyData?.publicKey ||
-      keyData?.key;
-
-    if(!publicKey) return;
-
-    const registration=
-      await navigator.serviceWorker.register("/sw.js");
-
-    const permission=
-      await Notification.requestPermission();
-
-    if(permission!=="granted")
-      return;
-
-    const subscription=
-      await registration.pushManager.subscribe({
-        userVisibleOnly:true,
-        applicationServerKey:urlBase64ToUint8Array(publicKey)
-      });
-
-    await api("/api/push/subscribe",{
-      method:"POST",
-      body:JSON.stringify(subscription)
-    });
-
-  }catch(error){
-
-    console.log("Push registration skipped:",error.message);
-  }
-}
-
-function urlBase64ToUint8Array(base64String){
-
-  const padding="=".repeat(
-    (4-base64String.length%4)%4
-  );
-
-  const base64=
-    (base64String+padding)
-    .replace(/-/g,"+")
-    .replace(/_/g,"/");
-
-  const rawData=window.atob(base64);
-
-  return Uint8Array.from(
-    [...rawData].map(char=>char.charCodeAt(0))
-  );
-}
-
-/* ---------- HEALTH ---------- */
-
-async function healthCheck(){
-
-  const data=await api("/api/health");
-
-  if(data){
-
-    console.log("Era AI backend:",data);
-
-  }
-}
-
-/* ---------- HELPERS ---------- */
-
-function setText(id,value){
-
-  const el=document.getElementById(id);
-
-  if(el)
-    el.textContent=value;
-}
 
 function formatNumber(value){
 
-  const number=Number(value);
+if(
+value === null ||
+value === undefined ||
+value === ""
+){
 
-  if(!Number.isFinite(number))
-    return value;
+return "--";
 
-  return new Intl.NumberFormat("en-IN",{
-    maximumFractionDigits:2
-  }).format(number);
 }
 
-function formatTime(value){
+if(typeof value === "number"){
 
-  try{
-    return new Date(value).toLocaleTimeString(
-      "en-IN",
-      {
-        hour:"2-digit",
-        minute:"2-digit"
-      }
-    );
-  }catch{
-    return value;
-  }
+return Number.isInteger(value)
+? value.toLocaleString("en-IN")
+: value.toFixed(2);
+
 }
 
-function escapeHTML(value){
+return value;
 
-  if(value===null || value===undefined)
-    return "";
-
-  return String(value)
-    .replace(/&/g,"&amp;")
-    .replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;")
-    .replace(/'/g,"&#039;");
 }
 
-/* ---------- STARTUP ---------- */
 
-document.addEventListener("DOMContentLoaded",async()=>{
+indexSelect.addEventListener(
+"change",
+loadExpiries
+);
 
-  loadMarket();
-  loadOptionContracts();
-  loadAlerts();
-  loadAnalysis();
-  loadNews();
-  loadPerformance();
-  loadMonitorStatus();
-  healthCheck();
+document
+.getElementById("loadOptionsBtn")
+.addEventListener(
+"click",
+loadOptionChain
+);
 
-  /*
-    Background Era actually runs on the backend.
-    Browser only displays its current status.
-  */
 
-  setInterval(()=>{
-    loadMarket();
-    loadMonitorStatus();
-  },15000);
+/* =========================================
+   ANALYSIS HELPERS
+========================================= */
 
-  setInterval(()=>{
-    loadAlerts();
-  },10000);
+function formatPrice(value){
 
-  setInterval(()=>{
-    if(
-      document.getElementById("options")
-      .classList.contains("active")
-    ){
-      loadOptions();
-    }
-  },15000);
+if(
+value === null ||
+value === undefined ||
+value === ""
+){
+
+return "--";
+
+}
+
+const number =
+Number(value);
+
+if(!Number.isFinite(number)){
+
+return "--";
+
+}
+
+return number.toLocaleString(
+"en-IN",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+);
+
+}
+
+
+function setDirectionStyle(element,direction){
+
+if(!element){
+return;
+}
+
+element.classList.remove(
+"green",
+"red",
+"yellow",
+"blue"
+);
+
+if(direction === "BUY"){
+
+element.classList.add("green");
+
+}else if(direction === "SELL"){
+
+element.classList.add("red");
+
+}else{
+
+element.classList.add("yellow");
+
+}
+
+}
+
+
+function setText(id,value){
+
+const element =
+document.getElementById(id);
+
+if(element){
+
+element.textContent =
+value;
+
+}
+
+}
+
+
+function getIndexMarketFromResponse(
+market,
+selected
+){
+
+if(!market){
+return null;
+}
+
+if(
+market.indices &&
+market.indices[selected]
+){
+
+return market.indices[selected];
+
+}
+
+if(selected === "NIFTY"){
+
+return market.nifty || null;
+
+}
+
+return null;
+
+}
+
+
+/* =========================================
+   LOAD ERA ANALYSIS
+========================================= */
+
+let analysisLoading = false;
+
+async function loadEraAnalysis(){
+
+if(analysisLoading){
+return;
+}
+
+analysisLoading = true;
+
+status.textContent =
+"● Analyzing";
+
+try{
+
+const response =
+await fetch(
+`${BACKEND_URL}/api/analysis`,
+{
+cache:"no-store"
+}
+);
+
+const result =
+await response.json();
+
+if(!response.ok || !result.success){
+
+throw new Error(
+result.error ||
+"Analysis unavailable"
+);
+
+}
+
+renderEraAnalysis(result);
+
+if(
+!isListening &&
+!isSpeaking &&
+!isThinking
+){
+
+status.textContent =
+"● Live";
+
+}
+
+}catch(error){
+
+console.error(
+"Era analysis error:",
+error
+);
+
+setText(
+"marketStatus",
+"DATA UNAVAILABLE"
+);
+
+setText(
+"directionBig",
+"WAIT"
+);
+
+setText(
+"direction",
+"WAIT"
+);
+
+setDirectionStyle(
+document.getElementById("directionBig"),
+"WAIT"
+);
+
+setDirectionStyle(
+document.getElementById("direction"),
+"WAIT"
+);
+
+status.textContent =
+"● Ready";
+
+}finally{
+
+analysisLoading = false;
+
+}
+
+}
+
+
+/* =========================================
+   RENDER ANALYSIS
+========================================= */
+
+function renderEraAnalysis(data){
+
+const signal =
+data.signal || {};
+
+const market =
+data.market || {};
+
+const technical =
+data.technical || {};
+
+const options =
+data.options || {};
+
+const direction =
+signal.direction ||
+"WAIT";
+
+const confidence =
+signal.confidence ??
+0;
+
+const selectedIndex =
+getSelectedIndex();
+
+const selectedConfig =
+INDEX_CONFIG[selectedIndex] ||
+INDEX_CONFIG.NIFTY;
+
+const selectedMarket =
+getIndexMarketFromResponse(
+market,
+selectedIndex
+);
+
+const nifty =
+market.nifty || {};
+
+const gift =
+market.giftNifty || {};
+
+const vix =
+market.indiaVix || {};
+
+const primaryMarket =
+selectedMarket ||
+nifty;
+
+
+/* MARKET */
+
+setText(
+"niftyValue",
+formatPrice(primaryMarket.lastPrice)
+);
+
+const primaryChange =
+Number(primaryMarket.netChange);
+
+const niftyChangeElement =
+document.getElementById("niftyChange");
+
+setText(
+"niftyChange",
+Number.isFinite(primaryChange)
+? (primaryChange >= 0 ? "+" : "") +
+primaryChange.toFixed(2)
+: "--"
+);
+
+if(niftyChangeElement){
+
+niftyChangeElement.className =
+"small-value " +
+(
+Number.isFinite(primaryChange)
+? primaryChange >= 0
+? "green"
+: "red"
+: ""
+);
+
+}
+
+setText(
+"giftValue",
+formatPrice(gift.lastPrice)
+);
+
+setText(
+"vixValue",
+formatPrice(vix.lastPrice)
+);
+
+const giftChange =
+Number(gift.netChange);
+
+const vixChange =
+Number(vix.netChange);
+
+setText(
+"giftChange",
+Number.isFinite(giftChange)
+? (giftChange >= 0 ? "+" : "") +
+giftChange.toFixed(2)
+: "--"
+);
+
+setText(
+"vixChange",
+Number.isFinite(vixChange)
+? (vixChange >= 0 ? "+" : "") +
+vixChange.toFixed(2)
+: "--"
+);
+
+const giftChangeElement =
+document.getElementById("giftChange");
+
+const vixChangeElement =
+document.getElementById("vixChange");
+
+if(giftChangeElement){
+
+giftChangeElement.className =
+"small-value " +
+(
+Number.isFinite(giftChange)
+? giftChange >= 0
+? "green"
+: "red"
+: ""
+);
+
+}
+
+if(vixChangeElement){
+
+vixChangeElement.className =
+"small-value " +
+(
+Number.isFinite(vixChange)
+? vixChange >= 0
+? "red"
+: "green"
+: ""
+);
+
+}
+
+setText(
+"marketStatus",
+direction === "BUY"
+? "BULLISH SETUP"
+: direction === "SELL"
+? "BEARISH SETUP"
+: "WAIT / NO TRADE"
+);
+
+setText(
+"analysisNifty",
+formatPrice(primaryMarket.lastPrice)
+);
+
+setText(
+"analysisGift",
+formatPrice(gift.lastPrice)
+);
+
+setText(
+"analysisVix",
+formatPrice(vix.lastPrice)
+);
+
+
+/* SIGNAL */
+
+setText(
+"directionBig",
+direction
+);
+
+setDirectionStyle(
+document.getElementById("directionBig"),
+direction
+);
+
+setText(
+"confidenceBig",
+"Confidence: " +
+confidence +
+"%"
+);
+
+setText(
+"direction",
+direction
+);
+
+setDirectionStyle(
+document.getElementById("direction"),
+direction
+);
+
+
+/* TECHNICAL */
+
+setText(
+"analysisTrend",
+technical.trend || "--"
+);
+
+setText(
+"rsiValue",
+technical.rsi !== null &&
+technical.rsi !== undefined
+? Number(technical.rsi).toFixed(2)
+: "--"
+);
+
+setText(
+"vwapValue",
+formatPrice(technical.vwap)
+);
+
+setText(
+"ema9Value",
+formatPrice(technical.ema9)
+);
+
+setText(
+"ema20Value",
+formatPrice(technical.ema20)
+);
+
+setText(
+"ema50Value",
+formatPrice(technical.ema50)
+);
+
+setText(
+"momentumValue",
+technical.momentum || "--"
+);
+
+
+/* OPTIONS */
+
+setText(
+"pcrValue",
+options.pcr !== null &&
+options.pcr !== undefined
+? Number(options.pcr).toFixed(2)
+: "--"
+);
+
+setText(
+"maxPainValue",
+formatPrice(options.maxPain)
+);
+
+setText(
+"optionBiasValue",
+options.bias || "--"
+);
+
+setText(
+"expiryValue",
+options.expiry || "--"
+);
+
+
+/* TRADE */
+
+setText(
+"entry",
+formatPrice(signal.entry)
+);
+
+setText(
+"sl",
+formatPrice(signal.stopLoss)
+);
+
+setText(
+"target1",
+formatPrice(signal.target1)
+);
+
+setText(
+"target2",
+formatPrice(signal.target2)
+);
+
+setText(
+"target3",
+formatPrice(signal.target3)
+);
+
+setText(
+"rr",
+signal.riskReward !== null &&
+signal.riskReward !== undefined
+? Number(signal.riskReward).toFixed(2)
+: "--"
+);
+
+setText(
+"tradeConfidence",
+confidence + "%"
+);
+
+const tradeStatus =
+document.getElementById("tradeStatus");
+
+if(direction === "BUY"){
+
+tradeStatus.textContent =
+"BUY SETUP";
+
+tradeStatus.className =
+"green";
+
+}else if(direction === "SELL"){
+
+tradeStatus.textContent =
+"SELL SETUP";
+
+tradeStatus.className =
+"red";
+
+}else{
+
+tradeStatus.textContent =
+"NO TRADE";
+
+tradeStatus.className =
+"yellow";
+
+}
+
+
+/* REASONS */
+
+const reasonsList =
+document.getElementById("reasonsList");
+
+const reasons =
+Array.isArray(data.reasons)
+? data.reasons
+: [];
+
+if(!reasons.length){
+
+reasonsList.innerHTML =
+`
+<div class="reason">
+No strong confirmation yet.
+</div>
+`;
+
+}else{
+
+reasonsList.innerHTML =
+reasons
+.map(
+reason =>
+`
+<div class="reason">
+• ${escapeHTML(reason)}
+</div>
+`
+)
+.join("");
+
+}
+
+
+/* INVALIDATION */
+
+setText(
+"invalidation",
+"Invalidation: " +
+(
+data.invalidation ||
+"--"
+)
+);
+
+}
+
+
+/* =========================================
+   REFRESH
+========================================= */
+
+document
+.getElementById("refreshAnalysisBtn")
+.addEventListener(
+"click",
+async()=>{
+
+const button =
+document.getElementById(
+"refreshAnalysisBtn"
+);
+
+button.disabled = true;
+
+button.textContent =
+"⟳ Updating...";
+
+await loadEraAnalysis();
+
+button.disabled = false;
+
+button.textContent =
+"↻ Refresh Era Analysis";
+
+}
+);
+
+
+/* =========================================
+   AUTO REFRESH
+========================================= */
+
+setInterval(
+()=>{
+
+const home =
+document.getElementById("home");
+
+if(
+home &&
+home.classList.contains("active")
+){
+
+loadEraAnalysis();
+
+}
+
+},
+60000
+);
+
+
+/* =========================================
+   LANGUAGE
+========================================= */
+
+function getSelectedLanguage(){
+
+return languageSelect.value;
+
+}
+
+
+/* =========================================
+   CHAT
+========================================= */
+
+let chatConversation = [];
+
+function addChatMessage(
+sender,
+text
+){
+
+if(chatEmpty){
+
+chatEmpty.style.display =
+"none";
+
+}
+
+const wrapper =
+document.createElement("div");
+
+wrapper.className =
+"chat-message " +
+sender;
+
+const content =
+document.createElement("div");
+
+content.className =
+"chat-content";
+
+const label =
+document.createElement("div");
+
+label.className =
+"chat-label";
+
+label.textContent =
+sender === "user"
+? "You"
+: "Era";
+
+const bubble =
+document.createElement("div");
+
+bubble.className =
+"chat-bubble";
+
+bubble.textContent =
+text;
+
+content.appendChild(label);
+
+content.appendChild(bubble);
+
+wrapper.appendChild(content);
+
+chatBoard.appendChild(wrapper);
+
+chatBoard.scrollTop =
+chatBoard.scrollHeight;
+
+}
+
+
+function addThinking(){
+
+if(chatEmpty){
+
+chatEmpty.style.display =
+"none";
+
+}
+
+removeThinking();
+
+const wrapper =
+document.createElement("div");
+
+wrapper.id =
+"thinkingMessage";
+
+wrapper.className =
+"chat-message era";
+
+const content =
+document.createElement("div");
+
+content.className =
+"chat-content";
+
+const label =
+document.createElement("div");
+
+label.className =
+"chat-label";
+
+label.textContent =
+"Era";
+
+const bubble =
+document.createElement("div");
+
+bubble.className =
+"chat-bubble";
+
+bubble.innerHTML =
+'<span class="chat-thinking">Thinking...</span>';
+
+content.appendChild(label);
+
+content.appendChild(bubble);
+
+wrapper.appendChild(content);
+
+chatBoard.appendChild(wrapper);
+
+chatBoard.scrollTop =
+chatBoard.scrollHeight;
+
+}
+
+
+function removeThinking(){
+
+const thinking =
+document.getElementById(
+"thinkingMessage"
+);
+
+if(thinking){
+
+thinking.remove();
+
+}
+
+}
+
+
+function getAnswerFromResponse(result){
+
+if(!result){
+
+return "";
+
+}
+
+if(typeof result === "string"){
+
+return result;
+
+}
+
+return (
+
+result.reply ||
+result.response ||
+result.answer ||
+result.message ||
+result.text ||
+result.content ||
+result.data?.reply ||
+result.data?.response ||
+result.data?.answer ||
+result.data?.message ||
+result.data?.text ||
+result.data?.content ||
+""
+
+);
+
+}
+
+
+/* =========================================
+   NATURAL VOICE
+========================================= */
+
+let currentAudio = null;
+let isSpeaking = false;
+let isThinking = false;
+
+let audioRequestId = 0;
+
+function stopEraVoice(){
+
+audioRequestId++;
+
+if(currentAudio){
+
+try{
+
+currentAudio.pause();
+currentAudio.currentTime = 0;
+
+}catch(e){}
+
+currentAudio = null;
+
+}
+
+isSpeaking = false;
+
+orb.classList.remove("speaking");
+
+micBtn.classList.remove("speaking");
+
+if(!isListening && !isThinking){
+
+state.textContent =
+"Ready";
+
+status.textContent =
+"● Live";
+
+}
+
+}
+
+
+async function speak(text){
+
+const cleanText =
+String(text || "").trim();
+
+if(!cleanText){
+
+return false;
+
+}
+
+stopEraVoice();
+
+const requestId =
+audioRequestId;
+
+try{
+
+isSpeaking = true;
+
+orb.classList.remove(
+"listening",
+"thinking"
+);
+
+orb.classList.add("speaking");
+
+micBtn.classList.remove("listening");
+
+micBtn.classList.add("speaking");
+
+state.textContent =
+"Speaking...";
+
+status.textContent =
+"● Speaking";
+
+const response =
+await fetch(
+`${BACKEND_URL}/api/tts`,
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+
+text:cleanText,
+
+language:
+getSelectedLanguage()
+
+})
+}
+);
+
+if(requestId !== audioRequestId){
+
+return false;
+
+}
+
+if(!response.ok){
+
+let errorMessage =
+"Natural voice unavailable";
+
+try{
+
+const data =
+await response.json();
+
+errorMessage =
+data?.error ||
+data?.message ||
+errorMessage;
+
+}catch(e){}
+
+throw new Error(
+errorMessage
+);
+
+}
+
+const blob =
+await response.blob();
+
+if(requestId !== audioRequestId){
+
+return false;
+
+}
+
+if(
+!blob ||
+blob.size === 0
+){
+
+throw new Error(
+"Empty voice audio received"
+);
+
+}
+
+const audioUrl =
+URL.createObjectURL(blob);
+
+const audio =
+new Audio(audioUrl);
+
+currentAudio =
+audio;
+
+audio.preload =
+"auto";
+
+audio.onended = ()=>{
+
+if(requestId !== audioRequestId){
+
+return;
+
+}
+
+URL.revokeObjectURL(audioUrl);
+
+currentAudio = null;
+
+isSpeaking = false;
+
+orb.classList.remove("speaking");
+
+micBtn.classList.remove("speaking");
+
+if(!isListening && !isThinking){
+
+state.textContent =
+"Ready";
+
+status.textContent =
+"● Live";
+
+}
+
+};
+
+audio.onerror = ()=>{
+
+if(requestId !== audioRequestId){
+
+return;
+
+}
+
+URL.revokeObjectURL(audioUrl);
+
+currentAudio = null;
+
+isSpeaking = false;
+
+orb.classList.remove("speaking");
+
+micBtn.classList.remove("speaking");
+
+state.textContent =
+"Voice playback error";
+
+status.textContent =
+"● Ready";
+
+};
+
+await audio.play();
+
+return true;
+
+}catch(error){
+
+console.error(
+"Natural voice error:",
+error
+);
+
+if(requestId !== audioRequestId){
+
+return false;
+
+}
+
+isSpeaking = false;
+
+orb.classList.remove("speaking");
+
+micBtn.classList.remove("speaking");
+
+state.textContent =
+"Voice unavailable";
+
+status.textContent =
+"● Ready";
+
+return false;
+
+}
+
+}
+
+
+/* =========================================
+   VOICE TEST
+========================================= */
+
+document
+.getElementById("voiceTestBtn")
+.addEventListener(
+"click",
+async()=>{
+
+const testMessages = {
+
+"hi-IN":
+"Namaste, main Era AI hoon. Main aapki market analysis mein madad karne ke liye ready hoon.",
+
+"gu-IN":
+"Namaste, hu Era AI chu. Hu tamari market analysis ma madad karva mate ready chu.",
+
+"en-IN":
+"Hello, I am Era AI. I am ready to help you with your market analysis."
+
+};
+
+await speak(
+testMessages[
+getSelectedLanguage()
+]
+);
+
+}
+);
+
+
+/* =========================================
+   MAIN CHAT
+========================================= */
+
+async function handleUserMessage(text){
+
+const cleanText =
+String(text || "").trim();
+
+if(!cleanText){
+
+return;
+
+}
+
+if(isSpeaking){
+
+stopEraVoice();
+
+}
+
+addChatMessage(
+"user",
+cleanText
+);
+
+saveChat(
+cleanText
+);
+
+chatConversation.push({
+role:"user",
+content:cleanText
+});
+
+addThinking();
+
+isThinking = true;
+
+orb.classList.remove(
+"listening",
+"speaking"
+);
+
+orb.classList.add("thinking");
+
+state.textContent =
+"Thinking...";
+
+status.textContent =
+"● Thinking";
+
+
+try{
+
+const response =
+await fetch(
+`${BACKEND_URL}/api/chat`,
+{
+method:"POST",
+headers:{
+"Content-Type":
+"application/json"
+},
+body:JSON.stringify({
+
+message:
+cleanText,
+
+language:
+getSelectedLanguage(),
+
+history:
+chatConversation.slice(-10)
+
+})
+}
+);
+
+let result = null;
+
+try{
+
+result =
+await response.json();
+
+}catch{
+
+result = null;
+
+}
+
+if(!response.ok){
+
+throw new Error(
+result?.error ||
+result?.message ||
+"Chat server error"
+);
+
+}
+
+const answer =
+getAnswerFromResponse(
+result
+);
+
+if(!answer){
+
+throw new Error(
+"Empty response from Era"
+);
+
+}
+
+removeThinking();
+
+isThinking = false;
+
+orb.classList.remove("thinking");
+
+addChatMessage(
+"era",
+answer
+);
+
+chatConversation.push({
+role:"assistant",
+content:answer
+});
+
+chatOutput.textContent =
+answer;
+
+chatOutput.style.display =
+"block";
+
+await speak(answer);
+
+if(!isSpeaking){
+
+state.textContent =
+"Ready";
+
+status.textContent =
+"● Live";
+
+}
+
+}catch(error){
+
+console.error(
+"Era chat error:",
+error
+);
+
+removeThinking();
+
+isThinking = false;
+
+orb.classList.remove("thinking");
+
+const errorMessage =
+"Era se connection nahi ho pa raha: " +
+(error.message ||
+"Unknown error");
+
+addChatMessage(
+"era",
+errorMessage
+);
+
+chatOutput.textContent =
+errorMessage;
+
+chatOutput.style.display =
+"block";
+
+state.textContent =
+"Ready";
+
+status.textContent =
+"● Ready";
+
+}
+
+}
+
+
+/* =========================================
+   SEND
+========================================= */
+
+sendBtn.addEventListener(
+"click",
+()=>{
+
+const text =
+textInput.value.trim();
+
+if(!text){
+
+return;
+
+}
+
+textInput.value = "";
+
+handleUserMessage(text);
+
+}
+);
+
+
+textInput.addEventListener(
+"keydown",
+event=>{
+
+if(event.key === "Enter"){
+
+event.preventDefault();
+
+const text =
+textInput.value.trim();
+
+if(!text){
+
+return;
+
+}
+
+textInput.value = "";
+
+handleUserMessage(text);
+
+}
+
+}
+);
+
+
+/* =========================================
+   SPEECH RECOGNITION
+========================================= */
+
+const SpeechRecognition =
+window.SpeechRecognition ||
+window.webkitSpeechRecognition;
+
+let recognition = null;
+let listening = false;
+
+let isListening = false;
+
+
+if(SpeechRecognition){
+
+recognition =
+new SpeechRecognition();
+
+recognition.continuous =
+false;
+
+recognition.interimResults =
+false;
+
+recognition.maxAlternatives =
+1;
+
+recognition.lang =
+getSelectedLanguage();
+
+
+recognition.onstart = ()=>{
+
+listening = true;
+isListening = true;
+
+if(isSpeaking){
+
+stopEraVoice();
+
+}
+
+orb.classList.remove(
+"speaking",
+"thinking"
+);
+
+orb.classList.add("listening");
+
+micBtn.classList.add("listening");
+
+state.textContent =
+"Listening...";
+
+status.textContent =
+"● Listening";
+
+};
+
+
+recognition.onresult =
+event=>{
+
+const text =
+event.results[0][0].transcript;
+
+if(!text){
+
+return;
+
+}
+
+textInput.value =
+text;
+
+isListening = false;
+listening = false;
+
+micBtn.classList.remove(
+"listening"
+);
+
+orb.classList.remove(
+"listening"
+);
+
+handleUserMessage(text);
+
+};
+
+
+recognition.onerror =
+event=>{
+
+console.log(
+"Speech recognition error:",
+event.error
+);
+
+listening = false;
+isListening = false;
+
+micBtn.classList.remove(
+"listening"
+);
+
+orb.classList.remove(
+"listening"
+);
+
+if(event.error === "not-allowed"){
+
+state.textContent =
+"Microphone permission required";
+
+status.textContent =
+"● Mic blocked";
+
+}else if(
+event.error === "no-speech"
+){
+
+state.textContent =
+"No speech detected";
+
+status.textContent =
+"● Ready";
+
+}else{
+
+state.textContent =
+"Voice input error";
+
+status.textContent =
+"● Ready";
+
+}
+
+};
+
+
+recognition.onend = ()=>{
+
+listening = false;
+isListening = false;
+
+micBtn.classList.remove(
+"listening"
+);
+
+orb.classList.remove(
+"listening"
+);
+
+if(
+!isThinking &&
+!isSpeaking
+){
+
+state.textContent =
+"Ready";
+
+status.textContent =
+"● Live";
+
+}
+
+};
+
+
+micBtn.addEventListener(
+"click",
+()=>{
+
+if(isSpeaking){
+
+stopEraVoice();
+
+return;
+
+}
+
+if(listening){
+
+recognition.stop();
+
+return;
+
+}
+
+recognition.lang =
+getSelectedLanguage();
+
+try{
+
+recognition.start();
+
+}catch(error){
+
+console.log(
+"Recognition start:",
+error
+);
+
+}
+
+}
+);
+
+
+}else{
+
+micBtn.disabled = true;
+
+state.textContent =
+"Voice recognition not supported";
+
+}
+
+
+/* =========================================
+   LANGUAGE CHANGE
+========================================= */
+
+languageSelect.addEventListener(
+"change",
+()=>{
+
+if(recognition){
+
+recognition.lang =
+getSelectedLanguage();
+
+}
+
+const names = {
+
+"hi-IN":
+"Hindi selected",
+
+"gu-IN":
+"Gujarati selected",
+
+"en-IN":
+"English selected"
+
+};
+
+state.textContent =
+names[
+getSelectedLanguage()
+] ||
+"Language selected";
+
+}
+);
+
+
+/* =========================================
+   NEWS
+========================================= */
+
+async function loadNews(){
+
+const container =
+document.getElementById(
+"newsContainer"
+);
+
+container.innerHTML =
+'<div class="empty">Loading market news...</div>';
+
+try{
+
+const response =
+await fetch(
+`${BACKEND_URL}/api/news`,
+{
+cache:"no-store"
+}
+);
+
+let result = null;
+
+try{
+
+result =
+await response.json();
+
+}catch{
+
+result = null;
+
+}
+
+if(!response.ok){
+
+throw new Error(
+result?.error ||
+"Unable to load news"
+);
+
+}
+
+const articles =
+Array.isArray(result?.data)
+? result.data
+: [];
+
+if(!articles.length){
+
+container.innerHTML =
+`
+<div class="card">
+
+<h3>📰 MARKET NEWS</h3>
+
+<p style="
+color:var(--muted);
+margin-top:8px;
+">
+No live news available right now.
+</p>
+
+</div>
+`;
+
+return;
+
+}
+
+container.innerHTML = "";
+
+articles.forEach(article=>{
+
+const item =
+document.createElement("div");
+
+item.className =
+"news-item";
+
+const title =
+document.createElement("div");
+
+title.style.fontWeight =
+"bold";
+
+title.textContent =
+article.title ||
+"Untitled";
+
+item.appendChild(title);
+
+if(article.description){
+
+const description =
+document.createElement("div");
+
+description.style.cssText =
+"color:var(--muted);font-size:11px;margin-top:7px;";
+
+description.textContent =
+article.description;
+
+item.appendChild(description);
+
+}
+
+if(
+article.source ||
+article.publishedAt
+){
+
+const meta =
+document.createElement("div");
+
+meta.className =
+"news-meta";
+
+meta.textContent =
+`${article.source || ""}${
+article.source &&
+article.publishedAt
+? " • "
+: ""
+}${
+article.publishedAt
+? new Date(
+article.publishedAt
+).toLocaleString("en-IN")
+: ""
+}`;
+
+item.appendChild(meta);
+
+}
+
+if(article.url){
+
+const link =
+document.createElement("a");
+
+link.href =
+article.url;
+
+link.target =
+"_blank";
+
+link.rel =
+"noopener noreferrer";
+
+link.textContent =
+"Read full news →";
+
+link.style.display =
+"block";
+
+link.style.marginTop =
+"9px";
+
+item.appendChild(link);
+
+}
+
+container.appendChild(item);
 
 });
+
+}catch(error){
+
+console.error(
+"News error:",
+error
+);
+
+container.innerHTML =
+`
+<div class="card">
+
+<h3>📰 NEWS</h3>
+
+<p style="
+color:var(--red);
+margin-top:8px;
+">
+News load nahi ho pa rahi.
+</p>
+
+<p style="
+color:var(--muted);
+margin-top:6px;
+font-size:11px;
+">
+${escapeHTML(
+error.message ||
+"Unknown error"
+)}
+</p>
+
+</div>
+`;
+
+}
+
+}
+
+
+/* =========================================
+   LOCAL CHAT HISTORY
+========================================= */
+
+function saveChat(message){
+
+const history =
+JSON.parse(
+localStorage.getItem(
+"era_chat_history"
+) || "[]"
+);
+
+history.push({
+
+time:
+new Date().toLocaleString(
+"en-IN"
+),
+
+message
+
+});
+
+localStorage.setItem(
+"era_chat_history",
+JSON.stringify(history)
+);
+
+renderChatHistory();
+
+}
+
+
+function renderChatHistory(){
+
+const container =
+document.getElementById(
+"chatHistory"
+);
+
+const history =
+JSON.parse(
+localStorage.getItem(
+"era_chat_history"
+) || "[]"
+);
+
+if(!history.length){
+
+container.innerHTML =
+'<div class="empty">No chat history yet.</div>';
+
+return;
+
+}
+
+container.innerHTML =
+history
+.slice()
+.reverse()
+.map(
+item=>`
+
+<div style="
+padding:10px 0;
+border-bottom:1px solid var(--border);
+">
+
+<small style="
+color:var(--muted);
+">
+
+${escapeHTML(item.time)}
+
+</small>
+
+<div style="
+margin-top:5px;
+">
+
+${escapeHTML(item.message)}
+
+</div>
+
+</div>
+
+`
+)
+.join("");
+
+}
+
+
+/* =========================================
+   ESCAPE
+========================================= */
+
+function escapeHTML(text){
+
+return String(text)
+
+.replaceAll(
+"&",
+"&amp;"
+)
+
+.replaceAll(
+"<",
+"&lt;"
+)
+
+.replaceAll(
+">",
+"&gt;"
+)
+
+.replaceAll(
+'"',
+"&quot;"
+)
+
+.replaceAll(
+"'",
+"&#039;"
+);
+
+}
+
+
+/* =========================================
+   START
+========================================= */
+
+renderChatHistory();
+
+loadEraAnalysis();
+
+console.log(
+"Era AI V5 frontend loaded successfully."
+);
 
 </script>
 
 </body>
-  </html>
+</html>
