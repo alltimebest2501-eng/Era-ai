@@ -4274,6 +4274,69 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
+<!-- ERA AI V6 NOTIFICATION, VOICE & SMART POPUP SCRIPT -->
+<script>
+// 1. Service Worker & Push Notification Register
+if ('serviceWorker' in navigator && 'PushManager' in window) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('ERA V6 Service Worker Registered:', reg.scope))
+    .catch(err => console.error('Service Worker Error:', err));
+}
+
+async function enableNotifications() {
+  if ('Notification' in window) {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted' && navigator.serviceWorker.controller) {
+      // Backend ko subscriber registration request bhejna
+      fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device: navigator.userAgent })
+      });
+    }
+  }
+}
+
+// 2. Fixed Voice Speech Engine
+function speakEraMessage(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel(); // Reset audio queue
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = 'hi-IN'; // Hindi-English Natural Voice
+    speech.rate = 1.0;
+    speech.pitch = 1.0;
+    window.speechSynthesis.speak(speech);
+  }
+}
+
+// 3. Fixed VWAP Logic Calculation
+function calculateVWAP(ticks) {
+  if (!ticks || ticks.length === 0) return 0;
+  let totalPV = 0;
+  let totalVolume = 0;
+  
+  ticks.forEach(tick => {
+    const typicalPrice = (tick.high + tick.low + tick.close) / 3;
+    totalPV += typicalPrice * tick.volume;
+    totalVolume += tick.volume;
+  });
+  
+  return totalVolume > 0 ? (totalPV / totalVolume) : 0;
+}
+
+// 4. Notification Tap Event & Dynamic Pop-up Handler
+window.addEventListener('DOMContentLoaded', () => {
+  enableNotifications();
+
+  // Check if opened via notification click
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('from') === 'notification') {
+    const modal = document.getElementById('eraSignalModal');
+    if (modal) modal.style.display = 'flex';
+    speakEraMessage("Era AI V6 system active. Welcome back.");
+  }
+});
+</script>
 
 </body>
 </html>
