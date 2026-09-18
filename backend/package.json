@@ -1,20 +1,15 @@
 {
-  "name": "era-ai-v6",
-  "version": "6.0.0",
-  "description": "Era AI V6 - Premium AI Stock Market Assistant",
+  "name": "era-ai-backend",
+  "version": "1.0.0",
+  "description": "Era AI secure market backend",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
   "dependencies": {
-    "axios": "^1.8.4",
+    "axios": "^1.7.9",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "upstox-js-sdk": "^2.19.0",
-    "web-push": "^3.6.7"
+    "express": "^4.21.2"
   }
 }
