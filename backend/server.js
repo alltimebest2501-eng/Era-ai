@@ -1,3 +1,8 @@
+// ============================================================
+// ERA AI - SERVER.JS
+// Step 7A - Live Market Data + Normalization Fix
+// ============================================================
+
 require("dotenv").config();
 
 const express = require("express");
@@ -9,42 +14,44 @@ const webpush = require("web-push");
 
 const app = express();
 
-const PORT = Number(process.env.PORT || 3000);
-const UPSTOX_ACCESS_TOKEN = process.env.UPSTOX_ACCESS_TOKEN || "";
+const PORT = process.env.PORT || 10000;
 
-const UPSTOX_V2 = "https://api.upstox.com/v2";
-const UPSTOX_V3 = "https://api.upstox.com/v3";
+// ============================================================
+// CONFIG
+// ============================================================
 
-const FRONTEND_URL =
-  process.env.FRONTEND_URL || "https://era-ai.onrender.com";
+const UPSTOX_BASE = "https://api.upstox.com";
+const UPSTOX_ACCESS_TOKEN = process.env.UPSTOX_ACCESS_TOKEN;
 
-/* =========================================================
-   BASIC APP CONFIG
-========================================================= */
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_MODEL =
+  process.env.OPENROUTER_MODEL || "openai/gpt-4o-mini";
 
-app.set("trust proxy", 1);
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID;
+
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT =
+  process.env.VAPID_SUBJECT || "mailto:admin@era-ai.app";
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 
 app.use(
   cors({
     origin: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false,
   })
 );
 
 app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true, limit: "2mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  res.setHeader("X-Content-Type-Options", "nosniff");
-  res.setHeader("X-Frame-Options", "SAMEORIGIN");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  next();
-});
-
-/* =========================================================
-   DATA DIRECTORIES
-========================================================= */
+// ============================================================
+// DATA DIRECTORIES
+// ============================================================
 
 const DATA_DIR = path.join(__dirname, "data");
 
@@ -52,18 +59,19 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const SETTINGS_FILE = path.join(DATA_DIR, "settings.json");
-const HISTORY_FILE = path.join(DATA_DIR, "history.json");
-const SUBSCRIPTIONS_FILE = path.join(DATA_DIR, "subscriptions.json");
+const SUBSCRIPTIONS_FILE = path.join(
+  DATA_DIR,
+  "push-subscriptions.json"
+);
 
-/* =========================================================
-   SAFE JSON HELPERS
-========================================================= */
+const HISTORY_FILE = path.join(
+  DATA_DIR,
+  "history.json"
+);
 
-function readJson(file, fallback) {
+function readJSON(file, fallback) {
   try {
     if (!fs.existsSync(file)) {
-      fs.writeFileSync(file, JSON.stringify(fallback, null, 2));
       return fallback;
     }
 
@@ -75,469 +83,526 @@ function readJson(file, fallback) {
 
     return JSON.parse(raw);
   } catch (error) {
-    console.error("JSON READ ERROR:", file, error.message);
+    console.error("JSON READ ERROR:", error.message);
     return fallback;
   }
 }
 
-function writeJson(file, data) {
+function writeJSON(file, data) {
   try {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
+    fs.writeFileSync(
+      file,
+      JSON.stringify(data, null, 2),
+      "utf8"
+    );
     return true;
   } catch (error) {
-    console.error("JSON WRITE ERROR:", file, error.message);
+    console.error("JSON WRITE ERROR:", error.message);
     return false;
   }
 }
 
-/* =========================================================
-   DEFAULT SETTINGS
-========================================================= */
+// ============================================================
+// UPSTOX HELPERS
+// ============================================================
 
-const DEFAULT_SETTINGS = {
-  movementTrigger: 0.35,
-  minConfidence: 60,
-  autoAlerts: true,
-  notifications: true,
-  analysisInterval: 60,
-};
+function upstoxHeaders() {
+  return {
+    Accept: "application/json",
+    Authorization: `Bearer ${UPSTOX_ACCESS_TOKEN}`,
+  };
+}
 
-let settings = {
-  ...DEFAULT_SETTINGS,
-  ...readJson(SETTINGS_FILE, {}),
-};
+function requireUpstox() {
+  if (!UPSTOX_ACCESS_TOKEN) {
+    throw new Error("UPSTOX_ACCESS_TOKEN is missing");
+  }
+}
 
-writeJson(SETTINGS_FILE, settings);
-
-/* =========================================================
-   SUPPORTED INDICES
-========================================================= */
+// ============================================================
+// SUPPORTED INDICES
+// ============================================================
 
 const INDICES = {
   NIFTY: {
     name: "NIFTY",
     instrumentKey: "NSE_INDEX|Nifty 50",
-    optionInstrumentKey: "NSE_INDEX|Nifty 50",
   },
 
   BANKNIFTY: {
     name: "BANKNIFTY",
     instrumentKey: "NSE_INDEX|Nifty Bank",
-    optionInstrumentKey: "NSE_INDEX|Nifty Bank",
   },
 
   FINNIFTY: {
     name: "FINNIFTY",
     instrumentKey: "NSE_INDEX|Nifty Fin Service",
-    optionInstrumentKey: "NSE_INDEX|Nifty Fin Service",
   },
 
   SENSEX: {
     name: "SENSEX",
     instrumentKey: "BSE_INDEX|SENSEX",
-    optionInstrumentKey: "BSE_INDEX|SENSEX",
   },
 };
 
-const GLOBAL_INSTRUMENTS = {
-  GIFT_NIFTY: "GLOBAL_INDEX|SGX NIFTY",
-  INDIA_VIX: "NSE_INDEX|India VIX",
+const EXTRA_MARKET_DATA = {
+  giftNifty: {
+    name: "GIFT NIFTY",
+    instrumentKey: "GLOBAL_INDEX|SGX NIFTY",
+  },
+
+  indiaVix: {
+    name: "INDIA VIX",
+    instrumentKey: "NSE_INDEX|India VIX",
+  },
 };
 
-/* =========================================================
-   RUNTIME STATE
-========================================================= */
+// ============================================================
+// NUMBER HELPERS
+// ============================================================
 
-let upstoxConfigured = Boolean(UPSTOX_ACCESS_TOKEN);
+function number(value, fallback = null) {
+  const n = Number(value);
 
-let engineState = {
-  running: false,
-  lastRun: null,
-  lastSuccess: null,
-  lastError: null,
-};
-
-let analysisCache = new Map();
-
-let alertState = {
-  active: null,
-  lastSignal: null,
-};
-
-/* =========================================================
-   UPSTOX HELPERS
-========================================================= */
-
-function getUpstoxHeaders() {
-  if (!UPSTOX_ACCESS_TOKEN) {
-    throw new Error("UPSTOX_ACCESS_TOKEN is missing");
+  if (Number.isFinite(n)) {
+    return n;
   }
 
-  return {
-    Accept: "application/json",
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${UPSTOX_ACCESS_TOKEN}`,
-  };
-}
-
-async function upstoxGet(url, params = {}) {
-  const response = await axios.get(url, {
-    params,
-    headers: getUpstoxHeaders(),
-    timeout: 15000,
-  });
-
-  return response.data;
-}
-
-function normalizeNumber(value, fallback = 0) {
-  const number = Number(value);
-
-  return Number.isFinite(number) ? number : fallback;
+  return fallback;
 }
 
 function round(value, decimals = 2) {
-  const n = Number(value);
+  const n = number(value);
 
-  if (!Number.isFinite(n)) {
-    return 0;
-  }
-
-  const factor = 10 ** decimals;
-  return Math.round(n * factor) / factor;
-}
-
-/* =========================================================
-   INDEX HELPERS
-========================================================= */
-
-function normalizeIndex(index) {
-  if (!index) {
-    return "NIFTY";
-  }
-
-  const key = String(index).trim().toUpperCase();
-
-  return INDICES[key] ? key : "NIFTY";
-}
-
-function getIndexConfig(index) {
-  return INDICES[normalizeIndex(index)];
-}
-
-/* =========================================================
-   MARKET QUOTE V3
-========================================================= */
-
-function extractQuoteObject(data, instrumentKey) {
-  if (!data || !data.data) {
+  if (n === null) {
     return null;
   }
 
-  const root = data.data;
+  const factor = Math.pow(10, decimals);
 
-  if (root[instrumentKey]) {
-    return root[instrumentKey];
-  }
-
-  const encodedKey = instrumentKey.replace(/\|/g, "%7C");
-
-  if (root[encodedKey]) {
-    return root[encodedKey];
-  }
-
-  const values = Object.values(root);
-
-  return values.length ? values[0] : null;
+  return Math.round(n * factor) / factor;
 }
 
-function normalizeMarketQuote(raw, instrumentKey, name) {
-  if (!raw) {
+// ============================================================
+// MARKET DATA NORMALIZATION
+// ============================================================
+
+function extractQuote(raw) {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const ohlc =
+    raw.ohlc ||
+    raw.OHLC ||
+    {};
+
+  const price = number(
+    raw.last_price ??
+      raw.lastPrice ??
+      raw.ltp ??
+      raw.close ??
+      ohlc.close
+  );
+
+  if (price === null) {
+    return null;
+  }
+
+  const open = number(
+    raw.open ??
+      ohlc.open
+  );
+
+  const high = number(
+    raw.high ??
+      ohlc.high
+  );
+
+  const low = number(
+    raw.low ??
+      ohlc.low
+  );
+
+  const close = number(
+    raw.close ??
+      ohlc.close ??
+      price
+  );
+
+  // Upstox sometimes provides this directly.
+  let previousClose = number(
+    raw.prev_close_price ??
+      raw.previous_close ??
+      raw.previousClose ??
+      raw.prevClosePrice
+  );
+
+  const netChange = number(
+    raw.net_change ??
+      raw.netChange ??
+      raw.change
+  );
+
+  // ----------------------------------------------------------
+  // IMPORTANT:
+  // If Upstox does not return previous close but gives
+  // net_change, derive previous close:
+  //
+  // previousClose = currentPrice - netChange
+  // ----------------------------------------------------------
+
+  if (
+    (previousClose === null || previousClose === 0) &&
+    netChange !== null
+  ) {
+    previousClose = price - netChange;
+  }
+
+  // Last fallback.
+  if (
+    (previousClose === null || previousClose === 0) &&
+    close !== null &&
+    netChange !== null
+  ) {
+    previousClose = close - netChange;
+  }
+
+  let change = netChange;
+
+  if (change === null && previousClose !== null) {
+    change = price - previousClose;
+  }
+
+  let changePercent = null;
+
+  if (
+    previousClose !== null &&
+    previousClose !== 0 &&
+    change !== null
+  ) {
+    changePercent = (change / previousClose) * 100;
+  }
+
+  const volume = number(
+    raw.volume ??
+      ohlc.volume,
+    0
+  );
+
+  const oi = number(
+    raw.oi
+  );
+
+  const previousOI = number(
+    raw.previous_oi ??
+      raw.previousOI
+  );
+
+  const timestamp =
+    raw.timestamp ||
+    new Date().toISOString();
+
+  return {
+    price: round(price, 2),
+
+    previousClose: round(previousClose, 2),
+
+    change: round(change, 2),
+
+    changePercent: round(changePercent, 2),
+
+    open: round(open, 2),
+    high: round(high, 2),
+    low: round(low, 2),
+    close: round(close, 2),
+
+    volume,
+    oi,
+    previousOI,
+
+    timestamp,
+
+    raw,
+  };
+}
+
+// ============================================================
+// GET SINGLE MARKET QUOTE
+// ============================================================
+
+async function getMarketQuote(
+  indexName,
+  instrumentKey
+) {
+  requireUpstox();
+
+  const url =
+    `${UPSTOX_BASE}/v2/market-quote/quotes`;
+
+  const response = await axios.get(url, {
+    params: {
+      instrument_key: instrumentKey,
+    },
+
+    headers: upstoxHeaders(),
+
+    timeout: 15000,
+  });
+
+  const data = response.data?.data || {};
+
+  const keys = Object.keys(data);
+
+  let rawQuote = null;
+
+  if (keys.length > 0) {
+    rawQuote = data[keys[0]];
+  }
+
+  if (!rawQuote) {
     return {
-      name,
+      name: indexName,
       instrumentKey,
       available: false,
       price: null,
       previousClose: null,
       change: null,
       changePercent: null,
-      volume: null,
+      open: null,
+      high: null,
+      low: null,
+      close: null,
+      volume: 0,
       oi: null,
-      timestamp: null,
+      previousOI: null,
+      timestamp: new Date().toISOString(),
+      raw: null,
     };
   }
 
-  const price = normalizeNumber(
-    raw.last_price ??
-      raw.last_traded_price ??
-      raw.ltp ??
-      raw.lastPrice
-  );
+  const normalized = extractQuote(rawQuote);
 
-  const previousClose = normalizeNumber(
-    raw.prev_close_price ??
-      raw.cp ??
-      raw.previous_close ??
-      raw.prevClosePrice
-  );
-
-  let change = normalizeNumber(
-    raw.net_change ??
-      raw.netChange ??
-      raw.change,
-    NaN
-  );
-
-  if (!Number.isFinite(change) && Number.isFinite(price) && previousClose) {
-    change = price - previousClose;
+  if (!normalized) {
+    return {
+      name: indexName,
+      instrumentKey,
+      available: false,
+      price: null,
+      previousClose: null,
+      change: null,
+      changePercent: null,
+      open: null,
+      high: null,
+      low: null,
+      close: null,
+      volume: 0,
+      oi: null,
+      previousOI: null,
+      timestamp: new Date().toISOString(),
+      raw: rawQuote,
+    };
   }
-
-  let changePercent = normalizeNumber(
-    raw.change_percent ??
-      raw.changePercent,
-    NaN
-  );
-
-  if (
-    !Number.isFinite(changePercent) &&
-    Number.isFinite(change) &&
-    previousClose
-  ) {
-    changePercent = (change / previousClose) * 100;
-  }
-
-  const ohlc = raw.ohlc || {};
 
   return {
-    name,
+    name: indexName,
     instrumentKey,
     available: true,
 
-    price: round(price),
-    previousClose: round(previousClose),
-
-    change: round(change),
-    changePercent: round(changePercent),
-
-    open: round(ohlc.open ?? raw.open),
-    high: round(ohlc.high ?? raw.high),
-    low: round(ohlc.low ?? raw.low),
-    close: round(ohlc.close ?? raw.close),
-
-    volume: normalizeNumber(raw.volume),
-
-    oi: raw.oi != null ? normalizeNumber(raw.oi) : null,
-    previousOI:
-      raw.previous_oi != null ? normalizeNumber(raw.previous_oi) : null,
-
-    timestamp: raw.timestamp || raw.ts || null,
-
-    raw,
+    ...normalized,
   };
 }
 
-/* =========================================================
-   GET ONE MARKET QUOTE
-========================================================= */
+// ============================================================
+// GET ALL MARKET DATA
+// ============================================================
 
-async function getMarketQuote(index) {
-  const key = normalizeIndex(index);
-  const config = getIndexConfig(key);
-
-  const response = await upstoxGet(
-    `${UPSTOX_V3}/market-quote/quotes`,
-    {
-      instrument_key: config.instrumentKey,
-    }
-  );
-
-  const raw = extractQuoteObject(
-    response,
-    config.instrumentKey
-  );
-
-  return normalizeMarketQuote(
-    raw,
-    config.instrumentKey,
-    key
-  );
-}
-
-/* =========================================================
-   GET ALL SUPPORTED INDEX QUOTES
-========================================================= */
-
-async function getAllMarketQuotes() {
-  const entries = Object.entries(INDICES);
-
+async function getAllMarkets() {
   const result = {};
 
-  await Promise.all(
-    entries.map(async ([name, config]) => {
-      try {
-        const response = await upstoxGet(
-          `${UPSTOX_V3}/market-quote/quotes`,
-          {
-            instrument_key: config.instrumentKey,
-          }
-        );
+  for (const [key, config] of Object.entries(INDICES)) {
+    try {
+      result[key] = await getMarketQuote(
+        config.name,
+        config.instrumentKey
+      );
+    } catch (error) {
+      console.error(
+        `${config.name} MARKET ERROR:`,
+        error.response?.data || error.message
+      );
 
-        const raw = extractQuoteObject(
-          response,
-          config.instrumentKey
-        );
-
-        result[name] = normalizeMarketQuote(
-          raw,
-          config.instrumentKey,
-          name
-        );
-      } catch (error) {
-        console.error(
-          `MARKET ERROR ${name}:`,
-          error.response?.data || error.message
-        );
-
-        result[name] = {
-          name,
-          instrumentKey: config.instrumentKey,
-          available: false,
-          error: true,
-          price: null,
-          change: null,
-          changePercent: null,
-        };
-      }
-    })
-  );
-
-  return result;
-}
-
-/* =========================================================
-   GLOBAL MARKET DATA
-========================================================= */
-
-async function getGlobalMarketData() {
-  const result = {
-    giftNifty: null,
-    indiaVix: null,
-  };
-
-  try {
-    const response = await upstoxGet(
-      `${UPSTOX_V3}/market-quote/quotes`,
-      {
-        instrument_key: GLOBAL_INSTRUMENTS.GIFT_NIFTY,
-      }
-    );
-
-    result.giftNifty = normalizeMarketQuote(
-      extractQuoteObject(
-        response,
-        GLOBAL_INSTRUMENTS.GIFT_NIFTY
-      ),
-      GLOBAL_INSTRUMENTS.GIFT_NIFTY,
-      "GIFT NIFTY"
-    );
-  } catch (error) {
-    console.error(
-      "GIFT NIFTY ERROR:",
-      error.response?.data || error.message
-    );
-  }
-
-  try {
-    const response = await upstoxGet(
-      `${UPSTOX_V3}/market-quote/quotes`,
-      {
-        instrument_key: GLOBAL_INSTRUMENTS.INDIA_VIX,
-      }
-    );
-
-    result.indiaVix = normalizeMarketQuote(
-      extractQuoteObject(
-        response,
-        GLOBAL_INSTRUMENTS.INDIA_VIX
-      ),
-      GLOBAL_INSTRUMENTS.INDIA_VIX,
-      "INDIA VIX"
-    );
-  } catch (error) {
-    console.error(
-      "INDIA VIX ERROR:",
-      error.response?.data || error.message
-    );
+      result[key] = {
+        name: config.name,
+        instrumentKey: config.instrumentKey,
+        available: false,
+        price: null,
+        previousClose: null,
+        change: null,
+        changePercent: null,
+        open: null,
+        high: null,
+        low: null,
+        close: null,
+        volume: 0,
+        oi: null,
+        previousOI: null,
+        timestamp: new Date().toISOString(),
+        raw: null,
+        error: error.message,
+      };
+    }
   }
 
   return result;
 }
 
-/* =========================================================
-   CANDLE HELPERS
-========================================================= */
+// ============================================================
+// EXTRA MARKET DATA
+// ============================================================
 
-function parseCandle(candle) {
-  if (!Array.isArray(candle)) {
-    return null;
+async function getExtraMarketData() {
+  const result = {};
+
+  for (const [key, config] of Object.entries(
+    EXTRA_MARKET_DATA
+  )) {
+    try {
+      result[key] = await getMarketQuote(
+        config.name,
+        config.instrumentKey
+      );
+    } catch (error) {
+      console.error(
+        `${config.name} ERROR:`,
+        error.response?.data || error.message
+      );
+
+      result[key] = {
+        name: config.name,
+        instrumentKey: config.instrumentKey,
+        available: false,
+        price: null,
+        previousClose: null,
+        change: null,
+        changePercent: null,
+        open: null,
+        high: null,
+        low: null,
+        close: null,
+        volume: 0,
+        oi: null,
+        previousOI: null,
+        timestamp: new Date().toISOString(),
+        raw: null,
+        error: error.message,
+      };
+    }
   }
 
-  return {
-    timestamp: candle[0],
-    open: normalizeNumber(candle[1]),
-    high: normalizeNumber(candle[2]),
-    low: normalizeNumber(candle[3]),
-    close: normalizeNumber(candle[4]),
-    volume: normalizeNumber(candle[5]),
-    oi: normalizeNumber(candle[6]),
-  };
+  return result;
 }
 
-async function getIntradayCandles(
-  index,
-  interval = 5
+// ============================================================
+// HISTORICAL CANDLES
+// ============================================================
+
+function formatDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+async function getHistoricalCandles(
+  instrumentKey,
+  days = 5
 ) {
-  const config = getIndexConfig(index);
+  requireUpstox();
 
-  const encoded = encodeURIComponent(
-    config.instrumentKey
+  const to = new Date();
+
+  const from = new Date();
+
+  from.setDate(
+    from.getDate() - days
   );
 
-  const response = await upstoxGet(
-    `${UPSTOX_V3}/historical-candle/intraday/${encoded}/minutes/${interval}`
-  );
+  const url =
+    `${UPSTOX_BASE}/v3/historical-candle/` +
+    `${encodeURIComponent(instrumentKey)}/1minute/` +
+    `${formatDate(to)}/${formatDate(from)}`;
 
-  const candles = response?.data?.candles || [];
+  const response = await axios.get(url, {
+    headers: upstoxHeaders(),
+    timeout: 20000,
+  });
+
+  const candles =
+    response.data?.data?.candles || [];
 
   return candles
-    .map(parseCandle)
-    .filter(Boolean)
+    .map((candle) => ({
+      timestamp: candle[0],
+      open: number(candle[1]),
+      high: number(candle[2]),
+      low: number(candle[3]),
+      close: number(candle[4]),
+      volume: number(candle[5], 0),
+      oi: number(candle[6], 0),
+    }))
+    .filter(
+      (c) =>
+        c.open !== null &&
+        c.high !== null &&
+        c.low !== null &&
+        c.close !== null
+    )
     .reverse();
 }
 
-/* =========================================================
-   TECHNICAL INDICATORS
-========================================================= */
+// ============================================================
+// EMA
+// ============================================================
 
 function calculateEMA(values, period) {
-  if (!values.length) {
+  if (
+    !Array.isArray(values) ||
+    values.length < period
+  ) {
     return null;
   }
 
-  const multiplier = 2 / (period + 1);
+  const multiplier =
+    2 / (period + 1);
 
-  let ema = values[0];
+  let ema = values
+    .slice(0, period)
+    .reduce(
+      (sum, value) => sum + value,
+      0
+    ) / period;
 
-  for (let i = 1; i < values.length; i++) {
+  for (
+    let i = period;
+    i < values.length;
+    i++
+  ) {
     ema =
-      (values[i] - ema) * multiplier + ema;
+      (values[i] - ema) *
+        multiplier +
+      ema;
   }
 
   return ema;
 }
 
+// ============================================================
+// RSI
+// ============================================================
+
 function calculateRSI(values, period = 14) {
-  if (values.length <= period) {
+  if (
+    !Array.isArray(values) ||
+    values.length <= period
+  ) {
     return null;
   }
 
@@ -545,34 +610,44 @@ function calculateRSI(values, period = 14) {
   let losses = 0;
 
   for (let i = 1; i <= period; i++) {
-    const change = values[i] - values[i - 1];
+    const diff =
+      values[i] - values[i - 1];
 
-    if (change >= 0) {
-      gains += change;
+    if (diff >= 0) {
+      gains += diff;
     } else {
-      losses += Math.abs(change);
+      losses += Math.abs(diff);
     }
   }
 
-  let averageGain = gains / period;
-  let averageLoss = losses / period;
+  let averageGain =
+    gains / period;
+
+  let averageLoss =
+    losses / period;
 
   for (
     let i = period + 1;
     i < values.length;
     i++
   ) {
-    const change = values[i] - values[i - 1];
+    const diff =
+      values[i] - values[i - 1];
 
-    const gain = change > 0 ? change : 0;
-    const loss = change < 0 ? Math.abs(change) : 0;
+    const gain =
+      diff > 0 ? diff : 0;
+
+    const loss =
+      diff < 0 ? Math.abs(diff) : 0;
 
     averageGain =
-      (averageGain * (period - 1) + gain) /
+      (averageGain * (period - 1) +
+        gain) /
       period;
 
     averageLoss =
-      (averageLoss * (period - 1) + loss) /
+      (averageLoss * (period - 1) +
+        loss) /
       period;
   }
 
@@ -580,268 +655,283 @@ function calculateRSI(values, period = 14) {
     return 100;
   }
 
-  const rs = averageGain / averageLoss;
+  const rs =
+    averageGain / averageLoss;
 
   return 100 - 100 / (1 + rs);
 }
 
+// ============================================================
+// VWAP
+// ============================================================
+
 function calculateVWAP(candles) {
+  if (!candles?.length) {
+    return null;
+  }
+
   let cumulativePV = 0;
   let cumulativeVolume = 0;
 
   for (const candle of candles) {
-    const typical =
+    const volume =
+      number(candle.volume, 0);
+
+    const typicalPrice =
       (candle.high +
         candle.low +
         candle.close) /
       3;
 
     cumulativePV +=
-      typical * candle.volume;
+      typicalPrice * volume;
 
-    cumulativeVolume += candle.volume;
+    cumulativeVolume += volume;
   }
 
-  if (!cumulativeVolume) {
+  if (cumulativeVolume === 0) {
     return null;
   }
 
   return cumulativePV / cumulativeVolume;
 }
 
-function calculateSupportResistance(candles) {
-  const recent = candles.slice(-20);
+// ============================================================
+// TECHNICAL ANALYSIS
+// ============================================================
 
-  if (!recent.length) {
+function getTechnicalAnalysis(
+  index,
+  market,
+  candles
+) {
+  if (!candles?.length) {
     return {
+      index,
+      currentPrice: market.price,
+      ema9: null,
+      ema20: null,
+      ema50: null,
+      rsi: null,
+      vwap: null,
       support: null,
       resistance: null,
+      bullishScore: 0,
+      bearishScore: 0,
+      trend: "WAIT",
+      reasons: [],
+      candleCount: 0,
+      lastCandle: null,
     };
   }
 
-  const lows = recent.map((x) => x.low);
-  const highs = recent.map((x) => x.high);
+  const closes = candles.map(
+    (c) => c.close
+  );
 
-  return {
-    support: Math.min(...lows),
-    resistance: Math.max(...highs),
-  };
-}
+  const ema9 =
+    calculateEMA(closes, 9);
 
-/* =========================================================
-   TECHNICAL ANALYSIS
-========================================================= */
+  const ema20 =
+    calculateEMA(closes, 20);
 
-async function getTechnicalAnalysis(index) {
-  const candles = await getIntradayCandles(index, 5);
-
-  if (candles.length < 20) {
-    throw new Error(
-      `Not enough candles for ${normalizeIndex(index)}`
-    );
-  }
-
-  const closes = candles.map((x) => x.close);
-
-  const ema9 = calculateEMA(closes, 9);
-  const ema20 = calculateEMA(closes, 20);
   const ema50 =
-    closes.length >= 50
-      ? calculateEMA(closes, 50)
-      : null;
+    calculateEMA(closes, 50);
 
-  const rsi = calculateRSI(closes, 14);
-  const vwap = calculateVWAP(candles);
+  const rsi =
+    calculateRSI(closes, 14);
 
-  const sr =
-    calculateSupportResistance(candles);
+  const vwap =
+    calculateVWAP(candles);
 
-  const currentPrice =
-    closes[closes.length - 1];
+  const recent =
+    candles.slice(-20);
+
+  const support =
+    Math.min(
+      ...recent.map((c) => c.low)
+    );
+
+  const resistance =
+    Math.max(
+      ...recent.map((c) => c.high)
+    );
 
   let bullishScore = 0;
   let bearishScore = 0;
 
   const reasons = [];
 
-  if (ema9 > ema20) {
-    bullishScore += 20;
-    reasons.push("EMA 9 is above EMA 20");
-  } else {
-    bearishScore += 20;
-    reasons.push("EMA 9 is below EMA 20");
+  if (
+    ema9 !== null &&
+    ema20 !== null
+  ) {
+    if (ema9 > ema20) {
+      bullishScore += 20;
+      reasons.push(
+        "EMA 9 is above EMA 20"
+      );
+    } else {
+      bearishScore += 20;
+      reasons.push(
+        "EMA 9 is below EMA 20"
+      );
+    }
   }
 
-  if (ema50 != null) {
-    if (currentPrice > ema50) {
+  if (
+    ema50 !== null &&
+    market.price !== null
+  ) {
+    if (market.price > ema50) {
       bullishScore += 15;
-      reasons.push("Price is above EMA 50");
+      reasons.push(
+        "Price is above EMA 50"
+      );
     } else {
       bearishScore += 15;
-      reasons.push("Price is below EMA 50");
+      reasons.push(
+        "Price is below EMA 50"
+      );
     }
   }
 
-  if (rsi != null) {
-    if (rsi >= 55 && rsi <= 70) {
-      bullishScore += 15;
-      reasons.push("RSI supports bullish momentum");
-    } else if (rsi <= 45 && rsi >= 30) {
-      bearishScore += 15;
-      reasons.push("RSI supports bearish momentum");
-    }
-  }
-
-  if (vwap != null) {
-    if (currentPrice > vwap) {
+  if (rsi !== null) {
+    if (rsi >= 55) {
       bullishScore += 10;
-      reasons.push("Price is above VWAP");
-    } else {
+      reasons.push(
+        "RSI shows bullish momentum"
+      );
+    } else if (rsi <= 45) {
       bearishScore += 10;
-      reasons.push("Price is below VWAP");
+      reasons.push(
+        "RSI shows bearish momentum"
+      );
     }
   }
 
   let trend = "NEUTRAL";
 
-  if (bullishScore > bearishScore) {
+  if (
+    bullishScore >
+      bearishScore
+  ) {
     trend = "BULLISH";
-  } else if (bearishScore > bullishScore) {
+  } else if (
+    bearishScore >
+      bullishScore
+  ) {
     trend = "BEARISH";
   }
 
   return {
-    index: normalizeIndex(index),
+    index,
 
-    currentPrice: round(currentPrice),
+    currentPrice:
+      round(market.price),
 
-    ema9: round(ema9),
-    ema20: round(ema20),
-    ema50: ema50 != null ? round(ema50) : null,
+    ema9:
+      round(ema9),
 
-    rsi: rsi != null ? round(rsi) : null,
+    ema20:
+      round(ema20),
 
-    vwap: vwap != null ? round(vwap) : null,
+    ema50:
+      round(ema50),
+
+    rsi:
+      round(rsi),
+
+    vwap:
+      round(vwap),
 
     support:
-      sr.support != null
-        ? round(sr.support)
-        : null,
+      round(support),
 
     resistance:
-      sr.resistance != null
-        ? round(sr.resistance)
-        : null,
+      round(resistance),
 
     bullishScore,
     bearishScore,
+
     trend,
 
     reasons,
 
-    candleCount: candles.length,
+    candleCount:
+      candles.length,
 
     lastCandle:
-      candles[candles.length - 1] || null,
+      candles[candles.length - 1],
   };
 }
 
-/* =========================================================
-   OPTION CONTRACTS
-========================================================= */
+// ============================================================
+// OPTION CONTRACTS
+// ============================================================
 
-const contractCache = new Map();
+async function getOptionContracts(
+  instrumentKey
+) {
+  requireUpstox();
 
-async function getOptionContracts(index) {
-  const key = normalizeIndex(index);
-  const config = getIndexConfig(key);
+  const response =
+    await axios.get(
+      `${UPSTOX_BASE}/v2/option/contract`,
+      {
+        params: {
+          instrument_key:
+            instrumentKey,
+        },
 
-  if (contractCache.has(key)) {
-    const cached = contractCache.get(key);
+        headers: upstoxHeaders(),
 
-    if (
-      Date.now() - cached.timestamp <
-      30 * 60 * 1000
-    ) {
-      return cached.contracts;
-    }
-  }
+        timeout: 20000,
+      }
+    );
 
-  const response = await upstoxGet(
-    `${UPSTOX_V2}/option/contract`,
-    {
-      instrument_key:
-        config.optionInstrumentKey,
-    }
-  );
-
-  const contracts =
-    Array.isArray(response?.data)
-      ? response.data
-      : [];
-
-  contractCache.set(key, {
-    timestamp: Date.now(),
-    contracts,
-  });
-
-  return contracts;
+  return response.data?.data || [];
 }
 
-/* =========================================================
-   EXPIRY EXTRACTION
-========================================================= */
-
-function getExpiriesFromContracts(contracts) {
-  return [
-    ...new Set(
-      contracts
-        .map(
-          (contract) =>
-            contract.expiry ||
-            contract.expiry_date ||
-            contract.expiryDate
-        )
-        .filter(Boolean)
-    ),
-  ].sort();
-}
-
-/* =========================================================
-   OPTION CHAIN
-========================================================= */
+// ============================================================
+// OPTION CHAIN
+// ============================================================
 
 async function getOptionChain(
-  index,
+  instrumentKey,
   expiryDate
 ) {
-  const key = normalizeIndex(index);
-  const config = getIndexConfig(key);
+  requireUpstox();
 
-  if (!expiryDate) {
-    throw new Error(
-      "expiry_date is required"
-    );
+  const params = {
+    instrument_key:
+      instrumentKey,
+  };
+
+  if (expiryDate) {
+    params.expiry_date =
+      expiryDate;
   }
 
-  const response = await upstoxGet(
-    `${UPSTOX_V2}/option/chain`,
-    {
-      instrument_key:
-        config.optionInstrumentKey,
-      expiry_date: expiryDate,
-    }
-  );
+  const response =
+    await axios.get(
+      `${UPSTOX_BASE}/v2/option/chain`,
+      {
+        params,
+        headers: upstoxHeaders(),
+        timeout: 20000,
+      }
+    );
 
-  return response?.data || [];
+  return response.data?.data || [];
 }
 
-/* =========================================================
-   OPTION SUMMARY
-========================================================= */
+// ============================================================
+// OPTION SUMMARY
+// ============================================================
 
-function buildOptionSummary(chain) {
-  if (!Array.isArray(chain) || !chain.length) {
+function getOptionSummary(chain) {
+  if (!Array.isArray(chain)) {
     return {
       available: false,
       pcr: null,
@@ -849,52 +939,58 @@ function buildOptionSummary(chain) {
       putOI: 0,
       callVolume: 0,
       putVolume: 0,
-      sentiment: "NEUTRAL",
+      sentiment: "UNKNOWN",
     };
   }
 
   let callOI = 0;
   let putOI = 0;
-
   let callVolume = 0;
   let putVolume = 0;
 
-  for (const row of chain) {
+  for (const item of chain) {
     const call =
-      row.call_options ||
-      row.callOptions ||
+      item.call_options ||
+      item.call ||
       {};
 
     const put =
-      row.put_options ||
-      row.putOptions ||
+      item.put_options ||
+      item.put ||
       {};
 
     const callMarket =
-      call.market_data || {};
+      call.market_data ||
+      {};
 
     const putMarket =
-      put.market_data || {};
+      put.market_data ||
+      {};
 
-    callOI += normalizeNumber(callMarket.oi);
-    putOI += normalizeNumber(putMarket.oi);
+    callOI +=
+      number(callMarket.oi, 0);
+
+    putOI +=
+      number(putMarket.oi, 0);
 
     callVolume +=
-      normalizeNumber(callMarket.volume);
+      number(callMarket.volume, 0);
 
     putVolume +=
-      normalizeNumber(putMarket.volume);
+      number(putMarket.volume, 0);
   }
 
   const pcr =
-    callOI > 0 ? putOI / callOI : null;
+    callOI > 0
+      ? putOI / callOI
+      : null;
 
   let sentiment = "NEUTRAL";
 
-  if (pcr != null) {
-    if (pcr >= 1.1) {
+  if (pcr !== null) {
+    if (pcr >= 1.05) {
       sentiment = "BULLISH";
-    } else if (pcr <= 0.8) {
+    } else if (pcr <= 0.85) {
       sentiment = "BEARISH";
     }
   }
@@ -902,7 +998,7 @@ function buildOptionSummary(chain) {
   return {
     available: true,
 
-    pcr: pcr != null ? round(pcr, 3) : null,
+    pcr: round(pcr, 3),
 
     callOI,
     putOI,
@@ -914,641 +1010,932 @@ function buildOptionSummary(chain) {
   };
 }
 
-/* =========================================================
-   GET NEAREST EXPIRY
-========================================================= */
+// ============================================================
+// SIGNAL
+// ============================================================
 
-async function getNearestExpiry(index) {
-  const contracts =
-    await getOptionContracts(index);
-
-  const expiries =
-    getExpiriesFromContracts(contracts);
-
-  const today =
-    new Date()
-      .toISOString()
-      .slice(0, 10);
-
-  const future =
-    expiries.filter(
-      (expiry) => expiry >= today
-    );
-
-  return future[0] || expiries[0] || null;
-}
-
-/* =========================================================
-   ERA SIGNAL ENGINE
-========================================================= */
-
-function buildTradeSignal(
+function generateSignal(
   index,
   market,
   technical,
-  optionSummary
+  options
 ) {
-  if (!market || !market.available) {
-    return {
-      direction: "WAIT",
-      status: "DATA UNAVAILABLE",
-      confidence: 0,
-      entry: null,
-      stopLoss: null,
-      target1: null,
-      target2: null,
-      target3: null,
-      riskReward: null,
-      confirmations: [],
-      invalidation:
-        "Live market data unavailable.",
-    };
-  }
+  const bullish =
+    technical.bullishScore +
+    (options.sentiment === "BULLISH"
+      ? 35
+      : 0);
 
-  let bullish = 0;
-  let bearish = 0;
+  const bearish =
+    technical.bearishScore +
+    (options.sentiment === "BEARISH"
+      ? 35
+      : 0);
 
   const confirmations = [];
 
-  if (technical.trend === "BULLISH") {
-    bullish += 40;
+  if (
+    technical.trend ===
+    "BULLISH"
+  ) {
     confirmations.push(
       "Technical trend is bullish."
     );
   }
 
-  if (technical.trend === "BEARISH") {
-    bearish += 40;
+  if (
+    technical.trend ===
+    "BEARISH"
+  ) {
     confirmations.push(
       "Technical trend is bearish."
     );
   }
 
   if (
-    optionSummary &&
-    optionSummary.sentiment === "BULLISH"
+    options.sentiment ===
+    "BULLISH"
   ) {
-    bullish += 30;
     confirmations.push(
       "Option-chain sentiment is bullish."
     );
   }
 
   if (
-    optionSummary &&
-    optionSummary.sentiment === "BEARISH"
+    options.sentiment ===
+    "BEARISH"
   ) {
-    bearish += 30;
     confirmations.push(
       "Option-chain sentiment is bearish."
     );
   }
 
-  const price = market.price;
-
-  if (!price) {
-    return {
-      direction: "WAIT",
-      status: "DATA UNAVAILABLE",
-      confidence: 0,
-      entry: null,
-      stopLoss: null,
-      target1: null,
-      target2: null,
-      target3: null,
-      riskReward: null,
-      confirmations,
-      invalidation:
-        "Current price unavailable.",
-    };
-  }
-
   let direction = "WAIT";
+  let status = "WAIT";
+
+  let confidence = 40;
 
   if (
-    bullish >= 70 &&
+    bullish >= 60 &&
     bullish > bearish
   ) {
     direction = "BUY";
+    status = "CONFIRMED";
+    confidence = Math.min(
+      95,
+      50 + bullish
+    );
   } else if (
-    bearish >= 70 &&
+    bearish >= 60 &&
     bearish > bullish
   ) {
     direction = "SELL";
-  }
-
-  const confidence =
-    direction === "BUY"
-      ? bullish
-      : direction === "SELL"
-      ? bearish
-      : Math.max(
-          bullish,
-          bearish
-        );
-
-  if (direction === "WAIT") {
-    return {
-      direction,
-      status: "WAIT",
-      confidence,
-      entry: null,
-      stopLoss: null,
-      target1: null,
-      target2: null,
-      target3: null,
-      riskReward: null,
-      confirmations,
-      invalidation:
-        "Technical and option confirmations are not sufficiently aligned.",
-    };
-  }
-
-  const support =
-    technical.support || price * 0.995;
-
-  const resistance =
-    technical.resistance || price * 1.005;
-
-  let stopLoss;
-  let target1;
-  let target2;
-  let target3;
-
-  if (direction === "BUY") {
-    stopLoss = Math.min(
-      support,
-      price * 0.995
+    status = "CONFIRMED";
+    confidence = Math.min(
+      95,
+      50 + bearish
     );
-
-    const risk = price - stopLoss;
-
-    target1 = price + risk * 1;
-    target2 = price + risk * 2;
-    target3 = price + risk * 3;
-  } else {
-    stopLoss = Math.max(
-      resistance,
-      price * 1.005
-    );
-
-    const risk = stopLoss - price;
-
-    target1 = price - risk * 1;
-    target2 = price - risk * 2;
-    target3 = price - risk * 3;
   }
 
-  const risk = Math.abs(
-    price - stopLoss
-  );
+  let entry = null;
+  let stopLoss = null;
+  let target1 = null;
+  let target2 = null;
+  let target3 = null;
 
-  const riskReward =
-    risk > 0
-      ? Math.abs(target2 - price) / risk
-      : null;
+  const price =
+    market.price;
+
+  if (
+    direction === "BUY" &&
+    price !== null
+  ) {
+    entry = price;
+
+    const risk =
+      Math.max(
+        price * 0.005,
+        Math.abs(
+          price -
+            (technical.support ||
+              price * 0.995)
+        )
+      );
+
+    stopLoss =
+      price - risk;
+
+    target1 =
+      price + risk;
+
+    target2 =
+      price + risk * 2;
+
+    target3 =
+      price + risk * 3;
+  }
+
+  if (
+    direction === "SELL" &&
+    price !== null
+  ) {
+    entry = price;
+
+    const risk =
+      Math.max(
+        price * 0.005,
+        Math.abs(
+          (technical.resistance ||
+            price * 1.005) -
+            price
+        )
+      );
+
+    stopLoss =
+      price + risk;
+
+    target1 =
+      price - risk;
+
+    target2 =
+      price - risk * 2;
+
+    target3 =
+      price - risk * 3;
+  }
 
   return {
     direction,
-    status: "CONFIRMED",
+    status,
+
     confidence,
 
-    entry: round(price),
-    stopLoss: round(stopLoss),
+    entry:
+      round(entry),
 
-    target1: round(target1),
-    target2: round(target2),
-    target3: round(target3),
+    stopLoss:
+      round(stopLoss),
+
+    target1:
+      round(target1),
+
+    target2:
+      round(target2),
+
+    target3:
+      round(target3),
 
     riskReward:
-      riskReward != null
-        ? round(riskReward, 2)
-        : null,
+      direction === "WAIT"
+        ? null
+        : 2,
 
     confirmations,
 
     invalidation:
       direction === "BUY"
-        ? `Invalidation below ${round(stopLoss)}.`
-        : `Invalidation above ${round(stopLoss)}.`,
+        ? `Invalidation below ${round(
+            stopLoss
+          )}.`
+        : direction === "SELL"
+        ? `Invalidation above ${round(
+            stopLoss
+          )}.`
+        : "Technical and option confirmations are not sufficiently aligned.",
   };
 }
 
-/* =========================================================
-   COMPLETE INDEX ANALYSIS
-========================================================= */
+// ============================================================
+// COMPLETE INDEX ANALYSIS
+// ============================================================
 
-async function getIndexAnalysis(index) {
-  const key = normalizeIndex(index);
+async function getIndexAnalysis(
+  index
+) {
+  const config =
+    INDICES[index];
 
-  const cached =
-    analysisCache.get(key);
-
-  if (
-    cached &&
-    Date.now() - cached.timestamp <
-      30 * 1000
-  ) {
-    return cached.data;
+  if (!config) {
+    throw new Error(
+      `Unsupported index: ${index}`
+    );
   }
 
   const market =
-    await getMarketQuote(key);
+    await getMarketQuote(
+      config.name,
+      config.instrumentKey
+    );
 
-  const technical =
-    await getTechnicalAnalysis(key);
-
-  let optionSummary = {
-    available: false,
-    sentiment: "NEUTRAL",
-    pcr: null,
-  };
-
-  let optionExpiry = null;
+  let candles = [];
 
   try {
-    optionExpiry =
-      await getNearestExpiry(key);
+    candles =
+      await getHistoricalCandles(
+        config.instrumentKey,
+        5
+      );
+  } catch (error) {
+    console.error(
+      `${index} CANDLE ERROR:`,
+      error.response?.data ||
+        error.message
+    );
+  }
 
-    if (optionExpiry) {
+  const technical =
+    getTechnicalAnalysis(
+      index,
+      market,
+      candles
+    );
+
+  let options = {
+    available: false,
+    pcr: null,
+    callOI: 0,
+    putOI: 0,
+    callVolume: 0,
+    putVolume: 0,
+    sentiment: "UNKNOWN",
+    expiry: null,
+  };
+
+  try {
+    const contracts =
+      await getOptionContracts(
+        config.instrumentKey
+      );
+
+    const expiries = [
+      ...new Set(
+        contracts
+          .map(
+            (c) =>
+              c.expiry ||
+              c.expiry_date
+          )
+          .filter(Boolean)
+      ),
+    ].sort();
+
+    const expiry =
+      expiries[0] || null;
+
+    if (expiry) {
       const chain =
         await getOptionChain(
-          key,
-          optionExpiry
+          config.instrumentKey,
+          expiry
         );
 
-      optionSummary =
-        buildOptionSummary(chain);
+      options =
+        getOptionSummary(chain);
+
+      options.expiry =
+        expiry;
     }
   } catch (error) {
     console.error(
-      `OPTION ANALYSIS ${key}:`,
+      `${index} OPTION ERROR:`,
       error.response?.data ||
         error.message
     );
   }
 
   const signal =
-    buildTradeSignal(
-      key,
+    generateSignal(
+      index,
       market,
       technical,
-      optionSummary
+      options
     );
 
-  const result = {
-    index: key,
+  return {
+    index,
+
     market,
+
     technical,
 
-    options: {
-      ...optionSummary,
-      expiry: optionExpiry,
-    },
+    options,
 
     signal,
 
     generatedAt:
       new Date().toISOString(),
   };
-
-  analysisCache.set(key, {
-    timestamp: Date.now(),
-    data: result,
-  });
-
-  return result;
 }
 
-/* =========================================================
-   COMPLETE ERA ANALYSIS
-========================================================= */
+// ============================================================
+// ENGINE STATE
+// ============================================================
 
-async function getEraAnalysis(
-  selectedIndex = "NIFTY"
-) {
-  const selected =
-    normalizeIndex(selectedIndex);
+const engine = {
+  running: true,
+  lastRun: null,
+  lastSuccess: null,
+  lastError: null,
+  latest: null,
+};
 
-  const indices = {};
+let engineTimer = null;
 
-  for (const key of Object.keys(INDICES)) {
-    try {
-      indices[key] =
-        await getIndexAnalysis(key);
-    } catch (error) {
-      console.error(
-        `INDEX ANALYSIS ERROR ${key}:`,
-        error.response?.data ||
+// ============================================================
+// ENGINE RUN
+// ============================================================
+
+async function runEngine() {
+  engine.lastRun =
+    new Date().toISOString();
+
+  try {
+    const results = {};
+
+    for (const index of Object.keys(
+      INDICES
+    )) {
+      try {
+        results[index] =
+          await getIndexAnalysis(
+            index
+          );
+      } catch (error) {
+        console.error(
+          `ENGINE ${index} ERROR:`,
           error.message
+        );
+      }
+    }
+
+    engine.latest = results;
+
+    engine.lastSuccess =
+      new Date().toISOString();
+
+    engine.lastError = null;
+
+    console.log(
+      "ERA ENGINE SUCCESS:",
+      engine.lastSuccess
+    );
+
+    return results;
+  } catch (error) {
+    engine.lastError =
+      error.message;
+
+    console.error(
+      "ENGINE ERROR:",
+      error.message
+    );
+
+    return null;
+  }
+}
+
+function startEngine() {
+  if (engineTimer) {
+    return;
+  }
+
+  engine.running = true;
+
+  runEngine();
+
+  engineTimer = setInterval(
+    () => {
+      if (engine.running) {
+        runEngine();
+      }
+    },
+    60000
+  );
+}
+
+function stopEngine() {
+  engine.running = false;
+
+  if (engineTimer) {
+    clearInterval(engineTimer);
+    engineTimer = null;
+  }
+}
+
+// ============================================================
+// PUSH NOTIFICATIONS
+// ============================================================
+
+if (
+  VAPID_PUBLIC_KEY &&
+  VAPID_PRIVATE_KEY
+) {
+  try {
+    webpush.setVapidDetails(
+      VAPID_SUBJECT,
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
+
+    console.log(
+      "Push notifications configured."
+    );
+  } catch (error) {
+    console.error(
+      "VAPID ERROR:",
+      error.message
+    );
+  }
+}
+
+function getSubscriptions() {
+  return readJSON(
+    SUBSCRIPTIONS_FILE,
+    []
+  );
+}
+
+function saveSubscriptions(
+  subscriptions
+) {
+  return writeJSON(
+    SUBSCRIPTIONS_FILE,
+    subscriptions
+  );
+}
+
+async function sendPush(
+  payload
+) {
+  if (
+    !VAPID_PUBLIC_KEY ||
+    !VAPID_PRIVATE_KEY
+  ) {
+    return {
+      sent: 0,
+      skipped: true,
+      reason:
+        "VAPID keys are not configured",
+    };
+  }
+
+  const subscriptions =
+    getSubscriptions();
+
+  let sent = 0;
+
+  const remaining = [];
+
+  for (const subscription of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        subscription,
+        JSON.stringify(payload)
       );
 
-      indices[key] = {
-        index: key,
-        market: {
-          available: false,
-          price: null,
-          change: null,
-          changePercent: null,
-        },
-        technical: {
-          trend: "UNKNOWN",
-          rsi: null,
-          ema9: null,
-          ema20: null,
-          ema50: null,
-          vwap: null,
-        },
-        options: {
-          available: false,
-          sentiment: "UNKNOWN",
-        },
-        signal: {
-          direction: "WAIT",
-          status: "DATA UNAVAILABLE",
-          confidence: 0,
-          entry: null,
-          stopLoss: null,
-          target1: null,
-          target2: null,
-          target3: null,
-          riskReward: null,
-          confirmations: [],
-          invalidation:
-            "Live data unavailable.",
-        },
-      };
+      sent++;
+
+      remaining.push(
+        subscription
+      );
+    } catch (error) {
+      if (
+        error.statusCode === 404 ||
+        error.statusCode === 410
+      ) {
+        continue;
+      }
+
+      remaining.push(
+        subscription
+      );
     }
   }
 
-  const global =
-    await getGlobalMarketData();
-
-  const selectedData =
-    indices[selected] || indices.NIFTY;
+  saveSubscriptions(
+    remaining
+  );
 
   return {
-    selectedIndex: selected,
-
-    market: {
-      indices,
-
-      selected:
-        selectedData?.market || null,
-
-      nifty:
-        indices.NIFTY?.market || null,
-
-      banknifty:
-        indices.BANKNIFTY?.market || null,
-
-      finnifty:
-        indices.FINNIFTY?.market || null,
-
-      sensex:
-        indices.SENSEX?.market || null,
-
-      giftNifty:
-        global.giftNifty,
-
-      indiaVix:
-        global.indiaVix,
-    },
-
-    technical:
-      selectedData?.technical || {},
-
-    options:
-      selectedData?.options || {},
-
-    signal:
-      selectedData?.signal || {},
-
-    indicesAnalysis: indices,
-
-    generatedAt:
-      new Date().toISOString(),
+    sent,
+    total: subscriptions.length,
   };
 }
 
-/* =========================================================
-   HEALTH
-========================================================= */
+// ============================================================
+// NEWS
+// ============================================================
 
-app.get("/health", (req, res) => {
-  res.json({
-    ok: true,
-    service: "Era AI",
-    version: "2.0.0",
-    upstoxConfigured,
-    engine: engineState,
-    timestamp:
-      new Date().toISOString(),
-  });
-});
-
-app.get("/", (req, res) => {
-  res.json({
-    ok: true,
-    message: "Era AI backend is running.",
-    version: "2.0.0",
-  });
-});
-
-/* =========================================================
-   ANALYSIS API
-========================================================= */
-
-app.get("/api/analysis", async (req, res) => {
+async function getNews() {
   try {
-    if (!upstoxConfigured) {
-      return res.status(503).json({
-        ok: false,
-        error:
-          "UPSTOX_ACCESS_TOKEN is not configured.",
-        status: "DATA UNAVAILABLE",
+    const url =
+      "https://news.google.com/rss/search";
+
+    const response =
+      await axios.get(url, {
+        params: {
+          q:
+            "Indian stock market NIFTY BANKNIFTY Sensex",
+          hl: "en-IN",
+          gl: "IN",
+          ceid: "IN:en",
+        },
+        timeout: 15000,
       });
+
+    const xml =
+      response.data || "";
+
+    const items = [];
+
+    const matches =
+      xml.match(
+        /<item>([\s\S]*?)<\/item>/g
+      ) || [];
+
+    for (
+      const item of matches.slice(
+        0,
+        20
+      )
+    ) {
+      const title =
+        item.match(
+          /<title>([\s\S]*?)<\/title>/
+        )?.[1] || "";
+
+      const link =
+        item.match(
+          /<link>([\s\S]*?)<\/link>/
+        )?.[1] || "";
+
+      const pubDate =
+        item.match(
+          /<pubDate>([\s\S]*?)<\/pubDate>/
+        )?.[1] || "";
+
+      if (title) {
+        items.push({
+          title:
+            title
+              .replace(
+                /<!\[CDATA\[|\]\]>/g,
+                ""
+              )
+              .trim(),
+
+          url:
+            link.trim(),
+
+          publishedAt:
+            pubDate.trim(),
+        });
+      }
     }
 
-    const selected =
-      normalizeIndex(
-        req.query.index ||
-          req.query.instrument ||
-          "NIFTY"
-      );
-
-    const analysis =
-      await getEraAnalysis(selected);
-
-    res.json({
-      ok: true,
-      ...analysis,
-    });
+    return items;
   } catch (error) {
     console.error(
-      "ANALYSIS ERROR:",
-      error.response?.data ||
-        error.message
+      "NEWS ERROR:",
+      error.message
     );
 
-    res.status(503).json({
-      ok: false,
-      error: "Market analysis unavailable.",
-      status: "DATA UNAVAILABLE",
-      details:
-        process.env.NODE_ENV === "production"
-          ? undefined
-          : error.message,
+    return [];
+  }
+}
+
+// ============================================================
+// ROUTES
+// ============================================================
+
+// HEALTH
+app.get(
+  "/health",
+  (req, res) => {
+    res.json({
+      ok: true,
+      service: "Era AI",
+      version: "2.1.0",
+      upstoxConfigured:
+        Boolean(
+          UPSTOX_ACCESS_TOKEN
+        ),
+
+      engine: {
+        running:
+          engine.running,
+
+        lastRun:
+          engine.lastRun,
+
+        lastSuccess:
+          engine.lastSuccess,
+
+        lastError:
+          engine.lastError,
+      },
+
+      timestamp:
+        new Date().toISOString(),
     });
   }
-});
+);
 
-/* =========================================================
-   MARKET API
-========================================================= */
+// ROOT
+app.get(
+  "/",
+  (req, res) => {
+    res.json({
+      ok: true,
+      service: "Era AI",
+      message:
+        "Era AI backend is running.",
+      version: "2.1.0",
+    });
+  }
+);
+
+// ============================================================
+// /api/market
+// ============================================================
 
 app.get(
   "/api/market",
   async (req, res) => {
     try {
       const index =
-        normalizeIndex(
-          req.query.index || "NIFTY"
-        );
+        String(
+          req.query.index ||
+            "NIFTY"
+        ).toUpperCase();
+
+      const config =
+        INDICES[index] ||
+        INDICES.NIFTY;
 
       const market =
-        await getMarketQuote(index);
+        await getMarketQuote(
+          config.name,
+          config.instrumentKey
+        );
 
       res.json({
         ok: true,
-        index,
+
+        index:
+          config.name,
+
         market,
       });
     } catch (error) {
       console.error(
-        "MARKET API ERROR:",
+        "/api/market ERROR:",
         error.response?.data ||
           error.message
       );
 
-      res.status(503).json({
+      res.status(500).json({
         ok: false,
         error:
-          "Market data unavailable.",
+          error.response?.data ||
+          error.message,
       });
     }
   }
 );
 
-/* =========================================================
-   OPTION CONTRACTS API
-========================================================= */
+// ============================================================
+// /api/analysis
+// ============================================================
+
+app.get(
+  "/api/analysis",
+  async (req, res) => {
+    const selectedIndex =
+      String(
+        req.query.index ||
+          "NIFTY"
+      ).toUpperCase();
+
+    if (!INDICES[selectedIndex]) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Unsupported index",
+        supportedIndices:
+          Object.keys(INDICES),
+      });
+    }
+
+    try {
+      const indices = {};
+
+      for (const index of Object.keys(
+        INDICES
+      )) {
+        try {
+          indices[index] =
+            await getIndexAnalysis(
+              index
+            );
+        } catch (error) {
+          console.error(
+            `${index} ANALYSIS ERROR:`,
+            error.message
+          );
+        }
+      }
+
+      const extra =
+        await getExtraMarketData();
+
+      const selected =
+        indices[
+          selectedIndex
+        ];
+
+      if (!selected) {
+        return res.status(500).json({
+          ok: false,
+          error:
+            "Selected index analysis unavailable",
+        });
+      }
+
+      res.json({
+        ok: true,
+
+        selectedIndex,
+
+        market: {
+          indices,
+
+          selected:
+            selected.market,
+
+          nifty:
+            indices.NIFTY?.market ||
+            null,
+
+          banknifty:
+            indices.BANKNIFTY?.market ||
+            null,
+
+          finnifty:
+            indices.FINNIFTY?.market ||
+            null,
+
+          sensex:
+            indices.SENSEX?.market ||
+            null,
+
+          giftNifty:
+            extra.giftNifty,
+
+          indiaVix:
+            extra.indiaVix,
+        },
+
+        technical:
+          selected.technical,
+
+        options:
+          selected.options,
+
+        signal:
+          selected.signal,
+
+        indicesAnalysis:
+          indices,
+
+        generatedAt:
+          new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error(
+        "/api/analysis ERROR:",
+        error.response?.data ||
+          error.message
+      );
+
+      res.status(500).json({
+        ok: false,
+        error:
+          error.response?.data ||
+          error.message,
+      });
+    }
+  }
+);
+
+// ============================================================
+// OPTIONS CONTRACTS
+// ============================================================
 
 app.get(
   "/api/options/contracts",
   async (req, res) => {
     try {
-      const index =
-        normalizeIndexFromInstrumentKey(
-          req.query.instrument_key
-        );
+      const instrumentKey =
+        req.query.instrument_key;
 
-      const contracts =
-        await getOptionContracts(index);
+      if (!instrumentKey) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "instrument_key is required",
+        });
+      }
 
-      const expiries =
-        getExpiriesFromContracts(
-          contracts
+      const data =
+        await getOptionContracts(
+          instrumentKey
         );
 
       res.json({
         ok: true,
-        index,
-        expiries,
-        contracts,
+        data,
       });
     } catch (error) {
       console.error(
-        "CONTRACT ERROR:",
+        "/api/options/contracts ERROR:",
         error.response?.data ||
           error.message
       );
 
-      res.status(503).json({
+      res.status(500).json({
         ok: false,
         error:
-          "Option contracts unavailable.",
-        contracts: [],
-        expiries: [],
+          error.response?.data ||
+          error.message,
       });
     }
   }
 );
 
-/* =========================================================
-   OPTION CHAIN API
-========================================================= */
+// ============================================================
+// OPTIONS CHAIN
+// ============================================================
 
 app.get(
   "/api/options/chain",
   async (req, res) => {
     try {
-      const index =
-        normalizeIndexFromInstrumentKey(
-          req.query.instrument_key
-        );
+      const instrumentKey =
+        req.query.instrument_key;
 
-      const expiry =
+      const expiryDate =
         req.query.expiry_date;
 
-      if (!expiry) {
+      if (!instrumentKey) {
         return res.status(400).json({
           ok: false,
           error:
-            "expiry_date is required.",
+            "instrument_key is required",
         });
       }
 
-      const chain =
+      const data =
         await getOptionChain(
-          index,
-          expiry
+          instrumentKey,
+          expiryDate
         );
 
       res.json({
         ok: true,
-        index,
-        expiry,
-        data: chain,
+        data,
       });
     } catch (error) {
       console.error(
-        "OPTION CHAIN ERROR:",
+        "/api/options/chain ERROR:",
         error.response?.data ||
           error.message
       );
 
-      res.status(503).json({
+      res.status(500).json({
         ok: false,
         error:
-          "Option chain unavailable.",
-        data: [],
+          error.response?.data ||
+          error.message,
       });
     }
   }
 );
 
-/* =========================================================
-   OPTION GREEKS API
-========================================================= */
+// ============================================================
+// OPTIONS GREEKS
+// ============================================================
 
 app.get(
   "/api/options/greeks",
   async (req, res) => {
     try {
+      requireUpstox();
+
       const instrumentKeys =
         String(
-          req.query.instrument_key || ""
+          req.query.instrument_key ||
+            ""
         )
           .split(",")
           .map((x) => x.trim())
@@ -1558,365 +1945,343 @@ app.get(
         return res.status(400).json({
           ok: false,
           error:
-            "instrument_key is required.",
-        });
-      }
-
-      if (instrumentKeys.length > 50) {
-        return res.status(400).json({
-          ok: false,
-          error:
-            "Maximum 50 instrument keys per request.",
+            "instrument_key is required",
         });
       }
 
       const response =
-        await upstoxGet(
-          `${UPSTOX_V3}/market-quote/option-greek`,
+        await axios.get(
+          `${UPSTOX_BASE}/v2/option/greeks`,
           {
-            instrument_key:
-              instrumentKeys.join(","),
+            params: {
+              instrument_key:
+                instrumentKeys.join(
+                  ","
+                ),
+            },
+
+            headers:
+              upstoxHeaders(),
+
+            timeout: 20000,
           }
         );
 
       res.json({
         ok: true,
-        data: response?.data || {},
+        data:
+          response.data?.data ||
+          [],
       });
     } catch (error) {
       console.error(
-        "GREEKS ERROR:",
+        "/api/options/greeks ERROR:",
         error.response?.data ||
           error.message
       );
 
-      res.status(503).json({
+      res.status(500).json({
         ok: false,
         error:
-          "Option Greeks unavailable.",
+          error.response?.data ||
+          error.message,
       });
     }
   }
 );
 
-/* =========================================================
-   INSTRUMENT KEY -> INDEX
-========================================================= */
+// ============================================================
+// NEWS
+// ============================================================
 
-function normalizeIndexFromInstrumentKey(
-  instrumentKey
-) {
-  if (!instrumentKey) {
-    return "NIFTY";
-  }
+app.get(
+  "/api/news",
+  async (req, res) => {
+    try {
+      const data =
+        await getNews();
 
-  const value =
-    String(instrumentKey);
-
-  for (const [
-    index,
-    config,
-  ] of Object.entries(INDICES)) {
-    if (
-      value === config.instrumentKey ||
-      value === config.optionInstrumentKey
-    ) {
-      return index;
-    }
-  }
-
-  return "NIFTY";
-}
-
-/* =========================================================
-   NEWS API
-========================================================= */
-
-app.get("/api/news", async (req, res) => {
-  try {
-    const url =
-      process.env.NEWS_API_URL;
-
-    const key =
-      process.env.NEWS_API_KEY;
-
-    if (!url || !key) {
-      return res.json({
+      res.json({
         ok: true,
-        news: [],
-        message:
-          "News provider is not configured.",
+        data,
       });
-    }
-
-    const response =
-      await axios.get(url, {
-        params: {
-          apiKey: key,
-        },
-        timeout: 10000,
-      });
-
-    const articles =
-      response?.data?.articles || [];
-
-    res.json({
-      ok: true,
-      news: articles.slice(0, 30),
-    });
-  } catch (error) {
-    console.error(
-      "NEWS ERROR:",
-      error.message
-    );
-
-    res.json({
-      ok: false,
-      news: [],
-    });
-  }
-});
-
-/* =========================================================
-   CHAT API
-========================================================= */
-
-app.post("/api/chat", async (req, res) => {
-  try {
-    const message =
-      String(req.body?.message || "")
-        .trim();
-
-    const language =
-      String(
-        req.body?.language || "hinglish"
-      );
-
-    const history =
-      Array.isArray(req.body?.history)
-        ? req.body.history.slice(-10)
-        : [];
-
-    if (!message) {
-      return res.status(400).json({
-        ok: false,
-        error: "Message is required.",
-      });
-    }
-
-    const apiKey =
-      process.env.OPENROUTER_API_KEY;
-
-    if (!apiKey) {
-      return res.status(503).json({
+    } catch (error) {
+      res.status(500).json({
         ok: false,
         error:
-          "OPENROUTER_API_KEY is not configured.",
+          error.message,
       });
     }
+  }
+);
 
-    let liveContext = null;
+// ============================================================
+// CHAT
+// ============================================================
 
+app.post(
+  "/api/chat",
+  async (req, res) => {
     try {
-      if (upstoxConfigured) {
-        liveContext =
-          await getEraAnalysis(
+      const message =
+        String(
+          req.body?.message ||
+            ""
+        ).trim();
+
+      const language =
+        req.body?.language ||
+        "en";
+
+      const history =
+        Array.isArray(
+          req.body?.history
+        )
+          ? req.body.history
+          : [];
+
+      if (!message) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "message is required",
+        });
+      }
+
+      if (!OPENROUTER_API_KEY) {
+        return res.json({
+          ok: true,
+          reply:
+            "AI chat is not configured yet.",
+        });
+      }
+
+      let marketContext = null;
+
+      try {
+        marketContext =
+          await getIndexAnalysis(
             "NIFTY"
           );
+      } catch (error) {
+        console.error(
+          "CHAT MARKET CONTEXT ERROR:",
+          error.message
+        );
       }
-    } catch (error) {
-      console.error(
-        "CHAT LIVE CONTEXT ERROR:",
-        error.message
-      );
-    }
 
-    const systemPrompt = `
-You are Era AI, a market-analysis assistant.
+      const systemPrompt = `
+You are Era AI, a professional Indian stock-market analysis assistant.
 
-Rules:
-1. Never invent live market prices.
-2. Use supplied live market context when available.
-3. If live data is unavailable, clearly say DATA UNAVAILABLE.
-4. Do not guarantee profit.
-5. Do not claim certainty about future prices.
-6. For trading setups use:
-   Direction
-   Entry
-   Stop Loss
-   Target 1
-   Target 2
-   Target 3
-   Risk/Reward
-   Status
-   Confirmations
-   Invalidation
-7. If confirmations are insufficient, say WAIT / NO TRADE.
-8. Answer in ${language}.
+You communicate through text only.
+
+Never claim guaranteed profits.
+Never fabricate live prices.
+Use the supplied market context when available.
+
+Explain:
+- market structure
+- trend
+- technical indicators
+- option-chain information
+- risk
+- invalidation
+- WAIT when confirmation is insufficient.
+
+User language: ${language}
+
+Current market context:
+${JSON.stringify(
+  marketContext
+)}
 `;
 
-    const response =
-      await axios.post(
-        "https://openrouter.ai/api/v1/chat/completions",
+      const messages = [
         {
-          model:
-            process.env.OPENROUTER_MODEL ||
-            "openai/gpt-4o-mini",
-
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt,
-            },
-
-            {
-              role: "system",
-              content:
-                "LIVE MARKET CONTEXT:\n" +
-                JSON.stringify(
-                  liveContext || {},
-                  null,
-                  2
-                ),
-            },
-
-            ...history,
-
-            {
-              role: "user",
-              content: message,
-            },
-          ],
-
-          temperature: 0.2,
-          max_tokens: 1200,
+          role: "system",
+          content:
+            systemPrompt,
         },
+
+        ...history
+          .slice(-10)
+          .map((item) => ({
+            role:
+              item.role ===
+              "assistant"
+                ? "assistant"
+                : "user",
+            content:
+              String(
+                item.content ||
+                  ""
+              ),
+          })),
+
         {
-          headers: {
-            Authorization:
-              `Bearer ${apiKey}`,
+          role: "user",
+          content: message,
+        },
+      ];
 
-            "Content-Type":
-              "application/json",
+      const response =
+        await axios.post(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            model:
+              OPENROUTER_MODEL,
 
-            "HTTP-Referer":
-              FRONTEND_URL,
+            messages,
 
-            "X-Title":
-              "Era AI",
+            temperature: 0.2,
           },
+          {
+            headers: {
+              Authorization:
+                `Bearer ${OPENROUTER_API_KEY}`,
 
-          timeout: 30000,
-        }
+              "Content-Type":
+                "application/json",
+
+              "HTTP-Referer":
+                "https://era-ai.onrender.com",
+
+              "X-Title":
+                "Era AI",
+            },
+
+            timeout: 30000,
+          }
+        );
+
+      const reply =
+        response.data
+          ?.choices?.[0]
+          ?.message?.content ||
+        "Era could not generate a response.";
+
+      res.json({
+        ok: true,
+        reply,
+      });
+    } catch (error) {
+      console.error(
+        "/api/chat ERROR:",
+        error.response?.data ||
+          error.message
       );
 
-    const answer =
-      response?.data?.choices?.[0]
-        ?.message?.content ||
-      "Sorry, Era could not generate a response.";
-
-    res.json({
-      ok: true,
-      answer,
-    });
-  } catch (error) {
-    console.error(
-      "CHAT ERROR:",
-      error.response?.data ||
-        error.message
-    );
-
-    res.status(500).json({
-      ok: false,
-      error:
-        "Era chat is temporarily unavailable.",
-    });
-  }
-});
-
-/* =========================================================
-   TTS API
-========================================================= */
-
-app.post("/api/tts", async (req, res) => {
-  try {
-    const text =
-      String(req.body?.text || "")
-        .trim();
-
-    if (!text) {
-      return res.status(400).json({
-        ok: false,
-        error: "Text is required.",
-      });
-    }
-
-    const apiKey =
-      process.env.ELEVENLABS_API_KEY;
-
-    const voiceId =
-      process.env.ELEVENLABS_VOICE_ID;
-
-    if (!apiKey || !voiceId) {
-      return res.status(503).json({
+      res.status(500).json({
         ok: false,
         error:
-          "TTS is not configured.",
+          error.response?.data ||
+          error.message,
       });
     }
+  }
+);
 
-    const response =
-      await axios.post(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        {
-          text,
-          model_id:
-            process.env.ELEVENLABS_MODEL ||
-            "eleven_multilingual_v2",
-        },
-        {
-          headers: {
-            "xi-api-key": apiKey,
-            Accept:
-              "audio/mpeg",
-            "Content-Type":
-              "application/json",
+// ============================================================
+// TTS
+// ============================================================
+
+app.post(
+  "/api/tts",
+  async (req, res) => {
+    try {
+      const text =
+        String(
+          req.body?.text ||
+            ""
+        ).trim();
+
+      if (!text) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "text is required",
+        });
+      }
+
+      if (
+        !ELEVENLABS_API_KEY ||
+        !ELEVENLABS_VOICE_ID
+      ) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "TTS is not configured",
+        });
+      }
+
+      const response =
+        await axios.post(
+          `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
+          {
+            text,
+
+            model_id:
+              "eleven_multilingual_v2",
+
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+            },
           },
+          {
+            headers: {
+              "xi-api-key":
+                ELEVENLABS_API_KEY,
 
-          responseType: "arraybuffer",
-          timeout: 30000,
-        }
+              Accept:
+                "audio/mpeg",
+
+              "Content-Type":
+                "application/json",
+            },
+
+            responseType:
+              "arraybuffer",
+
+            timeout: 30000,
+          }
+        );
+
+      res.setHeader(
+        "Content-Type",
+        "audio/mpeg"
       );
 
-    res.setHeader(
-      "Content-Type",
-      "audio/mpeg"
-    );
+      res.send(
+        Buffer.from(
+          response.data
+        )
+      );
+    } catch (error) {
+      console.error(
+        "/api/tts ERROR:",
+        error.response?.data ||
+          error.message
+      );
 
-    res.setHeader(
-      "Cache-Control",
-      "no-store"
-    );
-
-    res.send(response.data);
-  } catch (error) {
-    console.error(
-      "TTS ERROR:",
-      error.response?.data ||
-        error.message
-    );
-
-    res.status(500).json({
-      ok: false,
-      error:
-        "Text-to-speech unavailable.",
-    });
+      res.status(500).json({
+        ok: false,
+        error:
+          "TTS request failed",
+      });
+    }
   }
-});
+);
 
-/* =========================================================
-   SETTINGS
-========================================================= */
+// ============================================================
+// SETTINGS
+// ============================================================
+
+const settings = {
+  selectedIndex: "NIFTY",
+  notifications: true,
+  theme: "dark",
+};
 
 app.get(
   "/api/settings",
@@ -1931,62 +2296,31 @@ app.get(
 app.post(
   "/api/settings",
   (req, res) => {
-    try {
-      const allowed = [
-        "movementTrigger",
-        "minConfidence",
-        "autoAlerts",
-        "notifications",
-        "analysisInterval",
-      ];
+    Object.assign(
+      settings,
+      req.body || {}
+    );
 
-      for (const key of allowed) {
-        if (
-          Object.prototype.hasOwnProperty.call(
-            req.body || {},
-            key
-          )
-        ) {
-          settings[key] =
-            req.body[key];
-        }
-      }
-
-      writeJson(
-        SETTINGS_FILE,
-        settings
-      );
-
-      res.json({
-        ok: true,
-        settings,
-      });
-    } catch (error) {
-      res.status(400).json({
-        ok: false,
-        error:
-          "Could not update settings.",
-      });
-    }
+    res.json({
+      ok: true,
+      settings,
+    });
   }
 );
 
-/* =========================================================
-   HISTORY
-========================================================= */
+// ============================================================
+// HISTORY
+// ============================================================
 
 app.get(
   "/api/history",
   (req, res) => {
-    const history =
-      readJson(
-        HISTORY_FILE,
-        []
-      );
-
     res.json({
       ok: true,
-      history,
+      data: readJSON(
+        HISTORY_FILE,
+        []
+      ),
     });
   }
 );
@@ -1994,448 +2328,168 @@ app.get(
 app.post(
   "/api/history",
   (req, res) => {
-    try {
-      const body =
-        req.body || {};
-
-      const trade = {
-        id:
-          body.id ||
-          `${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2, 8)}`,
-
-        market:
-          String(
-            body.market || "NIFTY"
-          ).slice(0, 30),
-
-        direction:
-          String(
-            body.direction || "WAIT"
-          ).slice(0, 10),
-
-        entry:
-          normalizeNumber(
-            body.entry,
-            null
-          ),
-
-        stopLoss:
-          normalizeNumber(
-            body.stopLoss,
-            null
-          ),
-
-        target1:
-          normalizeNumber(
-            body.target1,
-            null
-          ),
-
-        target2:
-          normalizeNumber(
-            body.target2,
-            null
-          ),
-
-        target3:
-          normalizeNumber(
-            body.target3,
-            null
-          ),
-
-        confidence:
-          normalizeNumber(
-            body.confidence,
-            null
-          ),
-
-        status:
-          String(
-            body.status || "OPEN"
-          ).slice(0, 30),
-
-        timestamp:
-          body.timestamp ||
-          new Date().toISOString(),
-      };
-
-      const history =
-        readJson(
-          HISTORY_FILE,
-          []
-        );
-
-      history.unshift(trade);
-
-      writeJson(
+    const history =
+      readJSON(
         HISTORY_FILE,
-        history.slice(0, 1000)
+        []
       );
 
-      res.json({
-        ok: true,
-        trade,
-      });
-    } catch (error) {
-      res.status(400).json({
-        ok: false,
-        error:
-          "Could not save history.",
-      });
-    }
+    history.push({
+      ...req.body,
+
+      createdAt:
+        new Date().toISOString(),
+    });
+
+    // Keep latest 1000 entries.
+    const trimmed =
+      history.slice(-1000);
+
+    writeJSON(
+      HISTORY_FILE,
+      trimmed
+    );
+
+    res.json({
+      ok: true,
+      data:
+        trimmed[
+          trimmed.length - 1
+        ],
+    });
   }
 );
 
-/* =========================================================
-   WEB PUSH CONFIG
-========================================================= */
-
-const VAPID_PUBLIC_KEY =
-  process.env.VAPID_PUBLIC_KEY || "";
-
-const VAPID_PRIVATE_KEY =
-  process.env.VAPID_PRIVATE_KEY || "";
-
-const VAPID_EMAIL =
-  process.env.VAPID_EMAIL ||
-  "mailto:admin@example.com";
-
-let pushConfigured =
-  Boolean(
-    VAPID_PUBLIC_KEY &&
-      VAPID_PRIVATE_KEY
-  );
-
-if (pushConfigured) {
-  try {
-    webpush.setVapidDetails(
-      VAPID_EMAIL,
-      VAPID_PUBLIC_KEY,
-      VAPID_PRIVATE_KEY
-    );
-  } catch (error) {
-    pushConfigured = false;
-
-    console.error(
-      "WEB PUSH CONFIG ERROR:",
-      error.message
-    );
-  }
-}
-
-/* =========================================================
-   PUSH PUBLIC KEY
-========================================================= */
+// ============================================================
+// PUSH PUBLIC KEY
+// ============================================================
 
 app.get(
   "/api/push/public-key",
   (req, res) => {
     res.json({
       ok: true,
-      configured: pushConfigured,
+
       publicKey:
-        pushConfigured
-          ? VAPID_PUBLIC_KEY
-          : null,
+        VAPID_PUBLIC_KEY ||
+        null,
     });
   }
 );
 
-/* =========================================================
-   PUSH SUBSCRIPTION
-========================================================= */
+// ============================================================
+// SUBSCRIBE
+// ============================================================
 
 app.post(
   "/api/subscribe",
   (req, res) => {
-    try {
-      const subscription =
-        req.body?.subscription ||
-        req.body;
+    const subscription =
+      req.body?.subscription;
 
-      if (
-        !subscription ||
-        !subscription.endpoint
-      ) {
-        return res.status(400).json({
-          ok: false,
-          error:
-            "Valid PushSubscription is required.",
-        });
-      }
-
-      const subscriptions =
-        readJson(
-          SUBSCRIPTIONS_FILE,
-          []
-        );
-
-      const exists =
-        subscriptions.some(
-          (item) =>
-            item.endpoint ===
-            subscription.endpoint
-        );
-
-      if (!exists) {
-        subscriptions.push(
-          subscription
-        );
-      }
-
-      writeJson(
-        SUBSCRIPTIONS_FILE,
-        subscriptions
-      );
-
-      res.json({
-        ok: true,
-        subscribed: true,
-      });
-    } catch (error) {
-      res.status(400).json({
+    if (
+      !subscription ||
+      !subscription.endpoint
+    ) {
+      return res.status(400).json({
         ok: false,
         error:
-          "Could not save push subscription.",
+          "Valid push subscription is required",
       });
     }
+
+    const subscriptions =
+      getSubscriptions();
+
+    const exists =
+      subscriptions.some(
+        (item) =>
+          item.endpoint ===
+          subscription.endpoint
+      );
+
+    if (!exists) {
+      subscriptions.push(
+        subscription
+      );
+
+      saveSubscriptions(
+        subscriptions
+      );
+    }
+
+    res.json({
+      ok: true,
+      subscribed: true,
+    });
   }
 );
 
-/* =========================================================
-   SEND PUSH
-========================================================= */
-
-async function sendPushNotification(
-  title,
-  body,
-  url = "/"
-) {
-  if (!pushConfigured) {
-    return {
-      sent: 0,
-      skipped: true,
-      reason:
-        "VAPID is not configured.",
-    };
-  }
-
-  const subscriptions =
-    readJson(
-      SUBSCRIPTIONS_FILE,
-      []
-    );
-
-  const payload =
-    JSON.stringify({
-      title,
-      body,
-      url,
-    });
-
-  let sent = 0;
-
-  const validSubscriptions = [];
-
-  for (const subscription of subscriptions) {
-    try {
-      await webpush.sendNotification(
-        subscription,
-        payload
-      );
-
-      sent++;
-      validSubscriptions.push(
-        subscription
-      );
-    } catch (error) {
-      const statusCode =
-        error.statusCode;
-
-      if (
-        statusCode !== 404 &&
-        statusCode !== 410
-      ) {
-        validSubscriptions.push(
-          subscription
-        );
-      }
-    }
-  }
-
-  writeJson(
-    SUBSCRIPTIONS_FILE,
-    validSubscriptions
-  );
-
-  return {
-    sent,
-    skipped: false,
-  };
-}
-
-/* =========================================================
-   TEST PUSH
-========================================================= */
+// ============================================================
+// PUSH TEST
+// ============================================================
 
 app.post(
   "/api/push/test",
   async (req, res) => {
     try {
       const result =
-        await sendPushNotification(
-          "Era AI",
-          "Test notification received.",
-          "/?from=notification"
-        );
+        await sendPush({
+          title:
+            req.body?.title ||
+            "Era AI",
+
+          body:
+            req.body?.body ||
+            "Era notification test.",
+
+          icon:
+            req.body?.icon ||
+            "/icon-192.png",
+
+          data: {
+            url:
+              req.body?.url ||
+              "/?from=notification",
+          },
+        });
 
       res.json({
         ok: true,
-        ...result,
+        result,
       });
     } catch (error) {
+      console.error(
+        "/api/push/test ERROR:",
+        error.message
+      );
+
       res.status(500).json({
         ok: false,
         error:
-          "Push notification failed.",
+          error.message,
       });
     }
   }
 );
 
-/* =========================================================
-   ENGINE
-========================================================= */
-
-let engineTimer = null;
-
-async function runEngineCycle() {
-  if (!upstoxConfigured) {
-    engineState.lastError =
-      "UPSTOX_ACCESS_TOKEN is missing.";
-
-    return;
-  }
-
-  engineState.lastRun =
-    new Date().toISOString();
-
-  try {
-    const analysis =
-      await getEraAnalysis(
-        "NIFTY"
-      );
-
-    const signal =
-      analysis.signal || {};
-
-    if (
-      signal.direction === "BUY" ||
-      signal.direction === "SELL"
-    ) {
-      const previous =
-        alertState.lastSignal;
-
-      const changed =
-        !previous ||
-        previous.direction !==
-          signal.direction ||
-        previous.entry !==
-          signal.entry;
-
-      if (
-        changed &&
-        settings.autoAlerts &&
-        signal.confidence >=
-          Number(
-            settings.minConfidence || 60
-          )
-      ) {
-        alertState.lastSignal =
-          signal;
-
-        alertState.active = {
-          market: "NIFTY",
-          ...signal,
-          createdAt:
-            new Date().toISOString(),
-        };
-
-        await sendPushNotification(
-          `Era AI ${signal.direction}`,
-          `NIFTY ${signal.direction} setup. Entry ${signal.entry}, SL ${signal.stopLoss}, Target 1 ${signal.target1}.`,
-          "/?from=notification"
-        );
-      }
-    }
-
-    engineState.lastSuccess =
-      new Date().toISOString();
-
-    engineState.lastError = null;
-  } catch (error) {
-    engineState.lastError =
-      error.message;
-
-    console.error(
-      "ENGINE ERROR:",
-      error.response?.data ||
-        error.message
-    );
-  }
-}
-
-function startEngine() {
-  if (engineTimer) {
-    clearInterval(engineTimer);
-  }
-
-  if (!upstoxConfigured) {
-    engineState.running = false;
-
-    console.log(
-      "Era engine NOT started: UPSTOX_ACCESS_TOKEN missing."
-    );
-
-    return;
-  }
-
-  engineState.running = true;
-
-  const interval =
-    Math.max(
-      30,
-      Number(
-        settings.analysisInterval || 60
-      )
-    ) * 1000;
-
-  runEngineCycle();
-
-  engineTimer =
-    setInterval(
-      runEngineCycle,
-      interval
-    );
-
-  console.log(
-    `Era engine started. Interval: ${interval / 1000}s`
-  );
-}
+// ============================================================
+// ENGINE STATUS
+// ============================================================
 
 app.get(
   "/api/engine",
   (req, res) => {
     res.json({
       ok: true,
-      engine: engineState,
-      activeAlert:
-        alertState.active,
+      engine,
     });
   }
 );
+
+// ============================================================
+// ENGINE START
+// ============================================================
 
 app.post(
   "/api/engine/start",
@@ -2444,51 +2498,35 @@ app.post(
 
     res.json({
       ok: true,
-      engine: engineState,
+      engine,
     });
   }
 );
+
+// ============================================================
+// ENGINE STOP
+// ============================================================
 
 app.post(
   "/api/engine/stop",
   (req, res) => {
-    if (engineTimer) {
-      clearInterval(engineTimer);
-      engineTimer = null;
-    }
-
-    engineState.running = false;
+    stopEngine();
 
     res.json({
       ok: true,
-      engine: engineState,
+      engine,
     });
   }
 );
 
-/* =========================================================
-   ERROR HANDLING
-========================================================= */
+// ============================================================
+// GLOBAL ERROR HANDLER
+// ============================================================
 
 app.use(
-  (req, res) => {
-    res.status(404).json({
-      ok: false,
-      error: "Endpoint not found.",
-      path: req.path,
-    });
-  }
-);
-
-app.use(
-  (
-    error,
-    req,
-    res,
-    next
-  ) => {
+  (error, req, res, next) => {
     console.error(
-      "EXPRESS ERROR:",
+      "GLOBAL ERROR:",
       error
     );
 
@@ -2499,64 +2537,78 @@ app.use(
     res.status(500).json({
       ok: false,
       error:
-        "Internal server error.",
+        error.message ||
+        "Internal server error",
     });
   }
 );
 
-/* =========================================================
-   PROCESS ERROR HANDLING
-========================================================= */
-
-process.on(
-  "unhandledRejection",
-  (reason) => {
-    console.error(
-      "UNHANDLED REJECTION:",
-      reason
-    );
-  }
-);
-
-process.on(
-  "uncaughtException",
-  (error) => {
-    console.error(
-      "UNCAUGHT EXCEPTION:",
-      error
-    );
-  }
-);
-
-/* =========================================================
-   START SERVER
-========================================================= */
+// ============================================================
+// START SERVER
+// ============================================================
 
 app.listen(
   PORT,
+  "0.0.0.0",
   () => {
     console.log(
-      "===================================="
+      "========================================"
     );
 
     console.log(
-      `Era AI backend running on port ${PORT}`
+      "        ERA AI BACKEND STARTED"
     );
 
     console.log(
-      `Upstox configured: ${upstoxConfigured}`
+      "========================================"
     );
 
     console.log(
-      `Push configured: ${pushConfigured}`
+      `PORT: ${PORT}`
     );
 
     console.log(
-      "Supported indices: NIFTY, BANKNIFTY, FINNIFTY, SENSEX"
+      `UPSTOX: ${
+        UPSTOX_ACCESS_TOKEN
+          ? "CONFIGURED"
+          : "MISSING"
+      }`
     );
 
     console.log(
-      "===================================="
+      `OPENROUTER: ${
+        OPENROUTER_API_KEY
+          ? "CONFIGURED"
+          : "MISSING"
+      }`
+    );
+
+    console.log(
+      `ELEVENLABS: ${
+        ELEVENLABS_API_KEY
+          ? "CONFIGURED"
+          : "MISSING"
+      }`
+    );
+
+    console.log(
+      `VAPID: ${
+        VAPID_PUBLIC_KEY &&
+        VAPID_PRIVATE_KEY
+          ? "CONFIGURED"
+          : "MISSING"
+      }`
+    );
+
+    console.log(
+      "Supported indices:",
+      Object.keys(
+        INDICES
+      ).join(", ")
+    );
+
+    console.log(
+      "========================================"
     );
 
     startEngine();
