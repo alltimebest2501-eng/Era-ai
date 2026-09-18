@@ -879,68 +879,61 @@ function rsi(
   );
 }
 
-function calculateVWAP(
-  candles
-) {
-  if (
-    !candles ||
-    !candles.length
-  ) {
+function calculateVWAP(candles) {
+  if (!Array.isArray(candles) || candles.length === 0) {
     return null;
   }
 
-  let cumulativePV = 0;
+  const latestCandle = candles[candles.length - 1];
+
+  const latestDate = new Date(latestCandle[0]).toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata"
+  });
+
+  const sessionCandles = candles.filter((candle) => {
+    const candleDate = new Date(candle[0]).toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata"
+    });
+
+    return candleDate === latestDate;
+  });
+
+  if (!sessionCandles.length) {
+    return null;
+  }
+
+  let cumulativePriceVolume = 0;
   let cumulativeVolume = 0;
 
-  for (
-    const candle of candles
-  ) {
-    const high =
-      safeNumber(
-        candle[2]
-      );
+  for (const candle of sessionCandles) {
+    const high = Number(candle[2]);
+    const low = Number(candle[3]);
+    const close = Number(candle[4]);
+    const volume = Number(candle[5] || 0);
 
-    const low =
-      safeNumber(
-        candle[3]
-      );
+    if (
+      !Number.isFinite(high) ||
+      !Number.isFinite(low) ||
+      !Number.isFinite(close) ||
+      !Number.isFinite(volume)
+    ) {
+      continue;
+    }
 
-    const close =
-      safeNumber(
-        candle[4]
-      );
+    const typicalPrice = (high + low + close) / 3;
 
-    const volume =
-      safeNumber(
-        candle[5]
-      );
-
-    const typical =
-      (
-        high +
-        low +
-        close
-      ) / 3;
-
-    cumulativePV +=
-      typical * volume;
-
-    cumulativeVolume +=
-      volume;
+    cumulativePriceVolume += typicalPrice * volume;
+    cumulativeVolume += volume;
   }
 
-  if (
-    cumulativeVolume <= 0
-  ) {
+  if (cumulativeVolume <= 0) {
     return null;
   }
 
-  return (
-    cumulativePV /
-    cumulativeVolume
+  return Number(
+    (cumulativePriceVolume / cumulativeVolume).toFixed(2)
   );
 }
-
 /* =========================================================
    MARKET STRUCTURE
    ========================================================= */
