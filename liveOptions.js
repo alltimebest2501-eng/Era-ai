@@ -1,731 +1,637 @@
 const axios = require("axios");
-const UpstoxClient = require("upstox-js-sdk");
 
-const UPSTOX_BASE = "https://api.upstox.com/v2";
+const UPSTOX_V2 = "https://api.upstox.com/v2";
+
+const UPSTOX_ACCESS_TOKEN =
+  process.env.UPSTOX_ACCESS_TOKEN || "";
+
+/* =========================================================
+   SUPPORTED OPTION INDICES
+========================================================= */
 
 const OPTION_UNDERLYINGS = [
   {
     name: "NIFTY",
-    key: "NSE_INDEX|Nifty 50"
+    key: "NSE_INDEX|Nifty 50",
   },
   {
     name: "BANKNIFTY",
-    key: "NSE_INDEX|Nifty Bank"
+    key: "NSE_INDEX|Nifty Bank",
   },
   {
     name: "FINNIFTY",
-    key: "NSE_INDEX|Nifty Fin Service"
+    key: "NSE_INDEX|Nifty Fin Service",
   },
   {
     name: "SENSEX",
-    key: "BSE_INDEX|SENSEX"
-  }
+    key: "BSE_INDEX|SENSEX",
+  },
 ];
 
-/*
-  Upstox V3 normal limits:
-  LTPC      : 5000 individual
-  Greeks    : 3000 individual
-  Full      : 2000 individual
-
-  We keep these configurable so the backend
-  never blindly sends an oversized subscription.
-*/
-
-const LTPC_LIMIT = 5000;
-const GREEKS_LIMIT = 3000;
+/* =========================================================
+   RUNTIME CACHE
+========================================================= */
 
 const optionContracts = new Map();
-const liveOptions = new Map();
 
-let streamer = null;
-let greeksStreamer = null;
+const liveOptionData = new Map();
 
 let initialized = false;
+let lastRefresh = null;
+let lastError = null;
 
-function authHeaders() {
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function getHeaders() {
+  if (!UPSTOX_ACCESS_TOKEN) {
+    throw new Error(
+      "UPSTOX_ACCESS_TOKEN is missing"
+    );
+  }
+
   return {
+    Accept: "application/json",
     Authorization:
-      `Bearer ${process.env.UPSTOX_ACCESS_TOKEN}`,
-    Accept: "application/json"
+      `Bearer ${UPSTOX_ACCESS_TOKEN}`,
   };
 }
 
-/* -------------------------------------------------------
-   FETCH ALL CURRENT CONTRACTS
-------------------------------------------------------- */
+function normalizeNumber(
+  value,
+  fallback = null
+) {
+  const number = Number(value);
 
-async function fetchAllOptionContracts() {
-  const all = [];
+  return Number.isFinite(number)
+    ? number
+    : fallback;
+}
 
-  for (const underlying of OPTION_UNDERLYINGS) {
+function sleep(ms) {
+  return new Promise((resolve) =>
+    setTimeout(resolve, ms)
+  );
+}
+
+/* =========================================================
+   FETCH CONTRACTS
+========================================================= */
+
+async function fetchContracts(
+  underlying
+) {
+  const response =
+    await axios.get(
+      `${UPSTOX_V2}/option/contract`,
+      {
+        params: {
+          instrument_key:
+            underlying.key,
+        },
+
+        headers: getHeaders(),
+
+        timeout: 15000,
+      }
+    );
+
+  const contracts =
+    Array.isArray(response?.data?.data)
+      ? response.data.data
+      : [];
+
+  return contracts;
+}
+
+/* =========================================================
+   NORMALIZE CONTRACT
+========================================================= */
+
+function normalizeContract(
+  contract,
+  underlying
+) {
+  return {
+    underlying:
+      underlying.name,
+
+    underlyingKey:
+      underlying.key,
+
+    instrumentKey:
+      contract.instrument_key ||
+      contract.instrumentKey ||
+      null,
+
+    tradingSymbol:
+      contract.trading_symbol ||
+      contract.tradingSymbol ||
+      contract.symbol ||
+      null,
+
+    expiry:
+      contract.expiry ||
+      contract.expiry_date ||
+      contract.expiryDate ||
+      null,
+
+    strikePrice:
+      normalizeNumber(
+        contract.strike_price ??
+          contract.strikePrice
+      ),
+
+    optionType:
+      (
+        contract.option_type ||
+        contract.optionType ||
+        ""
+      ).toUpperCase(),
+
+    lotSize:
+      normalizeNumber(
+        contract.lot_size ??
+          contract.lotSize,
+        null
+      ),
+
+    freezeQuantity:
+      normalizeNumber(
+        contract.freeze_quantity ??
+          contract.freezeQuantity,
+        null
+      ),
+
+    tickSize:
+      normalizeNumber(
+        contract.tick_size ??
+          contract.tickSize,
+        null
+      ),
+
+    raw: contract,
+  };
+}
+
+/* =========================================================
+   LOAD ALL CONTRACTS
+========================================================= */
+
+async function loadAllOptionContracts() {
+  if (!UPSTOX_ACCESS_TOKEN) {
+    throw new Error(
+      "UPSTOX_ACCESS_TOKEN is missing"
+    );
+  }
+
+  const loaded = new Map();
+
+  for (
+    const underlying of OPTION_UNDERLYINGS
+  ) {
     try {
-      console.log(
-        `[OPTIONS] Loading contracts: ${underlying.name}`
-      );
-
-      const response = await axios.get(
-        `${UPSTOX_BASE}/option/contract`,
-        {
-          params: {
-            instrument_key: underlying.key
-          },
-          headers: authHeaders(),
-          timeout: 20000
-        }
-      );
-
-      const rows =
-        response.data?.data || [];
-
-      for (const contract of rows) {
-        if (
-          !contract.instrument_key ||
-          !contract.instrument_type
-        ) {
-          continue;
-        }
-
-        if (
-          contract.instrument_type !== "CE" &&
-          contract.instrument_type !== "PE"
-        ) {
-          continue;
-        }
-
-        const normalized = {
-          ...contract,
-          underlying_name:
-            underlying.name,
-          underlying_key:
-            underlying.key
-        };
-
-        optionContracts.set(
-          contract.instrument_key,
-          normalized
+      const contracts =
+        await fetchContracts(
+          underlying
         );
 
-        all.push(normalized);
-      }
+      const normalized =
+        contracts
+          .map((contract) =>
+            normalizeContract(
+              contract,
+              underlying
+            )
+          )
+          .filter(
+            (contract) =>
+              contract.instrumentKey
+          );
 
-      console.log(
-        `[OPTIONS] ${underlying.name}: ${rows.length} contracts`
+      loaded.set(
+        underlying.name,
+        normalized
       );
 
+      console.log(
+        `[OPTIONS] ${underlying.name}: ${normalized.length} contracts`
+      );
+
+      await sleep(100);
     } catch (error) {
       console.error(
-        `[OPTIONS] Failed loading ${underlying.name}:`,
+        `[OPTIONS] ${underlying.name} contract error:`,
         error.response?.data ||
-        error.message
+          error.message
+      );
+
+      loaded.set(
+        underlying.name,
+        []
       );
     }
   }
 
-  console.log(
-    `[OPTIONS] TOTAL CONTRACTS DISCOVERED: ${optionContracts.size}`
-  );
-
-  return all;
-}
-
-/* -------------------------------------------------------
-   SAVE LIVE TICK
-------------------------------------------------------- */
-
-function updateLiveOption(instrumentKey, patch) {
-  const old =
-    liveOptions.get(instrumentKey) || {};
-
-  const updated = {
-    ...old,
-    ...patch,
-    instrument_key: instrumentKey,
-    updated_at:
-      new Date().toISOString()
-  };
-
-  liveOptions.set(
-    instrumentKey,
-    updated
-  );
-}
-
-/* -------------------------------------------------------
-   DECODE UPSTOX MESSAGE
-------------------------------------------------------- */
-
-function decodeMessage(data) {
-  try {
-    if (Buffer.isBuffer(data)) {
-      const text =
-        data.toString("utf8");
-
-      try {
-        return JSON.parse(text);
-      } catch {
-        return null;
-      }
-    }
-
-    if (typeof data === "string") {
-      try {
-        return JSON.parse(data);
-      } catch {
-        return null;
-      }
-    }
-
-    if (data && typeof data === "object") {
-      return data;
-    }
-
-    return null;
-
-  } catch {
-    return null;
-  }
-}
-
-/* -------------------------------------------------------
-   EXTRACT COMMON MARKET VALUES
-------------------------------------------------------- */
-
-function extractMarketData(feed) {
-  const market =
-    feed?.marketFF ||
-    feed?.marketFullFeed ||
-    feed?.market_full_feed ||
-    feed?.market ||
-    {};
-
-  const ltpc =
-    feed?.ltpc ||
-    market?.ltpc ||
-    {};
-
-  const ohlc =
-    market?.ohlc ||
-    {};
-
-  return {
-    ltp:
-      ltpc?.ltp ??
-      market?.ltp ??
-      null,
-
-    volume:
-      market?.vtt ??
-      market?.volume ??
-      null,
-
-    oi:
-      market?.oi ??
-      null,
-
-    oi_change:
-      market?.oi_change ??
-      market?.oiChange ??
-      null,
-
-    bid:
-      market?.bid_price ??
-      market?.bid ??
-      null,
-
-    ask:
-      market?.ask_price ??
-      market?.ask ??
-      null,
-
-    open:
-      ohlc?.open ??
-      null,
-
-    high:
-      ohlc?.high ??
-      null,
-
-    low:
-      ohlc?.low ??
-      null,
-
-    close:
-      ohlc?.close ??
-      null
-  };
-}
-
-/* -------------------------------------------------------
-   START LTPC STREAM
-------------------------------------------------------- */
-
-function startLTPCStreamer(instrumentKeys) {
-  if (!instrumentKeys.length) {
-    console.log(
-      "[OPTIONS] No option instruments for LTPC."
+  for (const [
+    name,
+    contracts,
+  ] of loaded.entries()) {
+    optionContracts.set(
+      name,
+      contracts
     );
-    return;
   }
 
-  const keys =
-    instrumentKeys.slice(
-      0,
-      LTPC_LIMIT
-    );
+  lastRefresh =
+    new Date().toISOString();
 
-  console.log(
-    `[OPTIONS] Starting LTPC WebSocket for ${keys.length} contracts`
-  );
+  lastError = null;
 
-  const defaultClient =
-    UpstoxClient.ApiClient.instance;
-
-  const oauth =
-    defaultClient.authentications["OAUTH2"];
-
-  oauth.accessToken =
-    process.env.UPSTOX_ACCESS_TOKEN;
-
-  streamer =
-    new UpstoxClient.MarketDataStreamerV3();
-
-  streamer.autoReconnect(
-    true,
-    10,
-    999999
-  );
-
-  streamer.on("open", () => {
-    console.log(
-      "[OPTIONS] LTPC WebSocket connected"
-    );
-
-    /*
-      Subscribe all discovered contracts
-      up to Upstox's LTPC limit.
-    */
-
-    streamer.subscribe(
-      keys,
-      "ltpc"
-    );
-
-    console.log(
-      `[OPTIONS] LTPC subscribed: ${keys.length}`
-    );
-  });
-
-  streamer.on("message", data => {
-    const decoded =
-      decodeMessage(data);
-
-    if (!decoded) {
-      return;
-    }
-
-    /*
-      Depending on SDK/feed format,
-      instrument feeds can be nested.
-    */
-
-    const feeds =
-      decoded.feeds ||
-      decoded.data ||
-      decoded;
-
-    if (
-      !feeds ||
-      typeof feeds !== "object"
-    ) {
-      return;
-    }
-
-    for (
-      const [instrumentKey, feed]
-      of Object.entries(feeds)
-    ) {
-      const market =
-        extractMarketData(feed);
-
-      updateLiveOption(
-        instrumentKey,
-        market
-      );
-    }
-  });
-
-  streamer.on("error", error => {
-    console.error(
-      "[OPTIONS] LTPC WebSocket error:",
-      error
-    );
-  });
-
-  streamer.on("close", () => {
-    console.log(
-      "[OPTIONS] LTPC WebSocket closed"
-    );
-  });
-
-  streamer.on(
-    "reconnecting",
-    () => {
-      console.log(
-        "[OPTIONS] LTPC reconnecting..."
-      );
-    }
-  );
-
-  streamer.connect();
+  return getContractStats();
 }
 
-/* -------------------------------------------------------
-   START GREEKS STREAM
-------------------------------------------------------- */
+/* =========================================================
+   CONTRACT STATS
+========================================================= */
 
-function startGreeksStreamer(instrumentKeys) {
-  if (!instrumentKeys.length) {
-    console.log(
-      "[OPTIONS] No option instruments for Greeks."
-    );
-    return;
-  }
+function getContractStats() {
+  const stats = {};
 
-  const keys =
-    instrumentKeys.slice(
-      0,
-      GREEKS_LIMIT
-    );
-
-  console.log(
-    `[OPTIONS] Starting Greeks WebSocket for ${keys.length} contracts`
-  );
-
-  const defaultClient =
-    UpstoxClient.ApiClient.instance;
-
-  const oauth =
-    defaultClient.authentications["OAUTH2"];
-
-  oauth.accessToken =
-    process.env.UPSTOX_ACCESS_TOKEN;
-
-  greeksStreamer =
-    new UpstoxClient.MarketDataStreamerV3();
-
-  greeksStreamer.autoReconnect(
-    true,
-    10,
-    999999
-  );
-
-  greeksStreamer.on("open", () => {
-    console.log(
-      "[OPTIONS] Greeks WebSocket connected"
-    );
-
-    greeksStreamer.subscribe(
-      keys,
-      "option_greeks"
-    );
-
-    console.log(
-      `[OPTIONS] Greeks subscribed: ${keys.length}`
-    );
-  });
-
-  greeksStreamer.on(
-    "message",
-    data => {
-      const decoded =
-        decodeMessage(data);
-
-      if (!decoded) {
-        return;
-      }
-
-      const feeds =
-        decoded.feeds ||
-        decoded.data ||
-        decoded;
-
-      if (
-        !feeds ||
-        typeof feeds !== "object"
-      ) {
-        return;
-      }
-
-      for (
-        const [instrumentKey, feed]
-        of Object.entries(feeds)
-      ) {
-        const greeks =
-          feed?.optionGreeks ||
-          feed?.option_greeks ||
-          feed?.greeks ||
-          feed;
-
-        if (
-          greeks &&
-          typeof greeks === "object"
-        ) {
-          updateLiveOption(
-            instrumentKey,
-            {
-              iv:
-                greeks.iv ??
-                greeks.implied_volatility ??
-                null,
-
-              delta:
-                greeks.delta ??
-                null,
-
-              gamma:
-                greeks.gamma ??
-                null,
-
-              theta:
-                greeks.theta ??
-                null,
-
-              vega:
-                greeks.vega ??
-                null
-            }
-          );
-        }
-      }
-    }
-  );
-
-  greeksStreamer.on(
-    "error",
-    error => {
-      console.error(
-        "[OPTIONS] Greeks WebSocket error:",
-        error
-      );
-    }
-  );
-
-  greeksStreamer.on(
-    "close",
-    () => {
-      console.log(
-        "[OPTIONS] Greeks WebSocket closed"
-      );
-    }
-  );
-
-  greeksStreamer.connect();
-}
-
-/* -------------------------------------------------------
-   INITIALIZE EVERYTHING
-------------------------------------------------------- */
-
-async function initializeLiveOptions() {
-  if (initialized) {
-    return;
-  }
-
-  if (
-    !process.env.UPSTOX_ACCESS_TOKEN
+  for (
+    const underlying of OPTION_UNDERLYINGS
   ) {
-    console.error(
-      "[OPTIONS] UPSTOX_ACCESS_TOKEN missing."
+    const contracts =
+      optionContracts.get(
+        underlying.name
+      ) || [];
+
+    stats[underlying.name] = {
+      contracts:
+        contracts.length,
+
+      expiries:
+        [
+          ...new Set(
+            contracts
+              .map(
+                (x) => x.expiry
+              )
+              .filter(Boolean)
+          ),
+        ].sort(),
+    };
+  }
+
+  return stats;
+}
+
+/* =========================================================
+   GET CONTRACTS
+========================================================= */
+
+function getContracts(
+  index
+) {
+  const key =
+    String(index || "NIFTY")
+      .trim()
+      .toUpperCase();
+
+  return (
+    optionContracts.get(key) ||
+    []
+  );
+}
+
+/* =========================================================
+   GET EXPIRIES
+========================================================= */
+
+function getExpiries(
+  index
+) {
+  const contracts =
+    getContracts(index);
+
+  return [
+    ...new Set(
+      contracts
+        .map(
+          (contract) =>
+            contract.expiry
+        )
+        .filter(Boolean)
+    ),
+  ].sort();
+}
+
+/* =========================================================
+   GET NEAREST EXPIRY
+========================================================= */
+
+function getNearestExpiry(
+  index
+) {
+  const expiries =
+    getExpiries(index);
+
+  if (!expiries.length) {
+    return null;
+  }
+
+  const today =
+    new Date()
+      .toISOString()
+      .slice(0, 10);
+
+  const future =
+    expiries.filter(
+      (expiry) =>
+        expiry >= today
     );
 
+  return (
+    future[0] ||
+    expiries[0] ||
+    null
+  );
+}
+
+/* =========================================================
+   FILTER CONTRACTS
+========================================================= */
+
+function filterContracts({
+  index = "NIFTY",
+  expiry = null,
+  optionType = null,
+}) {
+  let contracts =
+    getContracts(index);
+
+  if (expiry) {
+    contracts =
+      contracts.filter(
+        (contract) =>
+          contract.expiry ===
+          expiry
+      );
+  }
+
+  if (optionType) {
+    const type =
+      String(optionType)
+        .toUpperCase();
+
+    contracts =
+      contracts.filter(
+        (contract) =>
+          contract.optionType ===
+          type
+      );
+  }
+
+  return contracts;
+}
+
+/* =========================================================
+   SAVE LIVE DATA
+========================================================= */
+
+function updateLiveOption(
+  instrumentKey,
+  data
+) {
+  if (!instrumentKey) {
     return;
   }
 
-  initialized = true;
+  const previous =
+    liveOptionData.get(
+      instrumentKey
+    ) || {};
 
-  try {
-    const contracts =
-      await fetchAllOptionContracts();
+  liveOptionData.set(
+    instrumentKey,
+    {
+      ...previous,
+      ...data,
 
-    const instrumentKeys =
-      [
-        ...new Set(
-          contracts
-            .map(
-              item =>
-                item.instrument_key
-            )
-            .filter(Boolean)
-        )
-      ];
+      instrumentKey,
 
-    console.log(
-      `[OPTIONS] Unique option contracts: ${instrumentKeys.length}`
-    );
-
-    /*
-      LTPC:
-      up to 5000 contracts
-    */
-
-    startLTPCStreamer(
-      instrumentKeys
-    );
-
-    /*
-      Greeks:
-      up to 3000 contracts
-    */
-
-    startGreeksStreamer(
-      instrumentKeys
-    );
-
-  } catch (error) {
-    initialized = false;
-
-    console.error(
-      "[OPTIONS] Initialization failed:",
-      error
-    );
-  }
+      updatedAt:
+        new Date().toISOString(),
+    }
+  );
 }
 
-/* -------------------------------------------------------
-   REFRESH CONTRACT LIST
-------------------------------------------------------- */
-
-async function refreshLiveOptions() {
-  try {
-    console.log(
-      "[OPTIONS] Refreshing contract list..."
-    );
-
-    const contracts =
-      await fetchAllOptionContracts();
-
-    return contracts.length;
-
-  } catch (error) {
-    console.error(
-      "[OPTIONS] Contract refresh error:",
-      error
-    );
-
-    return 0;
-  }
-}
-
-/*
-  Refresh contract metadata every 30 minutes.
-  This catches newly listed/rolled contracts.
-*/
-
-setInterval(
-  () => {
-    refreshLiveOptions()
-      .catch(console.error);
-  },
-  30 * 60 * 1000
-);
-
-/* -------------------------------------------------------
-   GETTERS
-------------------------------------------------------- */
+/* =========================================================
+   GET LIVE OPTION
+========================================================= */
 
 function getLiveOption(
   instrumentKey
 ) {
   return (
-    liveOptions.get(
+    liveOptionData.get(
       instrumentKey
     ) || null
   );
 }
 
-function getAllLiveOptions() {
-  const result = [];
+/* =========================================================
+   GET LIVE OPTIONS
+========================================================= */
 
-  for (
-    const [instrumentKey, live]
-    of liveOptions.entries()
-  ) {
-    const contract =
-      optionContracts.get(
-        instrumentKey
-      );
-
-    result.push({
-      ...(contract || {}),
-      ...(live || {})
+function getLiveOptions({
+  index = "NIFTY",
+  expiry = null,
+} = {}) {
+  const contracts =
+    filterContracts({
+      index,
+      expiry,
     });
+
+  return contracts.map(
+    (contract) => ({
+      ...contract,
+
+      live:
+        getLiveOption(
+          contract.instrumentKey
+        ),
+    })
+  );
+}
+
+/* =========================================================
+   GET STATUS
+========================================================= */
+
+function getStatus() {
+  let totalContracts = 0;
+
+  for (const contracts of optionContracts.values()) {
+    totalContracts +=
+      contracts.length;
   }
 
-  return result;
-}
-
-function getContracts() {
-  return [
-    ...optionContracts.values()
-  ];
-}
-
-function getOptionStats() {
   return {
-    contracts_discovered:
-      optionContracts.size,
+    initialized,
 
-    live_contracts:
-      liveOptions.size,
+    lastRefresh,
 
-    nifty:
-      optionCount(
-        "NSE_INDEX|Nifty 50"
-      ),
+    lastError,
 
-    banknifty:
-      optionCount(
-        "NSE_INDEX|Nifty Bank"
-      ),
+    totalContracts,
 
-    finnifty:
-      optionCount(
-        "NSE_INDEX|Nifty Fin Service"
-      ),
+    liveDataCount:
+      liveOptionData.size,
 
-    sensex:
-      optionCount(
-        "BSE_INDEX|SENSEX"
-      )
+    indices:
+      getContractStats(),
   };
 }
 
-function optionCount(
-  underlyingKey
-) {
-  let count = 0;
+/* =========================================================
+   INITIALIZE
+========================================================= */
 
-  for (
-    const contract
-    of optionContracts.values()
-  ) {
-    if (
-      contract.underlying_key ===
-      underlyingKey
-    ) {
-      count++;
-    }
+async function initializeLiveOptions() {
+  if (initialized) {
+    return getStatus();
   }
 
-  return count;
+  try {
+    console.log(
+      "[OPTIONS] Initializing option contracts..."
+    );
+
+    initialized = false;
+
+    await loadAllOptionContracts();
+
+    initialized = true;
+
+    console.log(
+      "[OPTIONS] Option contracts initialized."
+    );
+
+    return getStatus();
+  } catch (error) {
+    initialized = false;
+
+    lastError =
+      error.message;
+
+    console.error(
+      "[OPTIONS] Initialization failed:",
+      error.response?.data ||
+        error.message
+    );
+
+    throw error;
+  }
 }
 
+/* =========================================================
+   REFRESH
+========================================================= */
+
+async function refreshOptionContracts() {
+  try {
+    console.log(
+      "[OPTIONS] Refreshing contracts..."
+    );
+
+    await loadAllOptionContracts();
+
+    console.log(
+      "[OPTIONS] Contracts refreshed."
+    );
+
+    return getStatus();
+  } catch (error) {
+    lastError =
+      error.message;
+
+    console.error(
+      "[OPTIONS] Refresh failed:",
+      error.response?.data ||
+        error.message
+    );
+
+    return getStatus();
+  }
+}
+
+/* =========================================================
+   AUTO REFRESH
+========================================================= */
+
+let refreshTimer = null;
+
+function startOptionRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+  }
+
+  refreshTimer =
+    setInterval(
+      refreshOptionContracts,
+      30 * 60 * 1000
+    );
+
+  console.log(
+    "[OPTIONS] Auto-refresh enabled: 30 minutes"
+  );
+}
+
+function stopOptionRefresh() {
+  if (refreshTimer) {
+    clearInterval(
+      refreshTimer
+    );
+
+    refreshTimer = null;
+  }
+}
+
+/* =========================================================
+   EXPORTS
+========================================================= */
+
 module.exports = {
+  OPTION_UNDERLYINGS,
+
   initializeLiveOptions,
-  refreshLiveOptions,
-  getLiveOption,
-  getAllLiveOptions,
+
+  refreshOptionContracts,
+
+  startOptionRefresh,
+
+  stopOptionRefresh,
+
+  loadAllOptionContracts,
+
   getContracts,
-  getOptionStats
+
+  getExpiries,
+
+  getNearestExpiry,
+
+  filterContracts,
+
+  updateLiveOption,
+
+  getLiveOption,
+
+  getLiveOptions,
+
+  getContractStats,
+
+  getStatus,
 };
