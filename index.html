@@ -1,4473 +1,4612 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#080a0f">
-<meta name="description" content="Era AI - AI Market Copilot">
-<title>Era AI V6</title>
-
-<style>
-*{
-  box-sizing:border-box;
-  margin:0;
-  padding:0;
-  font-family:Arial,sans-serif;
-}
-
-:root{
-  --bg:#080a0f;
-  --bg2:#0d1017;
-  --card:#11151d;
-  --card2:#151a23;
-  --border:#242b36;
-  --text:#f5f7fb;
-  --muted:#89919f;
-  --muted2:#606978;
-  --accent:#8b7cff;
-  --accent2:#b59cff;
-  --green:#48e6a1;
-  --red:#ff667d;
-  --yellow:#ffd166;
-  --blue:#6bb7ff;
-  --shadow:0 12px 35px rgba(0,0,0,.28);
-}
-
-body.light{
-  --bg:#f4f6fb;
-  --bg2:#ffffff;
-  --card:#ffffff;
-  --card2:#f7f8fc;
-  --border:#e1e5ed;
-  --text:#11141a;
-  --muted:#687181;
-  --muted2:#8b93a1;
-  --accent:#635bff;
-  --accent2:#7b73ff;
-  --green:#099268;
-  --red:#e03152;
-  --yellow:#b77900;
-  --blue:#2677c9;
-  --shadow:0 10px 30px rgba(30,40,70,.10);
-}
-
-body{
-  background:
-    radial-gradient(circle at 50% -10%,rgba(120,100,255,.12),transparent 35%),
-    var(--bg);
-  color:var(--text);
-  min-height:100vh;
-  transition:.25s;
-}
-
-button,
-select,
-input{
-  font:inherit;
-}
-
-button{
-  border:0;
-  cursor:pointer;
-}
-
-button:active{
-  transform:scale(.98);
-}
-
-button:disabled{
-  opacity:.55;
-  cursor:not-allowed;
-}
-
-.app{
-  max-width:600px;
-  margin:auto;
-  min-height:100vh;
-  padding-bottom:90px;
-}
-
-/* HEADER */
-
-header{
-  padding:20px 17px 10px;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  position:sticky;
-  top:0;
-  z-index:20;
-  background:rgba(8,10,15,.88);
-  backdrop-filter:blur(18px);
-}
-
-body.light header{
-  background:rgba(244,246,251,.88);
-}
-
-.logo-wrap{
-  display:flex;
-  align-items:center;
-  gap:10px;
-}
-
-.logo-mark{
-  width:36px;
-  height:36px;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 7px 25px rgba(110,95,255,.28);
-  font-size:18px;
-}
-
-.logo{
-  font-size:22px;
-  font-weight:800;
-  letter-spacing:-.5px;
-}
-
-.logo-sub{
-  font-size:9px;
-  color:var(--muted);
-  margin-top:2px;
-  letter-spacing:1px;
-}
-
-.header-right{
-  display:flex;
-  align-items:center;
-  gap:9px;
-}
-
-.status{
-  font-size:11px;
-  color:var(--green);
-}
-
-.theme-btn{
-  width:36px;
-  height:36px;
-  border-radius:12px;
-  background:var(--card);
-  border:1px solid var(--border);
-  color:var(--text);
-}
-
-/* SCREEN */
-
-.screen{
-  display:none;
-  padding:10px 15px;
-}
-
-.screen.active{
-  display:block;
-}
-
-/* HERO */
-
-.hero{
-  text-align:center;
-  padding:24px 8px 18px;
-}
-
-.orb{
-  width:118px;
-  height:118px;
-  margin:auto;
-  border-radius:50%;
-  background:
-    radial-gradient(
-      circle,
-      #ffffff 0%,
-      #b9a8ff 8%,
-      #5146a7 22%,
-      #191735 48%,
-      #0b0d14 72%
-    );
-  box-shadow:
-    0 0 30px rgba(125,108,255,.25),
-    0 0 75px rgba(125,108,255,.10);
-  position:relative;
-  transition:.3s;
-}
-
-.orb:after{
-  content:"";
-  position:absolute;
-  inset:-8px;
-  border-radius:50%;
-  border:1px solid rgba(170,155,255,.20);
-}
-
-.orb.listening{
-  animation:orbPulse 1.2s infinite;
-}
-
-.orb.thinking{
-  animation:orbThink 1.8s infinite;
-}
-
-@keyframes orbPulse{
-  0%,100%{
-    transform:scale(1);
-    box-shadow:
-      0 0 30px rgba(125,108,255,.25),
-      0 0 75px rgba(125,108,255,.10);
-  }
-  50%{
-    transform:scale(1.05);
-    box-shadow:
-      0 0 45px rgba(125,108,255,.45),
-      0 0 100px rgba(125,108,255,.18);
-  }
-}
-
-@keyframes orbThink{
-  0%,100%{
-    transform:scale(1) rotate(0deg);
-  }
-  50%{
-    transform:scale(1.035) rotate(3deg);
-  }
-}
-
-.state{
-  margin-top:15px;
-  color:var(--muted);
-  font-size:13px;
-}
-
-.mic{
-  margin-top:19px;
-  width:68px;
-  height:68px;
-  border-radius:50%;
-  background:linear-gradient(145deg,var(--accent),var(--accent2));
-  color:#fff;
-  font-size:25px;
-  box-shadow:0 10px 30px rgba(100,85,255,.28);
-  transition:.2s;
-}
-
-.mic.listening{
-  animation:pulse 1.2s infinite;
-}
-
-@keyframes pulse{
-  0%{
-    box-shadow:0 0 0 0 rgba(130,110,255,.45);
-  }
-  70%{
-    box-shadow:0 0 0 18px rgba(130,110,255,0);
-  }
-  100%{
-    box-shadow:0 0 0 0 rgba(130,110,255,0);
-  }
-}
-
-/* LANGUAGE */
-
-.language-box{
-  margin:18px auto 0;
-  max-width:260px;
-  text-align:left;
-}
-
-.language-label{
-  display:block;
-  font-size:10px;
-  color:var(--muted2);
-  margin-bottom:7px;
-  text-transform:uppercase;
-  letter-spacing:.8px;
-}
-
-/* INPUT */
-
-.input-row{
-  display:flex;
-  gap:8px;
-  margin-top:18px;
-}
-
-input{
-  flex:1;
-  background:var(--card);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:13px;
-  padding:14px;
-  outline:none;
-}
-
-input:focus,
-select:focus{
-  border-color:var(--accent);
-}
-
-.send{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;
-  padding:0 17px;
-  border-radius:13px;
-  font-weight:bold;
-}
-
-/* COMMON */
-
-.grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:12px;
-}
-
-.card{
-  background:linear-gradient(145deg,var(--card),var(--bg2));
-  border:1px solid var(--border);
-  border-radius:17px;
-  padding:15px;
-  box-shadow:var(--shadow);
-}
-
-.card h3{
-  font-size:11px;
-  color:var(--muted);
-  margin-bottom:8px;
-  letter-spacing:.3px;
-}
-
-.value{
-  font-size:20px;
-  font-weight:800;
-}
-
-.small-value{
-  font-size:12px;
-  font-weight:bold;
-}
-
-.analysis,
-.trade{
-  margin-top:12px;
-  background:linear-gradient(145deg,var(--card),var(--bg2));
-  border:1px solid var(--border);
-  border-radius:17px;
-  padding:16px;
-  box-shadow:var(--shadow);
-}
-
-.section-title{
-  font-size:16px;
-  font-weight:800;
-  margin-bottom:12px;
-  letter-spacing:-.2px;
-}
-
-.section-sub{
-  font-size:10px;
-  color:var(--muted);
-  margin-top:-7px;
-  margin-bottom:12px;
-}
-
-.trade-row{
-  display:flex;
-  justify-content:space-between;
-  padding:9px 0;
-  border-bottom:1px solid var(--border);
-  font-size:13px;
-}
-
-.trade-row:last-child{
-  border-bottom:0;
-}
-
-.green{color:var(--green)!important}
-.red{color:var(--red)!important}
-.yellow{color:var(--yellow)!important}
-.blue{color:var(--blue)!important}
-
-/* MARKET SELECTOR */
-
-.market-selector{
-  margin-top:14px;
-  padding:13px;
-  border-radius:16px;
-  background:linear-gradient(
-    135deg,
-    rgba(105,90,255,.12),
-    var(--card)
-  );
-  border:1px solid rgba(130,115,255,.25);
-}
-
-.market-selector-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:9px;
-}
-
-.market-selector-title{
-  font-size:11px;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.8px;
-}
-
-.market-selector-badge{
-  font-size:10px;
-  color:var(--accent2);
-}
-
-.market-select{
-  margin:0!important;
-  background:var(--bg2)!important;
-}
-
-/* REFRESH */
-
-.refresh-btn{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:12px;
-  background:var(--card2);
-  color:var(--accent2);
-  border:1px solid var(--border);
-  font-weight:bold;
-}
-
-/* SIGNAL */
-
-.signal-box{
-  margin-bottom:12px;
-  padding:16px;
-  border-radius:15px;
-  background:
-    radial-gradient(circle at 50% 0%,rgba(120,100,255,.12),transparent 55%),
-    var(--card2);
-  border:1px solid var(--border);
-  text-align:center;
-}
-
-.signal-label{
-  font-size:10px;
-  color:var(--muted2);
-  letter-spacing:1px;
-}
-
-.signal-value{
-  font-size:28px;
-  font-weight:900;
-  margin-top:5px;
-}
-
-.confidence{
-  font-size:11px;
-  color:var(--muted);
-  margin-top:5px;
-}
-
-.metric-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:8px;
-  margin-top:10px;
-}
-
-.metric{
-  background:var(--card2);
-  border:1px solid var(--border);
-  border-radius:13px;
-  padding:11px;
-}
-
-.metric-title{
-  font-size:9px;
-  color:var(--muted2);
-  margin-bottom:5px;
-  letter-spacing:.4px;
-}
-
-.metric-value{
-  font-size:13px;
-  font-weight:bold;
-}
-
-/* REASONS */
-
-.reason-box{
-  margin-top:12px;
-  padding:12px;
-  background:var(--card2);
-  border:1px solid var(--border);
-  border-radius:13px;
-}
-
-.reason-title{
-  font-size:10px;
-  color:var(--muted2);
-  margin-bottom:7px;
-  letter-spacing:.5px;
-}
-
-.reason{
-  font-size:12px;
-  color:var(--text);
-  opacity:.86;
-  padding:4px 0;
-}
-
-.invalidation{
-  margin-top:10px;
-  font-size:11px;
-  color:var(--muted);
-  line-height:1.5;
-}
-
-/* SELECT */
-
-select{
-  width:100%;
-  background:var(--card);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:13px;
-  margin-bottom:10px;
-  outline:none;
-}
-
-/* OPTIONS */
-
-.options-info{
-  color:var(--muted);
-  font-size:11px;
-  line-height:1.5;
-  margin-bottom:12px;
-}
-
-.option-box{
-  overflow-x:auto;
-  border-radius:14px;
-  border:1px solid var(--border);
-  -webkit-overflow-scrolling:touch;
-}
-
-table{
-  width:100%;
-  min-width:850px;
-  border-collapse:collapse;
-  font-size:11px;
-}
-
-th{
-  background:var(--card2);
-  color:var(--muted);
-  padding:10px 5px;
-  position:sticky;
-  top:0;
-}
-
-td{
-  padding:9px 5px;
-  text-align:center;
-  border-top:1px solid var(--border);
-}
-
-.ce{color:var(--red)}
-.pe{color:var(--green)}
-
-.loading{
-  padding:25px;
-  text-align:center;
-  color:var(--muted);
-}
-
-/* CHAT */
-
-.chat-container{
-  margin-top:15px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:17px;
-  overflow:hidden;
-  box-shadow:var(--shadow);
-}
-
-.chat-header{
-  padding:13px 14px;
-  border-bottom:1px solid var(--border);
-  font-size:12px;
-  font-weight:bold;
-}
-
-.chat-board{
-  height:330px;
-  overflow-y:auto;
-  padding:12px;
-}
-
-.chat-empty{
-  height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  color:var(--muted2);
-  font-size:12px;
-}
-
-.chat-message{
-  display:flex;
-  margin:10px 0;
-}
-
-.chat-message.user{
-  justify-content:flex-end;
-}
-
-.chat-message.era{
-  justify-content:flex-start;
-}
-
-.chat-content{
-  max-width:85%;
-}
-
-.chat-label{
-  font-size:9px;
-  color:var(--muted2);
-  margin:0 5px 4px;
-}
-
-.chat-bubble{
-  padding:11px 13px;
-  border-radius:15px;
-  font-size:13px;
-  line-height:1.5;
-  white-space:pre-wrap;
-  word-break:break-word;
-}
-
-.chat-message.user .chat-bubble{
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;
-  border-bottom-right-radius:5px;
-}
-
-.chat-message.era .chat-bubble{
-  background:var(--card2);
-  color:var(--text);
-  border:1px solid var(--border);
-  border-bottom-left-radius:5px;
-}
-
-.chat-thinking{
-  color:var(--muted);
-  font-size:12px;
-}
-
-/* NEWS */
-
-.news-item{
-  margin-top:10px;
-  padding:13px;
-  border:1px solid var(--border);
-  border-radius:13px;
-  background:var(--card);
-}
-
-.news-title{
-  color:var(--text);
-  font-size:13px;
-  font-weight:bold;
-  line-height:1.4;
-}
-
-.news-description{
-  color:var(--muted);
-  font-size:11px;
-  line-height:1.5;
-  margin-top:7px;
-}
-
-.news-item a{
-  color:var(--accent2);
-  text-decoration:none;
-  font-weight:bold;
-  font-size:11px;
-}
-
-.news-meta{
-  font-size:9px;
-  color:var(--muted2);
-  margin-top:7px;
-}
-
-/* NOTIFICATION */
-
-.notification-box{
-  margin-top:12px;
-  padding:13px;
-  border:1px solid var(--border);
-  border-radius:14px;
-  background:var(--card);
-}
-
-.notification-title{
-  font-size:12px;
-  font-weight:bold;
-}
-
-.notification-text{
-  color:var(--muted);
-  font-size:10px;
-  line-height:1.5;
-  margin-top:5px;
-}
-
-.notification-btn{
-  width:100%;
-  padding:11px;
-  margin-top:9px;
-  border-radius:11px;
-  background:linear-gradient(135deg,var(--accent),var(--accent2));
-  color:#fff;
-  font-size:11px;
-  font-weight:bold;
-}
-
-/* MODAL */
-
-.era-modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.78);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:1000;
-  backdrop-filter:blur(7px);
-  padding:20px;
-}
-
-.era-modal{
-  width:100%;
-  max-width:480px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:18px;
-  padding:18px;
-  box-shadow:var(--shadow);
-  color:var(--text);
-}
-
-.modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-
-.modal-close{
-  background:transparent;
-  color:var(--text);
-  font-size:20px;
-}
-
-.trade-card{
-  background:var(--bg2);
-  border:1px solid var(--border);
-  padding:12px;
-  border-radius:12px;
-  margin-top:10px;
-}
-
-/* BOTTOM NAV */
-
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:100%;
-  max-width:600px;
-  background:rgba(11,14,19,.94);
-  backdrop-filter:blur(18px);
-  border-top:1px solid var(--border);
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  padding:8px 5px;
-  z-index:30;
-}
-
-body.light .bottom-nav{
-  background:rgba(255,255,255,.94);
-}
-
-.nav-btn{
-  background:transparent;
-  color:var(--muted2);
-  padding:7px 2px;
-  font-size:10px;
-}
-
-.nav-btn.active{
-  color:var(--text);
-}
-
-.nav-icon{
-  display:block;
-  font-size:18px;
-  margin-bottom:3px;
-}
-
-.empty{
-  text-align:center;
-  padding:40px 15px;
-  color:var(--muted2);
-  font-size:12px;
-}
-
-@media(max-width:380px){
-
-.grid{
-  grid-template-columns:1fr;
-}
-
-.metric-grid{
-  grid-template-columns:1fr 1fr;
-}
-
-.logo{
-  font-size:20px;
-}
-
-}
-</style>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  />
+
+  <meta name="theme-color" content="#080b12" />
+  <meta
+    name="description"
+    content="Era AI V6 — Autonomous Indian Market Intelligence & Options Analysis"
+  />
+
+  <title>Era AI V6</title>
+
+  <link rel="manifest" href="/manifest.json" />
+
+  <style>
+    :root {
+      --bg: #070a10;
+      --bg2: #0b0f18;
+      --panel: rgba(16, 21, 32, 0.88);
+      --panel2: rgba(21, 27, 40, 0.95);
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f5f7fb;
+      --muted: #8d98aa;
+      --green: #31e59a;
+      --red: #ff5f73;
+      --yellow: #ffc857;
+      --blue: #6da7ff;
+      --purple: #a984ff;
+      --cyan: #50d8ff;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(80,216,255,.08), transparent 28%),
+        radial-gradient(circle at 90% 10%, rgba(169,132,255,.08), transparent 28%),
+        var(--bg);
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      overflow-x: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .app {
+      min-height: 100vh;
+    }
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      background: rgba(7,10,16,.82);
+      backdrop-filter: blur(22px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .era-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 19px;
+      background:
+        linear-gradient(135deg, rgba(80,216,255,.2), rgba(169,132,255,.2));
+      border: 1px solid rgba(255,255,255,.13);
+      box-shadow: 0 0 30px rgba(80,216,255,.12);
+    }
+
+    .brand-text strong {
+      display: block;
+      font-size: 17px;
+      letter-spacing: -.4px;
+    }
+
+    .brand-text span {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.035);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      transition: .2s;
+    }
+
+    .icon-btn:hover {
+      border-color: var(--border2);
+      background: rgba(255,255,255,.07);
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .connection-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--yellow);
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .connection.live .connection-dot {
+      background: var(--green);
+    }
+
+    /* =====================================================
+       LAYOUT
+    ===================================================== */
+
+    .main {
+      width: min(1500px, 100%);
+      margin: auto;
+      padding: 24px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.45fr .8fr;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .hero-card,
+    .ai-status {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 25px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-card {
+      min-height: 245px;
+      padding: 28px;
+      background:
+        radial-gradient(circle at 90% 20%, rgba(80,216,255,.10), transparent 30%),
+        radial-gradient(circle at 20% 100%, rgba(169,132,255,.09), transparent 35%),
+        var(--panel);
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .hero-title {
+      margin-top: 18px;
+      font-size: clamp(30px, 4vw, 50px);
+      line-height: 1;
+      letter-spacing: -2.2px;
+      max-width: 700px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(90deg, #fff, #7edfff, #b99bff);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-sub {
+      margin-top: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 680px;
+      font-size: 13px;
+    }
+
+    .hero-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      min-height: 42px;
+      padding: 0 15px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .primary-btn {
+      background: linear-gradient(135deg, #62dfff, #8f7cff);
+      color: #071019;
+      border: 0;
+    }
+
+    .secondary-btn {
+      background: rgba(255,255,255,.04);
+    }
+
+    .primary-btn:hover,
+    .secondary-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .ai-status {
+      padding: 24px;
+    }
+
+    .ai-orb {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      margin-bottom: 20px;
+      display: grid;
+      place-items: center;
+      font-size: 25px;
+      font-weight: 900;
+      background:
+        radial-gradient(circle at 35% 30%, #fff, #7edfff 20%, #7b65ff 60%, transparent 72%);
+      box-shadow:
+        0 0 45px rgba(80,216,255,.18),
+        inset 0 0 25px rgba(255,255,255,.15);
+    }
+
+    .ai-status h3 {
+      font-size: 20px;
+    }
+
+    .ai-status p {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .ai-state {
+      margin-top: 17px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .state-pill {
+      padding: 6px 9px;
+      border-radius: 8px;
+      background: rgba(49,229,154,.09);
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .7px;
+    }
+
+    /* =====================================================
+       INDEX TABS
+    ===================================================== */
+
+    .section {
+      margin-top: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.2px;
+    }
+
+    .section-note {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .index-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .index-tab {
+      min-height: 88px;
+      padding: 14px;
+      text-align: left;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background: rgba(255,255,255,.025);
+      transition: .2s;
+    }
+
+    .index-tab:hover {
+      background: rgba(255,255,255,.045);
+      border-color: var(--border2);
+    }
+
+    .index-tab.active {
+      border-color: rgba(80,216,255,.4);
+      background:
+        linear-gradient(135deg, rgba(80,216,255,.08), rgba(169,132,255,.07));
+      box-shadow: 0 0 30px rgba(80,216,255,.05);
+    }
+
+    .index-name {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .index-price {
+      margin-top: 9px;
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .index-change {
+      margin-top: 4px;
+      font-size: 10px;
+    }
+
+    .up {
+      color: var(--green) !important;
+    }
+
+    .down {
+      color: var(--red) !important;
+    }
+
+    .neutral {
+      color: var(--yellow) !important;
+    }
+
+    /* =====================================================
+       MARKET GRID
+    ===================================================== */
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      min-height: 58px;
+      padding: 15px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-head-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-icon {
+      width: 31px;
+      height: 31px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      font-size: 13px;
+    }
+
+    .panel-head h3 {
+      font-size: 13px;
+    }
+
+    .panel-head p {
+      color: var(--muted);
+      font-size: 9px;
+      margin-top: 3px;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    /* =====================================================
+       SELECTED MARKET
+    ===================================================== */
+
+    .selected-market {
+      min-height: 190px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .selected-market::after {
+      content: "";
+      position: absolute;
+      right: -100px;
+      top: -100px;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(80,216,255,.06);
+      pointer-events: none;
+    }
+
+    .market-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .market-label {
+      color: var(--muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.3px;
+    }
+
+    .market-big {
+      margin-top: 8px;
+      font-size: clamp(34px, 5vw, 54px);
+      font-weight: 850;
+      letter-spacing: -2.5px;
+    }
+
+    .market-change {
+      margin-top: 5px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .market-status {
+      padding: 7px 10px;
+      border-radius: 9px;
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+
+    .market-stats {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .mini-stat {
+      padding: 11px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .mini-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .mini-stat strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+    }
+
+    /* =====================================================
+       RADAR
+    ===================================================== */
+
+    .radar-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .radar-item {
+      display: grid;
+      grid-template-columns: 82px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,.055);
+      background: rgba(255,255,255,.025);
+      border-radius: 13px;
+    }
+
+    .radar-name {
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .radar-price {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    .radar-middle {
+      min-width: 0;
+    }
+
+    .radar-bar {
+      height: 5px;
+      overflow: hidden;
+      border-radius: 20px;
+      background: rgba(255,255,255,.06);
+    }
+
+    .radar-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg,#5ee7ff,#957cff);
+    }
+
+    .radar-label {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .radar-signal {
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 8px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .radar-signal.buy {
+      color: var(--green);
+      background: rgba(49,229,154,.08);
+    }
+
+    .radar-signal.sell {
+      color: var(--red);
+      background: rgba(255,95,115,.08);
+    }
+
+    .radar-signal.wait {
+      color: var(--yellow);
+      background: rgba(255,200,87,.08);
+    }
+
+    /* =====================================================
+       SIGNALS
+    ===================================================== */
+
+    .signals {
+      display: grid;
+      gap: 12px;
+    }
+
+    .signal-card {
+      border: 1px solid var(--border);
+      border-radius: 17px;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+      padding: 16px;
+    }
+
+    .signal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .signal-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .signal-direction {
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .signal-direction.buy {
+      background: rgba(49,229,154,.1);
+      color: var(--green);
+    }
+
+    .signal-direction.sell {
+      background: rgba(255,95,115,.1);
+      color: var(--red);
+    }
+
+    .signal-index {
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .confidence {
+      text-align: right;
+    }
+
+    .confidence strong {
+      font-size: 17px;
+    }
+
+    .confidence span {
+      display: block;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .trade-contract {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.035);
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 10px;
+    }
+
+    .contract-item span,
+    .trade-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+    }
+
+    .contract-item strong,
+    .trade-metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    .trade-levels {
+      display: grid;
+      grid-template-columns: repeat(5,1fr);
+      gap: 7px;
+      margin-top: 9px;
+    }
+
+    .trade-metric {
+      padding: 9px;
+      border-radius: 10px;
+      background: rgba(255,255,255,.025);
+    }
+
+    .trade-metric strong.green {
+      color: var(--green);
+    }
+
+    .trade-metric strong.red {
+      color: var(--red);
+    }
+
+    .trade-reasons {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .trade-reasons b {
+      color: var(--text);
+    }
+
+    .suggestion {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 11px;
+      border: 1px solid rgba(80,216,255,.12);
+      background: rgba(80,216,255,.045);
+      color: var(--cyan);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    /* =====================================================
+       OPTIONS
+    ===================================================== */
+
+    .option-toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    select,
+    .text-input {
+      min-height: 37px;
+      padding: 0 11px;
+      color: var(--text);
+      background: #101620;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      font-size: 10px;
+    }
+
+    .text-input {
+      width: 100%;
+    }
+
+    .option-table-wrap {
+      overflow-x: auto;
+      padding: 0 18px 18px;
+    }
+
+    .option-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 9px;
+    }
+
+    .option-table th {
+      padding: 10px 7px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .option-table td {
+      padding: 10px 7px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,.035);
+    }
+
+    .ce-cell {
+      color: var(--green);
+    }
+
+    .pe-cell {
+      color: var(--red);
+    }
+
+    .atm-row {
+      background: rgba(80,216,255,.045);
+    }
+
+    /* =====================================================
+       TWO COLUMN LOWER
+    ===================================================== */
+
+    .lower-grid {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 18px;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 8px;
+    }
+
+    .metric-box {
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+    }
+
+    .metric-box span {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .metric-box strong {
+      display: block;
+      margin-top: 6px;
+      font-size: 14px;
+    }
+
+    .news-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .news-item {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.05);
+      background: rgba(255,255,255,.025);
+    }
+
+    .news-item strong {
+      display: block;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .news-item span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    /* =====================================================
+       CHAT
+    ===================================================== */
+
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 380px;
+    }
+
+    .chat-messages {
+      flex: 1;
+      max-height: 290px;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-message {
+      max-width: 88%;
+      padding: 11px 13px;
+      border-radius: 13px;
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .chat-message.ai {
+      align-self: flex-start;
+      background: rgba(255,255,255,.045);
+      border: 1px solid var(--border);
+    }
+
+    .chat-message.user {
+      align-self: flex-end;
+      background: rgba(80,216,255,.09);
+      border: 1px solid rgba(80,216,255,.12);
+    }
+
+    .chat-input-area {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .chat-input-area .text-input {
+      flex: 1;
+    }
+
+    /* =====================================================
+       JOURNAL / RISK
+    ===================================================== */
+
+    .journal-empty {
+      padding: 30px 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .risk-gauge {
+      margin: 18px auto;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle, var(--panel2) 58%, transparent 59%),
+        conic-gradient(
+          var(--cyan) 0deg,
+          var(--purple) 220deg,
+          rgba(255,255,255,.06) 220deg
+        );
+    }
+
+    .risk-number {
+      text-align: center;
+    }
+
+    .risk-number strong {
+      display: block;
+      font-size: 34px;
+    }
+
+    .risk-number span {
+      color: var(--muted);
+      font-size: 9px;
+    }
+
+    /* =====================================================
+       NOTIFICATIONS
+    ===================================================== */
+
+    .notification-grid {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 8px;
+    }
+
+    .notify-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 11px;
+      border-radius: 11px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.05);
+      font-size: 9px;
+    }
+
+    .switch {
+      position: relative;
+      width: 32px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: #252c38;
+      transition: .2s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      left: 3px;
+      top: 3px;
+      border-radius: 50%;
+      background: #fff;
+      transition: .2s;
+    }
+
+    .switch input:checked + .slider {
+      background: var(--green);
+    }
+
+    .switch input:checked + .slider::before {
+      transform: translateX(14px);
+    }
+
+    /* =====================================================
+       FOOTER
+    ===================================================== */
+
+    .footer {
+      margin-top: 25px;
+      padding: 18px 4px 30px;
+      color: var(--muted);
+      font-size: 9px;
+      text-align: center;
+    }
+
+    /* =====================================================
+       TOAST
+    ===================================================== */
+
+    .toast-container {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 9999;
+      display: grid;
+      gap: 8px;
+      width: min(350px, calc(100vw - 36px));
+    }
+
+    .toast {
+      padding: 13px 14px;
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      background: rgba(14,18,27,.96);
+      backdrop-filter: blur(20px);
+      box-shadow: var(--shadow);
+      animation: toastIn .25s ease;
+    }
+
+    .toast strong {
+      display: block;
+      font-size: 11px;
+    }
+
+    .toast span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateY(12px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* =====================================================
+       LOADING
+    ===================================================== */
+
+    .loading {
+      color: var(--muted);
+      font-size: 10px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .skeleton {
+      height: 12px;
+      border-radius: 8px;
+      background: linear-gradient(
+        90deg,
+        rgba(255,255,255,.04),
+        rgba(255,255,255,.09),
+        rgba(255,255,255,.04)
+      );
+      background-size: 200% 100%;
+      animation: skeleton 1.3s infinite;
+    }
+
+    @keyframes skeleton {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 1050px) {
+      .hero,
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 800px) {
+      .main {
+        padding: 15px;
+      }
+
+      .topbar {
+        padding: 0 14px;
+      }
+
+      .connection {
+        display: none;
+      }
+
+      .index-tabs {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .lower-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .market-stats {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .trade-levels {
+        grid-template-columns: repeat(3,1fr);
+      }
+    }
+
+    @media (max-width: 520px) {
+      .hero-card,
+      .ai-status {
+        padding: 20px;
+      }
+
+      .hero-title {
+        font-size: 34px;
+      }
+
+      .hero-sub {
+        font-size: 11px;
+      }
+
+      .market-big {
+        font-size: 38px;
+      }
+
+      .trade-contract {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .trade-levels {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .notification-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2,1fr);
+      }
+
+      .panel-body {
+        padding: 13px;
+      }
+
+      .panel-head {
+        padding: 13px;
+      }
+    }
+  </style>
 </head>
 
 <body>
-
 <div class="app">
 
-<header>
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
 
-<div class="logo-wrap">
-<div class="logo-mark">✦</div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="era-logo">E</div>
 
-<div>
-<div class="logo">Era AI</div>
-<div class="logo-sub">AI MARKET COPILOT</div>
+      <div class="brand-text">
+        <strong>Era AI</strong>
+        <span>Market Intelligence V6</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+
+      <div
+        class="connection"
+        id="connectionStatus"
+      >
+        <span class="connection-dot"></span>
+        <span id="connectionText">
+          Connecting
+        </span>
+      </div>
+
+      <button
+        class="icon-btn"
+        id="notificationBtn"
+        title="Enable notifications"
+      >
+        🔔
+      </button>
+
+      <button
+        class="icon-btn"
+        id="refreshBtn"
+        title="Refresh"
+      >
+        ↻
+      </button>
+
+    </div>
+  </header>
+
+
+  <main class="main">
+
+    <!-- ===================================================
+         HERO
+    ==================================================== -->
+
+    <section class="hero">
+
+      <div class="hero-card">
+
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          AUTONOMOUS MARKET INTELLIGENCE
+        </div>
+
+        <h1 class="hero-title">
+          Era doesn't wait for you.
+          <span>It watches the market.</span>
+        </h1>
+
+        <p class="hero-sub">
+          Real-time monitoring across NIFTY, BANKNIFTY,
+          FINNIFTY and SENSEX with technical structure,
+          options data, liquidity and confirmation analysis.
+        </p>
+
+        <div class="hero-controls">
+
+          <button
+            class="primary-btn"
+            id="startEngineBtn"
+          >
+            Start Era Radar
+          </button>
+
+          <button
+            class="secondary-btn"
+            id="stopEngineBtn"
+          >
+            Pause Radar
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="ai-status">
+
+        <div class="ai-orb">E</div>
+
+        <h3>Era Autonomous AI</h3>
+
+        <p>
+          Monitoring all supported indices and looking
+          for confirmed market opportunities.
+        </p>
+
+        <div class="ai-state">
+
+          <div>
+            <div
+              class="section-note"
+              id="lastUpdated"
+            >
+              Last update: —
+            </div>
+          </div>
+
+          <span
+            class="state-pill"
+            id="engineState"
+          >
+            INITIALIZING
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         INDEX SWITCHER
+    ==================================================== -->
+
+    <section class="section">
+
+      <div class="section-head">
+        <div>
+          <div class="section-title">
+            Market Radar
+          </div>
+
+          <div class="section-note">
+            Select an index for detailed analysis
+          </div>
+        </div>
+
+        <div
+          class="section-note"
+          id="marketTime"
+        >
+          Market status —
+        </div>
+      </div>
+
+
+      <div
+        class="index-tabs"
+        id="indexTabs"
+      >
+
+        <button
+          class="index-tab active"
+          data-index="NIFTY"
+        >
+          <div class="index-name">
+            NIFTY
+          </div>
+
+          <div
+            class="index-price"
+            id="tab-NIFTY-price"
+          >
+            —
+          </div>
+
+          <div
+            class="index-change"
+            id="tab-NIFTY-change"
+          >
+            —
+          </div>
+        </button>
+
+
+        <button
+          class="index-tab"
+          data-index="BANKNIFTY"
+        >
+          <div class="index-name">
+            BANKNIFTY
+          </div>
+
+          <div
+            class="index-price"
+            id="tab-BANKNIFTY-price"
+          >
+            —
+          </div>
+
+          <div
+            class="index-change"
+            id="tab-BANKNIFTY-change"
+          >
+            —
+          </div>
+        </button>
+
+
+        <button
+          class="index-tab"
+          data-index="FINNIFTY"
+        >
+          <div class="index-name">
+            FINNIFTY
+          </div>
+
+          <div
+            class="index-price"
+            id="tab-FINNIFTY-price"
+          >
+            —
+          </div>
+
+          <div
+            class="index-change"
+            id="tab-FINNIFTY-change"
+          >
+            —
+          </div>
+        </button>
+
+
+        <button
+          class="index-tab"
+          data-index="SENSEX"
+        >
+          <div class="index-name">
+            SENSEX
+          </div>
+
+          <div
+            class="index-price"
+            id="tab-SENSEX-price"
+          >
+            —
+          </div>
+
+          <div
+            class="index-change"
+            id="tab-SENSEX-change"
+          >
+            —
+          </div>
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         MAIN DASHBOARD
+    ==================================================== -->
+
+    <section class="section dashboard-grid">
+
+
+      <!-- SELECTED MARKET -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              ◉
+            </div>
+
+            <div>
+              <h3 id="selectedIndexTitle">
+                NIFTY
+              </h3>
+
+              <p>
+                Live market intelligence
+              </p>
+            </div>
+
+          </div>
+
+          <span
+            class="section-note"
+            id="selectedMarketSignal"
+          >
+            WAIT
+          </span>
+
+        </div>
+
+
+        <div class="panel-body">
+
+          <div class="selected-market">
+
+            <div class="market-top">
+
+              <div>
+
+                <div class="market-label">
+                  Current Price
+                </div>
+
+                <div
+                  class="market-big"
+                  id="selectedPrice"
+                >
+                  —
+                </div>
+
+                <div
+                  class="market-change"
+                  id="selectedChange"
+                >
+                  —
+                </div>
+
+              </div>
+
+              <div
+                class="market-status"
+                id="selectedStatus"
+              >
+                Loading
+              </div>
+
+            </div>
+
+
+            <div class="market-stats">
+
+              <div class="mini-stat">
+                <span>Previous Close</span>
+                <strong id="previousClose">
+                  —
+                </strong>
+              </div>
+
+              <div class="mini-stat">
+                <span>Change %</span>
+                <strong id="changePercent">
+                  —
+                </strong>
+              </div>
+
+              <div class="mini-stat">
+                <span>Trend</span>
+                <strong id="trendValue">
+                  —
+                </strong>
+              </div>
+
+              <div class="mini-stat">
+                <span>VWAP</span>
+                <strong id="vwapValue">
+                  —
+                </strong>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- RADAR -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              ◌
+            </div>
+
+            <div>
+              <h3>Era Radar</h3>
+
+              <p>
+                All-index autonomous scan
+              </p>
+            </div>
+
+          </div>
+
+          <span
+            class="section-note"
+            id="radarCount"
+          >
+            0 setups
+          </span>
+
+        </div>
+
+
+        <div class="panel-body">
+
+          <div
+            class="radar-list"
+            id="radarList"
+          >
+
+            <div class="loading">
+              Initializing radar...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         TRADE SIGNALS
+    ==================================================== -->
+
+    <section class="section">
+
+      <div class="section-head">
+
+        <div>
+          <div class="section-title">
+            Autonomous Trade Signals
+          </div>
+
+          <div class="section-note">
+            Only qualifying setups are displayed
+          </div>
+        </div>
+
+        <div
+          class="section-note"
+          id="signalCount"
+        >
+          0 active
+        </div>
+
+      </div>
+
+
+      <div
+        class="signals"
+        id="signalsContainer"
+      >
+
+        <div class="panel">
+          <div class="loading">
+            Era is scanning the market...
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         OPTION CHAIN
+    ==================================================== -->
+
+    <section class="section panel">
+
+      <div class="panel-head">
+
+        <div class="panel-head-left">
+
+          <div class="panel-icon">
+            ⛓
+          </div>
+
+          <div>
+            <h3>Option Chain</h3>
+
+            <p>
+              Live CE / PE intelligence
+            </p>
+          </div>
+
+        </div>
+
+
+        <div class="option-toolbar">
+
+          <select id="optionIndex">
+            <option value="NIFTY">
+              NIFTY
+            </option>
+
+            <option value="BANKNIFTY">
+              BANKNIFTY
+            </option>
+
+            <option value="FINNIFTY">
+              FINNIFTY
+            </option>
+
+            <option value="SENSEX">
+              SENSEX
+            </option>
+          </select>
+
+
+          <select id="expirySelect">
+            <option value="">
+              Loading expiry...
+            </option>
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <div class="panel-body">
+
+        <div class="metric-grid">
+
+          <div class="metric-box">
+            <span>ATM</span>
+            <strong id="atmStrike">
+              —
+            </strong>
+          </div>
+
+          <div class="metric-box">
+            <span>PCR</span>
+            <strong id="pcrValue">
+              —
+            </strong>
+          </div>
+
+          <div class="metric-box">
+            <span>Option Bias</span>
+            <strong id="pcrSentiment">
+              —
+            </strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="option-table-wrap">
+
+        <table class="option-table">
+
+          <thead>
+            <tr>
+
+              <th colspan="5">
+                CALL SIDE
+              </th>
+
+              <th>
+                STRIKE
+              </th>
+
+              <th colspan="5">
+                PUT SIDE
+              </th>
+
+            </tr>
+
+            <tr>
+
+              <th>
+                OI
+              </th>
+
+              <th>
+                CHG OI
+              </th>
+
+              <th>
+                LTP
+              </th>
+
+              <th>
+                IV
+              </th>
+
+              <th>
+                VOL
+              </th>
+
+              <th>
+                STRIKE
+              </th>
+
+              <th>
+                LTP
+              </th>
+
+              <th>
+                IV
+              </th>
+
+              <th>
+                VOL
+              </th>
+
+              <th>
+                CHG OI
+              </th>
+
+              <th>
+                OI
+              </th>
+
+            </tr>
+
+          </thead>
+
+          <tbody id="optionTableBody">
+
+            <tr>
+              <td
+                colspan="11"
+                class="loading"
+              >
+                Loading option chain...
+              </td>
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         LOWER GRID
+    ==================================================== -->
+
+    <section class="section lower-grid">
+
+
+      <!-- TECHNICALS -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              ◇
+            </div>
+
+            <div>
+              <h3>Market Structure</h3>
+
+              <p>
+                Technical confirmation layer
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+          <div class="metric-grid">
+
+            <div class="metric-box">
+              <span>EMA 9</span>
+              <strong id="ema9">—</strong>
+            </div>
+
+            <div class="metric-box">
+              <span>EMA 20</span>
+              <strong id="ema20">—</strong>
+            </div>
+
+            <div class="metric-box">
+              <span>EMA 50</span>
+              <strong id="ema50">—</strong>
+            </div>
+
+            <div class="metric-box">
+              <span>RSI</span>
+              <strong id="rsi">—</strong>
+            </div>
+
+            <div class="metric-box">
+              <span>Support</span>
+              <strong id="support">—</strong>
+            </div>
+
+            <div class="metric-box">
+              <span>Resistance</span>
+              <strong id="resistance">—</strong>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- NEWS -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              ◈
+            </div>
+
+            <div>
+              <h3>Market News</h3>
+
+              <p>
+                Important market updates
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+          <div
+            class="news-list"
+            id="newsList"
+          >
+
+            <div class="loading">
+              Loading news...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- RISK GUARDIAN -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              🛡
+            </div>
+
+            <div>
+              <h3>Risk Guardian</h3>
+
+              <p>
+                Trade-risk monitoring
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-body">
+
+          <div class="risk-gauge">
+
+            <div class="risk-number">
+
+              <strong id="riskScore">
+                0
+              </strong>
+
+              <span>
+                RISK SCORE
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <div class="metric-grid">
+
+            <div class="metric-box">
+              <span>Market Volatility</span>
+              <strong id="riskVolatility">
+                —
+              </strong>
+            </div>
+
+            <div class="metric-box">
+              <span>Max Risk</span>
+              <strong id="riskMax">
+                1R
+              </strong>
+            </div>
+
+            <div class="metric-box">
+              <span>Guardian</span>
+              <strong id="riskStatus">
+                ACTIVE
+              </strong>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- TRADE JOURNAL -->
+
+      <div class="panel">
+
+        <div class="panel-head">
+
+          <div class="panel-head-left">
+
+            <div class="panel-icon">
+              ▤
+            </div>
+
+            <div>
+              <h3>Trade Journal</h3>
+
+              <p>
+                Automatic signal history
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="panel-body"
+          id="journalContainer"
+        >
+
+          <div class="journal-empty">
+            No completed trades recorded yet.
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         NOTIFICATIONS
+    ==================================================== -->
+
+    <section class="section panel">
+
+      <div class="panel-head">
+
+        <div class="panel-head-left">
+
+          <div class="panel-icon">
+            🔔
+          </div>
+
+          <div>
+            <h3>Era Notifications</h3>
+
+            <p>
+              Control autonomous alerts
+            </p>
+          </div>
+
+        </div>
+
+        <button
+          class="secondary-btn"
+          id="enablePushBtn"
+        >
+          Enable Push
+        </button>
+
+      </div>
+
+
+      <div class="panel-body">
+
+        <div class="notification-grid">
+
+          <label class="notify-option">
+            Market Open
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="marketOpen"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Major Movement
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="movement"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Trade Setup
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="setup"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Entry
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="entry"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Targets
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="targets"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            SL / Invalidation
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="sl"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Market News
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="news"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+
+          <label class="notify-option">
+            Market Close
+
+            <span class="switch">
+              <input
+                type="checkbox"
+                data-notify="marketClose"
+                checked
+              />
+              <span class="slider"></span>
+            </span>
+          </label>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         ERA CHAT
+    ==================================================== -->
+
+    <section class="section panel chat-panel">
+
+      <div class="panel-head">
+
+        <div class="panel-head-left">
+
+          <div class="panel-icon">
+            E
+          </div>
+
+          <div>
+            <h3>Ask Era AI</h3>
+
+            <p>
+              Text + microphone input
+            </p>
+          </div>
+
+        </div>
+
+        <span class="section-note">
+          AI CHAT
+        </span>
+
+      </div>
+
+
+      <div
+        class="chat-messages"
+        id="chatMessages"
+      >
+
+        <div class="chat-message ai">
+          Hello. I am Era. I am monitoring the market.
+          Ask me about the current setup, index, option chain
+          or market structure.
+        </div>
+
+      </div>
+
+
+      <div class="chat-input-area">
+
+        <input
+          class="text-input"
+          id="chatInput"
+          type="text"
+          placeholder="Ask Era about the market..."
+          autocomplete="off"
+        />
+
+        <button
+          class="icon-btn"
+          id="micBtn"
+          title="Voice input"
+        >
+          🎙
+        </button>
+
+        <button
+          class="primary-btn"
+          id="sendChatBtn"
+        >
+          Send
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <footer class="footer">
+      Era AI V6 · Autonomous Market Intelligence ·
+      Data and signals are informational and require independent verification.
+    </footer>
+
+  </main>
 </div>
-</div>
-
-<div class="header-right">
-
-<div id="status" class="status">● Connecting</div>
-
-<button
-id="themeBtn"
-class="theme-btn"
-type="button"
-title="Change theme"
->
-🌙
-</button>
-
-</div>
-
-</header>
 
 
-<!-- HOME -->
-
-<section id="home" class="screen active">
-
-<div class="hero">
-
-<div id="orb" class="orb"></div>
-
-<div id="state" class="state">
-Connecting to Era...
-</div>
-
-<button
-id="micBtn"
-class="mic"
-type="button"
->
-🎙️
-</button>
-
-<div class="language-box">
-
-<label class="language-label">
-Era Language
-</label>
-
-<select id="languageSelect">
-<option value="hi-IN">🇮🇳 Hindi</option>
-<option value="gu-IN">🟢 Gujarati</option>
-<option value="en-IN">🇬🇧 English</option>
-</select>
-
-</div>
-
-<div class="input-row">
-
-<input
-id="textInput"
-type="text"
-placeholder="Ask Era anything..."
-autocomplete="off"
->
-
-<button
-id="sendBtn"
-class="send"
-type="button"
->
-Send
-</button>
-
-</div>
-
-</div>
-
-
-<!-- CHAT -->
-
-<div class="chat-container">
-
-<div class="chat-header">
-💬 Era Chat
-</div>
-
-<div id="chatBoard" class="chat-board">
-
-<div id="chatEmpty" class="chat-empty">
-Era is ready.<br>
-Ask me anything.
-</div>
-
-</div>
-
-</div>
-
-
-<!-- NOTIFICATIONS -->
-
-<div class="notification-box">
-
-<div class="notification-title">
-🔔 Era Signal Notifications
-</div>
-
-<div class="notification-text">
-Enable notifications to receive Era AI signal alerts on supported devices.
-</div>
-
-<button
-id="notificationBtn"
-class="notification-btn"
-type="button"
->
-Enable Notifications
-</button>
-
-</div>
-
-
-<!-- LIVE MARKET -->
-
-<div class="section-title" style="margin-top:20px;">
-📡 LIVE MARKET
-</div>
-
-<div class="section-sub">
-Select the market you want Era to analyze.
-</div>
-
-<div class="market-selector">
-
-<div class="market-selector-top">
-
-<div class="market-selector-title">
-Selected Market
-</div>
-
+<!-- TOAST CONTAINER -->
 <div
-id="selectedMarketBadge"
-class="market-selector-badge"
->
-● NIFTY
-</div>
-
-</div>
-
-<select
-id="homeIndexSelect"
-class="market-select"
->
-
-<option value="NIFTY">NIFTY 50</option>
-<option value="BANKNIFTY">BANKNIFTY</option>
-<option value="FINNIFTY">FINNIFTY</option>
-<option value="SENSEX">SENSEX</option>
-
-</select>
-
-</div>
-
-
-<div class="grid">
-
-<div class="card">
-
-<h3 id="selectedIndexTitle">
-NIFTY 50
-</h3>
-
-<div class="value" id="niftyValue">--</div>
-
-<div
-id="niftyChange"
-class="small-value"
-style="margin-top:5px;"
->
---
-</div>
-
-</div>
-
-
-<div class="card">
-
-<h3>GIFT NIFTY</h3>
-
-<div class="value" id="giftValue">--</div>
-
-<div
-id="giftChange"
-class="small-value"
-style="margin-top:5px;"
->
---
-</div>
-
-</div>
-
-
-<div class="card">
-
-<h3>INDIA VIX</h3>
-
-<div class="value" id="vixValue">--</div>
-
-<div
-id="vixChange"
-class="small-value"
-style="margin-top:5px;"
->
---
-</div>
-
-</div>
-
-
-<div class="card">
-
-<h3>MARKET STATUS</h3>
-
-<div
-class="value"
-id="marketStatus"
-style="font-size:15px;"
->
---
-</div>
-
-</div>
-
-</div>
-
-
-<button
-id="refreshAnalysisBtn"
-class="refresh-btn"
-type="button"
->
-↻ Refresh Era Analysis
-</button>
-
-
-<!-- ERA SIGNAL -->
-
-<div class="analysis">
-
-<div class="section-title">
-🤖 ERA MARKET SIGNAL
-</div>
-
-<div class="signal-box">
-
-<div class="signal-label">
-CURRENT SIGNAL
-</div>
-
-<div
-id="directionBig"
-class="signal-value yellow"
->
-WAIT
-</div>
-
-<div
-id="confidenceBig"
-class="confidence"
->
-Confidence: --
-</div>
-
-</div>
-
-
-<div class="metric-grid">
-
-<div class="metric">
-
-<div
-class="metric-title"
-id="analysisIndexLabel"
->
-NIFTY
-</div>
-
-<div
-id="analysisNifty"
-class="metric-value"
->
---
-</div>
-
-</div>
-
-
-<div class="metric">
-
-<div class="metric-title">
-GIFT NIFTY
-</div>
-
-<div
-id="analysisGift"
-class="metric-value"
->
---
-</div>
-
-</div>
-
-
-<div class="metric">
-
-<div class="metric-title">
-INDIA VIX
-</div>
-
-<div
-id="analysisVix"
-class="metric-value"
->
---
-</div>
-
-</div>
-
-
-<div class="metric">
-
-<div class="metric-title">
-TREND
-</div>
-
-<div
-id="analysisTrend"
-class="metric-value"
->
---
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-<!-- TECHNICAL -->
-
-<div class="analysis">
-
-<div class="section-title">
-📈 TECHNICAL ANALYSIS
-</div>
-
-<div class="metric-grid">
-
-<div class="metric">
-<div class="metric-title">RSI</div>
-<div id="rsiValue" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">VWAP</div>
-<div id="vwapValue" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">EMA 9</div>
-<div id="ema9Value" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">EMA 20</div>
-<div id="ema20Value" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">EMA 50</div>
-<div id="ema50Value" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">MOMENTUM</div>
-<div id="momentumValue" class="metric-value">--</div>
-</div>
-
-</div>
-
-</div>
-
-
-<!-- OPTIONS ANALYSIS -->
-
-<div class="analysis">
-
-<div class="section-title">
-📊 OPTION ANALYSIS
-</div>
-
-<div class="metric-grid">
-
-<div class="metric">
-<div class="metric-title">PCR</div>
-<div id="pcrValue" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">MAX PAIN</div>
-<div id="maxPainValue" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">OPTION BIAS</div>
-<div id="optionBiasValue" class="metric-value">--</div>
-</div>
-
-<div class="metric">
-<div class="metric-title">EXPIRY</div>
-<div id="expiryValue" class="metric-value">--</div>
-</div>
-
-</div>
-
-</div>
-
-
-<!-- TRADE -->
-
-<div class="trade">
-
-<div class="section-title">
-🎯 TRADE SETUP
-</div>
-
-<div class="trade-row">
-<span>Direction</span>
-<strong id="direction" class="yellow">WAIT</strong>
-</div>
-
-<div class="trade-row">
-<span>Entry</span>
-<strong id="entry">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Stop Loss</span>
-<strong id="sl">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Target 1</span>
-<strong id="target1">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Target 2</span>
-<strong id="target2">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Target 3</span>
-<strong id="target3">--</strong>
-</div>
-
-<div class="trade-row">
-<span>R:R</span>
-<strong id="rr">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Confidence</span>
-<strong id="tradeConfidence">--</strong>
-</div>
-
-<div class="trade-row">
-<span>Status</span>
-<strong id="tradeStatus" class="yellow">
-NO TRADE
-</strong>
-</div>
-
-<div class="reason-box">
-
-<div class="reason-title">
-CONFIRMATIONS / REASONS
-</div>
-
-<div id="reasonsList">
-
-<div class="reason">
-Waiting for live analysis...
-</div>
-
-</div>
-
-</div>
-
-<div id="invalidation" class="invalidation">
-Invalidation: --
-</div>
-
-</div>
-
-</section>
-
-
-<!-- NEWS -->
-
-<section id="news" class="screen">
-
-<div class="section-title">
-📰 MARKET NEWS
-</div>
-
-<div class="section-sub">
-Relevant market news from Era backend.
-</div>
-
-<div id="newsContainer">
-
-<div class="empty">
-Open this section to load market news.
-</div>
-
-</div>
-
-</section>
-
-
-<!-- OPTIONS -->
-
-<section id="options" class="screen">
-
-<div class="section-title">
-📊 LIVE OPTION CHAIN
-</div>
-
-<div class="options-info">
-Select a supported index, choose expiry and load the available option chain.
-</div>
-
-<select id="indexSelect">
-
-<option value="NSE_INDEX|Nifty 50">
-NIFTY 50
-</option>
-
-<option value="NSE_INDEX|Nifty Bank">
-BANKNIFTY
-</option>
-
-<option value="NSE_INDEX|Nifty Fin Service">
-FINNIFTY
-</option>
-
-<option value="BSE_INDEX|SENSEX">
-SENSEX
-</option>
-
-</select>
-
-<select id="expirySelect">
-
-<option value="">
-Select Expiry
-</option>
-
-</select>
-
-<button
-id="loadOptionsBtn"
-style="
-width:100%;
-padding:13px;
-border-radius:12px;
-background:linear-gradient(135deg,var(--accent),var(--accent2));
-color:#fff;
-font-weight:bold;
-margin-bottom:12px;
-"
-type="button"
->
-Load Live Option Chain
-</button>
-
-<div
-id="optionStatus"
-style="
-font-size:11px;
-color:var(--muted);
-margin-bottom:8px;
-"
->
-Select expiry to load option chain.
-</div>
-
-<div class="option-box">
-
-<table>
-
-<thead>
-
-<tr>
-
-<th colspan="5" class="ce">
-CALL / CE
-</th>
-
-<th>
-STRIKE
-</th>
-
-<th colspan="5" class="pe">
-PUT / PE
-</th>
-
-</tr>
-
-<tr>
-
-<th>OI</th>
-<th>ΔOI</th>
-<th>VOL</th>
-<th>IV</th>
-<th>LTP</th>
-
-<th>STRIKE</th>
-
-<th>LTP</th>
-<th>IV</th>
-<th>VOL</th>
-<th>ΔOI</th>
-<th>OI</th>
-
-</tr>
-
-</thead>
-
-<tbody id="optionBody">
-
-<tr>
-<td colspan="11" class="loading">
-No data loaded
-</td>
-</tr>
-
-</tbody>
-
-</table>
-
-</div>
-
-</section>
-
-
-<!-- HISTORY -->
-
-<section id="history" class="screen">
-
-<div class="section-title">
-📚 HISTORY
-</div>
-
-<div class="card">
-
-<h3>💬 CHAT HISTORY</h3>
-
-<div id="chatHistory">
-
-<div class="empty">
-No chat history yet.
-</div>
-
-</div>
-
-</div>
-
-<div
-class="card"
-style="margin-top:12px;"
->
-
-<h3>📈 TRADE HISTORY</h3>
-
-<div id="tradeHistory">
-
-<div class="empty">
-No trade history yet.
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-
-<!-- PERFORMANCE -->
-
-<section id="performance" class="screen">
-
-<div class="section-title">
-📊 PERFORMANCE
-</div>
-
-<div class="grid">
-
-<div class="card">
-<h3>WEEKLY</h3>
-<div class="value">--</div>
-</div>
-
-<div class="card">
-<h3>MONTHLY</h3>
-<div class="value">--</div>
-</div>
-
-<div class="card">
-<h3>ERA SETUPS</h3>
-<div
-class="value"
-id="eraSetupCount"
->
-0
-</div>
-</div>
-
-<div class="card">
-<h3>MY TRADES</h3>
-<div
-class="value"
-id="myTradeCount"
->
-0
-</div>
-</div>
-
-</div>
-
-<div class="empty">
-Performance tracking will update as trade-history functionality is connected.
-</div>
-
-</section>
-
-</div>
-
-
-<!-- NAV -->
-
-<nav class="bottom-nav">
-
-<button class="nav-btn active" data-screen="home" type="button">
-<span class="nav-icon">⌂</span>
-Home
-</button>
-
-<button class="nav-btn" data-screen="news" type="button">
-<span class="nav-icon">📰</span>
-News
-</button>
-
-<button class="nav-btn" data-screen="options" type="button">
-<span class="nav-icon">📊</span>
-Options
-</button>
-
-<button class="nav-btn" data-screen="history" type="button">
-<span class="nav-icon">📚</span>
-History
-</button>
-
-<button class="nav-btn" data-screen="performance" type="button">
-<span class="nav-icon">📈</span>
-Performance
-</button>
-
-</nav>
-
-
-<!-- SIGNAL MODAL -->
-
-<div
-id="eraSignalModal"
-class="era-modal-overlay"
->
-
-<div class="era-modal">
-
-<div class="modal-header">
-
-<h3>
-🎯 ERA Active Trade Signal
-</h3>
-
-<button
-id="closeModalBtn"
-class="modal-close"
-type="button"
->
-✕
-</button>
-
-</div>
-
-<div
-id="modalSignalsList"
-style="
-max-height:350px;
-overflow-y:auto;
-margin-top:10px;
-"
->
-</div>
-
-</div>
-
-</div>
+  class="toast-container"
+  id="toastContainer"
+></div>
 
 
 <script>
-
 "use strict";
 
-/* =========================================
-   CONFIG
-========================================= */
+/* =========================================================
+   ERA AI V6 FRONTEND
+========================================================= */
 
-const BACKEND_URL = "https://era-ai.onrender.com";
-const APP_VERSION = "6.1.0";
+/*
+ * IMPORTANT:
+ * Change only if your Render backend URL is different.
+ */
 
-
-/* =========================================
-   ELEMENTS
-========================================= */
-
-const state = document.getElementById("state");
-const status = document.getElementById("status");
-const textInput = document.getElementById("textInput");
-const sendBtn = document.getElementById("sendBtn");
-const chatBoard = document.getElementById("chatBoard");
-const chatEmpty = document.getElementById("chatEmpty");
-const languageSelect = document.getElementById("languageSelect");
-const homeIndexSelect = document.getElementById("homeIndexSelect");
-const selectedIndexTitle = document.getElementById("selectedIndexTitle");
-const analysisIndexLabel = document.getElementById("analysisIndexLabel");
-const selectedMarketBadge = document.getElementById("selectedMarketBadge");
-const themeBtn = document.getElementById("themeBtn");
-const micBtn = document.getElementById("micBtn");
-const orb = document.getElementById("orb");
-const notificationBtn = document.getElementById("notificationBtn");
-const eraSignalModal = document.getElementById("eraSignalModal");
-const modalSignalsList = document.getElementById("modalSignalsList");
+const BACKEND_URL =
+  "https://era-ai.onrender.com";
 
 
-/* =========================================
-   INDEX CONFIG
-========================================= */
+/* =========================================================
+   STATE
+========================================================= */
 
-const INDEX_CONFIG = {
+const state = {
+  selectedIndex:
+    localStorage.getItem(
+      "eraSelectedIndex"
+    ) || "NIFTY",
 
-  NIFTY:{
-    label:"NIFTY 50",
-    short:"NIFTY",
-    instrumentKey:"NSE_INDEX|Nifty 50"
-  },
+  market: {},
 
-  BANKNIFTY:{
-    label:"BANKNIFTY",
-    short:"BANKNIFTY",
-    instrumentKey:"NSE_INDEX|Nifty Bank"
-  },
+  analysis: null,
 
-  FINNIFTY:{
-    label:"FINNIFTY",
-    short:"FINNIFTY",
-    instrumentKey:"NSE_INDEX|Nifty Fin Service"
-  },
+  optionData: null,
 
-  SENSEX:{
-    label:"SENSEX",
-    short:"SENSEX",
-    instrumentKey:"BSE_INDEX|SENSEX"
-  }
+  engine: false,
 
+  lastSignals: [],
+
+  refreshTimer: null,
+
+  optionTimer: null,
+
+  notificationSettings:
+    JSON.parse(
+      localStorage.getItem(
+        "eraNotificationSettings"
+      ) || "{}"
+    )
 };
 
 
-/* =========================================
-   SAFE JSON
-========================================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 
-async function readJSON(response){
-
-  try{
-    return await response.json();
-  }catch(error){
-    return null;
-  }
-
+function $(id) {
+  return document.getElementById(id);
 }
 
 
-/* =========================================
-   API HELPER
-========================================= */
-
-async function apiFetch(
-  path,
-  options={}
-){
-
-  const response = await fetch(
-    `${BACKEND_URL}${path}`,
-    {
-      cache:"no-store",
-      ...options
-    }
-  );
-
-  const result = await readJSON(response);
-
-  if(!response.ok){
-
-    throw new Error(
-      result?.error ||
-      result?.message ||
-      `HTTP ${response.status}`
-    );
-
-  }
-
-  return result;
-
+function escapeHtml(value) {
+  return String(
+    value ?? ""
+  )
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
-/* =========================================
-   THEME
-========================================= */
+function number(value, decimals = 2) {
+  const n =
+    Number(value);
 
-function applyTheme(theme){
-
-  if(theme === "light"){
-
-    document.body.classList.add("light");
-    themeBtn.textContent = "☀️";
-
-  }else{
-
-    document.body.classList.remove("light");
-    themeBtn.textContent = "🌙";
-
+  if (
+    !Number.isFinite(n)
+  ) {
+    return "—";
   }
 
-  localStorage.setItem("era_theme",theme);
-
-}
-
-applyTheme(
-  localStorage.getItem("era_theme") || "dark"
-);
-
-themeBtn.addEventListener(
-  "click",
-  ()=>{
-
-    const isLight =
-      document.body.classList.contains("light");
-
-    applyTheme(
-      isLight ? "dark" : "light"
-    );
-
-  }
-);
-
-
-/* =========================================
-   SELECTED INDEX
-========================================= */
-
-function getSelectedIndex(){
-
-  const saved =
-    localStorage.getItem("era_selected_index");
-
-  if(saved && INDEX_CONFIG[saved]){
-    return saved;
-  }
-
-  return "NIFTY";
-
-}
-
-
-function updateHomeIndexUI(){
-
-  const selected =
-    getSelectedIndex();
-
-  const config =
-    INDEX_CONFIG[selected] ||
-    INDEX_CONFIG.NIFTY;
-
-  homeIndexSelect.value = selected;
-
-  selectedIndexTitle.textContent =
-    config.label;
-
-  analysisIndexLabel.textContent =
-    config.short;
-
-  selectedMarketBadge.textContent =
-    "● " + config.short;
-
-}
-
-
-homeIndexSelect.addEventListener(
-  "change",
-  async()=>{
-
-    const selected =
-      homeIndexSelect.value;
-
-    if(!INDEX_CONFIG[selected]){
-      return;
-    }
-
-    localStorage.setItem(
-      "era_selected_index",
-      selected
-    );
-
-    updateHomeIndexUI();
-
-    state.textContent =
-      `${INDEX_CONFIG[selected].label} selected`;
-
-    await loadEraAnalysis();
-
-  }
-);
-
-updateHomeIndexUI();
-
-
-/* =========================================
-   NAVIGATION
-========================================= */
-
-const navButtons =
-  document.querySelectorAll(".nav-btn");
-
-const screens =
-  document.querySelectorAll(".screen");
-
-navButtons.forEach(button=>{
-
-  button.addEventListener(
-    "click",
-    async()=>{
-
-      const screenName =
-        button.dataset.screen;
-
-      screens.forEach(screen=>{
-        screen.classList.remove("active");
-      });
-
-      const targetScreen =
-        document.getElementById(screenName);
-
-      if(targetScreen){
-        targetScreen.classList.add("active");
-      }
-
-      navButtons.forEach(btn=>{
-        btn.classList.remove("active");
-      });
-
-      button.classList.add("active");
-
-      if(screenName === "options"){
-        await loadExpiries();
-      }
-
-      if(screenName === "news"){
-        await loadNews(true);
-      }
-
-      if(screenName === "home"){
-        await loadEraAnalysis();
-      }
-
-    }
-  );
-
-});
-
-
-/* =========================================
-   NUMBER HELPERS
-========================================= */
-
-function numberValue(value){
-
-  if(
-    value === null ||
-    value === undefined ||
-    value === ""
-  ){
-    return null;
-  }
-
-  const number = Number(value);
-
-  return Number.isFinite(number)
-    ? number
-    : null;
-
-}
-
-
-function formatPrice(value){
-
-  const number =
-    numberValue(value);
-
-  if(number === null){
-    return "--";
-  }
-
-  return number.toLocaleString(
+  return n.toLocaleString(
     "en-IN",
     {
-      minimumFractionDigits:2,
-      maximumFractionDigits:2
+      minimumFractionDigits:
+        decimals,
+
+      maximumFractionDigits:
+        decimals
     }
   );
-
 }
 
 
-function formatChange(
-  value,
-  percent=false
-){
+function signed(value) {
+  const n =
+    Number(value);
 
-  const number =
-    numberValue(value);
-
-  if(number === null){
-    return "--";
+  if (
+    !Number.isFinite(n)
+  ) {
+    return "—";
   }
 
   return (
-    number >= 0 ? "+" : ""
+    n >= 0 ? "+" : ""
   ) +
-  number.toFixed(
-    percent ? 2 : 2
-  ) +
-  (percent ? "%" : "");
-
+  number(n, 2);
 }
 
 
-/* =========================================
-   DOM HELPERS
-========================================= */
+function formatDateTime(date) {
+  try {
+    return new Date(date)
+      .toLocaleTimeString(
+        "en-IN",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }
+      );
+  } catch {
+    return "—";
+  }
+}
 
-function setText(id,value){
 
-  const element =
-    document.getElementById(id);
+function showToast(
+  title,
+  message
+) {
+  const container =
+    $("toastContainer");
 
-  if(element){
-    element.textContent =
-      value;
+  const toast =
+    document.createElement(
+      "div"
+    );
+
+  toast.className =
+    "toast";
+
+  toast.innerHTML = `
+    <strong>
+      ${escapeHtml(title)}
+    </strong>
+
+    <span>
+      ${escapeHtml(message)}
+    </span>
+  `;
+
+  container.appendChild(
+    toast
+  );
+
+  setTimeout(
+    () => toast.remove(),
+    4500
+  );
+}
+
+
+/* =========================================================
+   API
+========================================================= */
+
+async function api(
+  path,
+  options = {}
+) {
+  const response =
+    await fetch(
+      BACKEND_URL + path,
+      {
+        ...options,
+
+        headers: {
+          "Content-Type":
+            "application/json",
+
+          ...(options.headers || {})
+        }
+      }
+    );
+
+  const text =
+    await response.text();
+
+  let data;
+
+  try {
+    data =
+      text
+        ? JSON.parse(text)
+        : {};
+  } catch {
+    data = {
+      raw: text
+    };
   }
 
+  if (
+    !response.ok
+  ) {
+    throw new Error(
+      data?.error ||
+      data?.message ||
+      `HTTP ${response.status}`
+    );
+  }
+
+  return data;
 }
 
 
-function setDirectionStyle(
-  element,
-  direction
-){
+/* =========================================================
+   CONNECTION
+========================================================= */
 
-  if(!element){
+async function checkConnection() {
+  const status =
+    $("connectionStatus");
+
+  const text =
+    $("connectionText");
+
+  try {
+    const data =
+      await api(
+        "/health"
+      );
+
+    if (
+      data?.ok
+    ) {
+      status.classList.add(
+        "live"
+      );
+
+      text.textContent =
+        "Backend Live";
+    } else {
+      throw new Error(
+        "Backend unavailable"
+      );
+    }
+
+  } catch (error) {
+
+    status.classList.remove(
+      "live"
+    );
+
+    text.textContent =
+      "Offline";
+
+  }
+}
+
+
+/* =========================================================
+   INDEX TABS
+========================================================= */
+
+function setupIndexTabs() {
+  document
+    .querySelectorAll(
+      ".index-tab"
+    )
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          async () => {
+
+            const index =
+              button.dataset.index;
+
+            state.selectedIndex =
+              index;
+
+            localStorage.setItem(
+              "eraSelectedIndex",
+              index
+            );
+
+            document
+              .querySelectorAll(
+                ".index-tab"
+              )
+              .forEach(
+                (item) =>
+                  item.classList.toggle(
+                    "active",
+                    item === button
+                  )
+              );
+
+            $("selectedIndexTitle")
+              .textContent =
+              index;
+
+            $("optionIndex")
+              .value =
+              index;
+
+            await loadAnalysis();
+
+            await loadOptionData();
+
+          }
+        );
+
+      }
+    );
+}
+
+
+/* =========================================================
+   MARKET DATA
+========================================================= */
+
+function getMarketRows(
+  response
+) {
+  if (
+    Array.isArray(
+      response?.markets
+    )
+  ) {
+    return response.markets;
+  }
+
+  if (
+    Array.isArray(
+      response?.data
+    )
+  ) {
+    return response.data;
+  }
+
+  if (
+    response?.markets &&
+    typeof response.markets ===
+      "object"
+  ) {
+    return Object.entries(
+      response.markets
+    ).map(
+      ([index, value]) => ({
+        index,
+        ...value
+      })
+    );
+  }
+
+  return [];
+}
+
+
+function normalizeMarket(
+  row,
+  fallbackIndex
+) {
+  return {
+    index:
+      row.index ||
+      row.symbol ||
+      fallbackIndex,
+
+    price:
+      Number(
+        row.price ??
+        row.ltp ??
+        row.lastPrice ??
+        row.last_price
+      ),
+
+    change:
+      Number(
+        row.change ??
+        row.netChange ??
+        row.net_change
+      ),
+
+    changePercent:
+      Number(
+        row.changePercent ??
+        row.change_percent
+      ),
+
+    previousClose:
+      Number(
+        row.previousClose ??
+        row.previous_close
+      ),
+
+    trend:
+      row.trend ||
+      "NEUTRAL",
+
+    vwap:
+      Number(
+        row.vwap
+      )
+  };
+}
+
+
+async function loadMarket() {
+  try {
+
+    const data =
+      await api(
+        "/api/market"
+      );
+
+    const rows =
+      getMarketRows(
+        data
+      );
+
+    const map = {};
+
+    rows.forEach(
+      (row) => {
+
+        const normalized =
+          normalizeMarket(
+            row,
+            row.index
+          );
+
+        if (
+          normalized.index
+        ) {
+          map[
+            normalized.index
+          ] =
+            normalized;
+        }
+
+      }
+    );
+
+    state.market =
+      map;
+
+    renderMarketTabs();
+
+    renderSelectedMarket();
+
+  } catch (error) {
+
+    showToast(
+      "Market data",
+      error.message
+    );
+
+  }
+}
+
+
+/* =========================================================
+   MARKET TABS
+========================================================= */
+
+function renderMarketTabs() {
+
+  const indexes = [
+    "NIFTY",
+    "BANKNIFTY",
+    "FINNIFTY",
+    "SENSEX"
+  ];
+
+  indexes.forEach(
+    (index) => {
+
+      const market =
+        state.market[index];
+
+      const price =
+        $(
+          `tab-${index}-price`
+        );
+
+      const change =
+        $(
+          `tab-${index}-change`
+        );
+
+      if (!market) {
+        price.textContent =
+          "—";
+
+        change.textContent =
+          "—";
+
+        return;
+      }
+
+      price.textContent =
+        number(
+          market.price
+        );
+
+      const changeValue =
+        Number.isFinite(
+          market.changePercent
+        )
+          ? `${signed(market.changePercent)}%`
+          : signed(
+              market.change
+            );
+
+      change.textContent =
+        changeValue;
+
+      change.className =
+        "index-change " +
+        (
+          market.change >= 0
+            ? "up"
+            : "down"
+        );
+    }
+  );
+}
+
+
+/* =========================================================
+   SELECTED MARKET
+========================================================= */
+
+function renderSelectedMarket() {
+
+  const market =
+    state.market[
+      state.selectedIndex
+    ];
+
+  if (!market) {
     return;
   }
 
-  element.classList.remove(
-    "green",
-    "red",
-    "yellow",
-    "blue"
-  );
+  $("selectedIndexTitle")
+    .textContent =
+    state.selectedIndex;
 
-  if(direction === "BUY"){
-
-    element.classList.add("green");
-
-  }else if(direction === "SELL"){
-
-    element.classList.add("red");
-
-  }else{
-
-    element.classList.add("yellow");
-
-  }
-
-}
-
-
-/* =========================================
-   MARKET NORMALIZER
-========================================= */
-
-function normalizeMarket(market){
-
-  if(!market){
-    return null;
-  }
-
-  const price =
-    numberValue(
-      market.price ??
-      market.lastPrice ??
-      market.last_price
+  $("selectedPrice")
+    .textContent =
+    number(
+      market.price
     );
 
   const change =
-    numberValue(
-      market.change ??
-      market.netChange ??
-      market.net_change
-    );
-
-  let previousClose =
-    numberValue(
-      market.previousClose ??
-      market.previous_close ??
-      market.prevClose ??
-      market.prev_close_price
-    );
-
-  if(
-    previousClose === null &&
-    price !== null &&
-    change !== null
-  ){
-
-    previousClose =
-      price - change;
-
-  }
-
-  let changePercent =
-    numberValue(
-      market.changePercent ??
-      market.change_percent ??
-      market.netChangePercent
-    );
-
-  if(
-    changePercent === null &&
-    previousClose !== null &&
-    previousClose !== 0 &&
-    change !== null
-  ){
-
-    changePercent =
-      (change / previousClose) * 100;
-
-  }
-
-  return {
-
-    ...market,
-
-    price,
-    lastPrice:price,
-    change,
-    netChange:change,
-    changePercent,
-    previousClose,
-
-    open:numberValue(
-      market.open ??
-      market.ohlc?.open
-    ),
-
-    high:numberValue(
-      market.high ??
-      market.ohlc?.high
-    ),
-
-    low:numberValue(
-      market.low ??
-      market.ohlc?.low
+    Number.isFinite(
+      market.change
     )
+      ? signed(
+          market.change
+        )
+      : "—";
 
-  };
+  const percent =
+    Number.isFinite(
+      market.changePercent
+    )
+      ? ` (${signed(market.changePercent)}%)`
+      : "";
 
+  $("selectedChange")
+    .textContent =
+    change + percent;
+
+  $("selectedChange")
+    .className =
+    "market-change " +
+    (
+      market.change >= 0
+        ? "up"
+        : "down"
+    );
+
+  $("previousClose")
+    .textContent =
+    number(
+      market.previousClose
+    );
+
+  $("changePercent")
+    .textContent =
+    Number.isFinite(
+      market.changePercent
+    )
+      ? signed(
+          market.changePercent
+        ) + "%"
+      : "—";
+
+  $("trendValue")
+    .textContent =
+    market.trend ||
+    "—";
+
+  $("vwapValue")
+    .textContent =
+    number(
+      market.vwap
+    );
+
+  $("selectedStatus")
+    .textContent =
+    "LIVE";
 }
 
 
-/* =========================================
-   MARKET FINDER
-========================================= */
+/* =========================================================
+   ANALYSIS
+========================================================= */
 
-function getIndexMarketFromResponse(
-  market,
-  selected
-){
+async function loadAnalysis() {
 
-  if(!market){
+  try {
+
+    $("lastUpdated")
+      .textContent =
+      "Updating...";
+
+    const data =
+      await api(
+        `/api/analysis?index=${encodeURIComponent(
+          state.selectedIndex
+        )}`
+      );
+
+    state.analysis =
+      data;
+
+    renderAnalysis(
+      data
+    );
+
+    $("lastUpdated")
+      .textContent =
+      `Last update: ${formatDateTime(
+        new Date()
+      )}`;
+
+  } catch (error) {
+
+    $("lastUpdated")
+      .textContent =
+      "Update failed";
+
+    showToast(
+      "Analysis error",
+      error.message
+    );
+
+  }
+}
+
+
+/* =========================================================
+   FIND SELECTED ANALYSIS
+========================================================= */
+
+function getSelectedAnalysis(
+  data
+) {
+  if (
+    !data
+  ) {
     return null;
   }
 
-  if(
-    market.indices &&
-    market.indices[selected]
-  ){
+  if (
+    data.indexes &&
+    data.indexes[
+      state.selectedIndex
+    ]
+  ) {
+    return data.indexes[
+      state.selectedIndex
+    ];
+  }
 
-    return normalizeMarket(
-      market.indices[selected]
+  if (
+    Array.isArray(
+      data.markets
+    )
+  ) {
+    return data.markets.find(
+      (item) =>
+        String(
+          item.index
+        ).toUpperCase() ===
+        state.selectedIndex
     );
-
   }
 
-  if(
-    market[selected]
-  ){
-
-    return normalizeMarket(
-      market[selected]
+  if (
+    Array.isArray(
+      data.data
+    )
+  ) {
+    return data.data.find(
+      (item) =>
+        String(
+          item.index
+        ).toUpperCase() ===
+        state.selectedIndex
     );
-
   }
 
-  if(
-    selected === "NIFTY" &&
-    market.nifty
-  ){
-
-    return normalizeMarket(
-      market.nifty
-    );
-
-  }
-
-  if(
-    market.price !== undefined ||
-    market.lastPrice !== undefined
-  ){
-
-    return normalizeMarket(market);
-
-  }
-
-  return null;
-
-}
-
-
-/* =========================================
-   SPECIAL MARKET FINDER
-========================================= */
-
-function findSpecialMarket(
-  market,
-  name
-){
-
-  if(!market){
-    return null;
-  }
-
-  if(
-    name === "GIFT" &&
-    market.giftNifty
-  ){
-
-    return normalizeMarket(
-      market.giftNifty
-    );
-
-  }
-
-  if(
-    name === "VIX" &&
-    market.indiaVix
-  ){
-
-    return normalizeMarket(
-      market.indiaVix
-    );
-
+  if (
+    data.index ===
+    state.selectedIndex
+  ) {
+    return data;
   }
 
   return null;
-
 }
 
 
-/* =========================================
-   CLEAR ANALYSIS
-========================================= */
+/* =========================================================
+   ANALYSIS RENDER
+========================================================= */
 
-function clearAnalysisUI(){
+function renderAnalysis(
+  data
+) {
 
-  const ids = [
+  const selected =
+    getSelectedAnalysis(
+      data
+    );
 
-    "niftyValue",
-    "niftyChange",
-    "giftValue",
-    "giftChange",
-    "vixValue",
-    "vixChange",
-    "analysisNifty",
-    "analysisGift",
-    "analysisVix",
-    "analysisTrend",
-    "rsiValue",
-    "vwapValue",
-    "ema9Value",
-    "ema20Value",
-    "ema50Value",
-    "momentumValue",
-    "pcrValue",
-    "maxPainValue",
-    "optionBiasValue",
-    "expiryValue",
-    "entry",
-    "sl",
-    "target1",
-    "target2",
-    "target3",
-    "rr",
-    "tradeConfidence"
+  if (
+    selected
+  ) {
 
-  ];
+    const technical =
+      selected.technicals ||
+      selected.technical ||
+      {};
 
-  ids.forEach(id=>{
-    setText(id,"--");
-  });
+    $("ema9")
+      .textContent =
+      number(
+        technical.ema9 ??
+        selected.ema9
+      );
 
-  setText("directionBig","WAIT");
-  setText("direction","WAIT");
-  setText("confidenceBig","Confidence: --");
-  setText("marketStatus","DATA UNAVAILABLE");
-  setText("tradeStatus","NO TRADE");
-  setText("invalidation","Invalidation: --");
+    $("ema20")
+      .textContent =
+      number(
+        technical.ema20 ??
+        selected.ema20
+      );
 
-  setDirectionStyle(
-    document.getElementById("directionBig"),
-    "WAIT"
-  );
+    $("ema50")
+      .textContent =
+      number(
+        technical.ema50 ??
+        selected.ema50
+      );
 
-  setDirectionStyle(
-    document.getElementById("direction"),
-    "WAIT"
-  );
+    $("rsi")
+      .textContent =
+      number(
+        technical.rsi ??
+        selected.rsi
+      );
 
-  const tradeStatus =
-    document.getElementById("tradeStatus");
+    $("support")
+      .textContent =
+      number(
+        technical.support ??
+        selected.support
+      );
 
-  if(tradeStatus){
-    tradeStatus.className = "yellow";
+    $("resistance")
+      .textContent =
+      number(
+        technical.resistance ??
+        selected.resistance
+      );
   }
 
-  document.getElementById(
-    "reasonsList"
-  ).innerHTML = `
-    <div class="reason">
-      Live analysis unavailable.
-    </div>
-  `;
+  const signals =
+    extractSignals(
+      data
+    );
 
+  state.lastSignals =
+    signals;
+
+  renderSignals(
+    signals
+  );
+
+  renderRadar(
+    data,
+    signals
+  );
+
+  renderRisk(
+    data
+  );
 }
 
 
-/* =========================================
-   LOAD ANALYSIS
-========================================= */
+/* =========================================================
+   EXTRACT SIGNALS
+========================================================= */
 
-let analysisLoading = false;
+function extractSignals(
+  data
+) {
 
-async function loadEraAnalysis(){
+  let signals = [];
 
-  if(analysisLoading){
-    return;
+  if (
+    Array.isArray(
+      data?.signals
+    )
+  ) {
+    signals =
+      data.signals;
   }
 
-  analysisLoading = true;
-
-  status.textContent = "● Analyzing";
-  state.textContent = "Updating live market...";
-
-  try{
-
-    const selectedIndex =
-      getSelectedIndex();
-
-    const result =
-      await apiFetch(
-        `/api/analysis?index=${encodeURIComponent(selectedIndex)}`
-      );
-
-    if(
-      result?.success === false
-    ){
-
-      throw new Error(
-        result?.error ||
-        "Analysis unavailable"
-      );
-
-    }
-
-    renderEraAnalysis(result);
-
-    status.textContent = "● Live";
-    state.textContent =
-      `${INDEX_CONFIG[selectedIndex].label} live`;
-
-  }catch(error){
-
-    console.error(
-      "Era analysis error:",
-      error
-    );
-
-    clearAnalysisUI();
-
-    status.textContent = "● Backend Error";
-    state.textContent =
-      "Live analysis unavailable";
-
-  }finally{
-
-    analysisLoading = false;
-
+  else if (
+    Array.isArray(
+      data?.trades
+    )
+  ) {
+    signals =
+      data.trades;
   }
 
+  else if (
+    data?.signal
+  ) {
+    signals =
+      [data.signal];
+  }
+
+  return signals;
 }
 
 
-/* =========================================
-   RENDER ANALYSIS
-========================================= */
-
-function renderEraAnalysis(data){
-
-  const signal =
-    data.signal ||
-    data.analysis?.signal ||
-    {};
-
-  const market =
-    data.market ||
-    data.data?.market ||
-    {};
-
-  const technical =
-    data.technical ||
-    data.data?.technical ||
-    data.analysis?.technical ||
-    {};
-
-  const options =
-    data.options ||
-    data.data?.options ||
-    data.analysis?.options ||
-    {};
-
-  const direction =
-    String(
-      signal.direction ||
-      signal.action ||
-      "WAIT"
-    ).toUpperCase();
-
-  const confidence =
-    numberValue(
-      signal.confidence
-    );
-
-  const selectedIndex =
-    String(
-      data.selectedIndex ||
-      getSelectedIndex()
-    ).toUpperCase();
-
-  const selectedMarket =
-    getIndexMarketFromResponse(
-      market,
-      selectedIndex
-    );
-
-  const gift =
-    findSpecialMarket(
-      market,
-      "GIFT"
-    ) || {};
-
-  const vix =
-    findSpecialMarket(
-      market,
-      "VIX"
-    ) || {};
-
-
-  /* ================= MARKET ================= */
-
-  setText(
-    "niftyValue",
-    formatPrice(
-      selectedMarket?.price
-    )
-  );
-
-  const primaryChange =
-    selectedMarket?.change;
-
-  const primaryChangeElement =
-    document.getElementById(
-      "niftyChange"
-    );
-
-  setText(
-    "niftyChange",
-    primaryChange !== null &&
-    primaryChange !== undefined
-      ? `${formatChange(primaryChange)} (${formatChange(selectedMarket.changePercent,true)})`
-      : "--"
-  );
-
-  if(primaryChangeElement){
-
-    primaryChangeElement.className =
-      "small-value " +
-      (
-        primaryChange === null ||
-        primaryChange === undefined
-          ? ""
-          : primaryChange >= 0
-            ? "green"
-            : "red"
-      );
-
-  }
-
-
-  /* ================= GIFT ================= */
-
-  setText(
-    "giftValue",
-    formatPrice(
-      gift.price
-    )
-  );
-
-  const giftChange =
-    gift.change;
-
-  const giftChangeElement =
-    document.getElementById(
-      "giftChange"
-    );
-
-  setText(
-    "giftChange",
-    giftChange !== null &&
-    giftChange !== undefined
-      ? `${formatChange(giftChange)} (${formatChange(gift.changePercent,true)})`
-      : "--"
-  );
-
-  if(giftChangeElement){
-
-    giftChangeElement.className =
-      "small-value " +
-      (
-        giftChange === null ||
-        giftChange === undefined
-          ? ""
-          : giftChange >= 0
-            ? "green"
-            : "red"
-      );
-
-  }
-
-
-  /* ================= VIX ================= */
-
-  setText(
-    "vixValue",
-    formatPrice(
-      vix.price
-    )
-  );
-
-  const vixChange =
-    vix.change;
-
-  const vixChangeElement =
-    document.getElementById(
-      "vixChange"
-    );
-
-  setText(
-    "vixChange",
-    vixChange !== null &&
-    vixChange !== undefined
-      ? `${formatChange(vixChange)} (${formatChange(vix.changePercent,true)})`
-      : "--"
-  );
-
-  if(vixChangeElement){
-
-    vixChangeElement.className =
-      "small-value " +
-      (
-        vixChange === null ||
-        vixChange === undefined
-          ? ""
-          : vixChange >= 0
-            ? "red"
-            : "green"
-      );
-
-  }
-
-
-  /* ================= STATUS ================= */
-
-  if(direction === "BUY"){
-
-    setText(
-      "marketStatus",
-      "BULLISH SETUP"
-    );
-
-  }else if(direction === "SELL"){
-
-    setText(
-      "marketStatus",
-      "BEARISH SETUP"
-    );
-
-  }else{
-
-    setText(
-      "marketStatus",
-      "WAIT / NO TRADE"
-    );
-
-  }
-
-
-  setText(
-    "analysisNifty",
-    formatPrice(
-      selectedMarket?.price
-    )
-  );
-
-  setText(
-    "analysisGift",
-    formatPrice(
-      gift.price
-    )
-  );
-
-  setText(
-    "analysisVix",
-    formatPrice(
-      vix.price
-    )
-  );
-
-
-  /* ================= SIGNAL ================= */
-
-  setText(
-    "directionBig",
-    direction
-  );
-
-  setDirectionStyle(
-    document.getElementById(
-      "directionBig"
-    ),
-    direction
-  );
-
-  setText(
-    "confidenceBig",
-    confidence !== null
-      ? `Confidence: ${confidence}%`
-      : "Confidence: --"
-  );
-
-  setText(
-    "direction",
-    direction
-  );
-
-  setDirectionStyle(
-    document.getElementById(
-      "direction"
-    ),
-    direction
-  );
-
-
-  /* ================= TECHNICAL ================= */
-
-  setText(
-    "analysisTrend",
-    technical.trend ||
-    technical.direction ||
-    "--"
-  );
-
-  setText(
-    "rsiValue",
-    technical.rsi !== null &&
-    technical.rsi !== undefined
-      ? Number(technical.rsi).toFixed(2)
-      : "--"
-  );
-
-  setText(
-    "vwapValue",
-    formatPrice(
-      technical.vwap
-    )
-  );
-
-  setText(
-    "ema9Value",
-    formatPrice(
-      technical.ema9
-    )
-  );
-
-  setText(
-    "ema20Value",
-    formatPrice(
-      technical.ema20
-    )
-  );
-
-  setText(
-    "ema50Value",
-    formatPrice(
-      technical.ema50
-    )
-  );
-
-  setText(
-    "momentumValue",
-    technical.momentum ||
-    "--"
-  );
-
-
-  /* ================= OPTIONS ================= */
-
-  setText(
-    "pcrValue",
-    options.pcr !== null &&
-    options.pcr !== undefined
-      ? Number(options.pcr).toFixed(2)
-      : "--"
-  );
-
-  setText(
-    "maxPainValue",
-    formatPrice(
-      options.maxPain
-    )
-  );
-
-  setText(
-    "optionBiasValue",
-    options.bias ||
-    options.optionBias ||
-    "--"
-  );
-
-  setText(
-    "expiryValue",
-    options.expiry ||
-    options.expiryDate ||
-    "--"
-  );
-
-
-  /* ================= TRADE ================= */
-
-  setText(
-    "entry",
-    formatPrice(
-      signal.entry
-    )
-  );
-
-  setText(
-    "sl",
-    formatPrice(
-      signal.stopLoss ??
-      signal.sl
-    )
-  );
-
-  setText(
-    "target1",
-    formatPrice(
-      signal.target1 ??
-      signal.target_1
-    )
-  );
-
-  setText(
-    "target2",
-    formatPrice(
-      signal.target2 ??
-      signal.target_2
-    )
-  );
-
-  setText(
-    "target3",
-    formatPrice(
-      signal.target3 ??
-      signal.target_3
-    )
-  );
-
-  setText(
-    "rr",
-    signal.riskReward !== null &&
-    signal.riskReward !== undefined
-      ? Number(signal.riskReward).toFixed(2)
-      : "--"
-  );
-
-  setText(
-    "tradeConfidence",
-    confidence !== null
-      ? `${confidence}%`
-      : "--"
-  );
-
-
-  /* ================= TRADE STATUS ================= */
-
-  const tradeStatus =
-    document.getElementById(
-      "tradeStatus"
-    );
-
-  if(direction === "BUY"){
-
-    tradeStatus.textContent =
-      "BUY SETUP";
-
-    tradeStatus.className =
-      "green";
-
-  }else if(direction === "SELL"){
-
-    tradeStatus.textContent =
-      "SELL SETUP";
-
-    tradeStatus.className =
-      "red";
-
-  }else{
-
-    tradeStatus.textContent =
-      "NO TRADE";
-
-    tradeStatus.className =
-      "yellow";
-
-  }
-
-
-  /* ================= REASONS ================= */
-
-  const reasonsList =
-    document.getElementById(
-      "reasonsList"
-    );
-
-  let reasons =
-    Array.isArray(data.reasons)
-      ? data.reasons
-      : Array.isArray(signal.reasons)
-        ? signal.reasons
-        : [];
-
-  if(!reasons.length){
-
-    reasonsList.innerHTML = `
-      <div class="reason">
-        No strong confirmation yet.
+/* =========================================================
+   SIGNAL CARD
+========================================================= */
+
+function renderSignals(
+  signals
+) {
+
+  const container =
+    $("signalsContainer");
+
+  if (
+    !signals.length
+  ) {
+
+    $("signalCount")
+      .textContent =
+      "0 active";
+
+    container.innerHTML = `
+      <div class="panel">
+        <div class="loading">
+          Era currently has no qualifying trade setup.
+          Monitoring continues automatically.
+        </div>
       </div>
     `;
 
-  }else{
-
-    reasonsList.innerHTML = "";
-
-    reasons.forEach(reason=>{
-
-      const div =
-        document.createElement("div");
-
-      div.className = "reason";
-
-      div.textContent =
-        "• " + String(reason);
-
-      reasonsList.appendChild(div);
-
-    });
-
+    return;
   }
 
+  $("signalCount")
+    .textContent =
+    `${signals.length} active`;
 
-  /* ================= INVALIDATION ================= */
+  container.innerHTML =
+    signals
+      .map(
+        renderSignalCard
+      )
+      .join("");
+}
 
-  setText(
-    "invalidation",
-    "Invalidation: " +
+
+function renderSignalCard(
+  signal
+) {
+
+  const index =
+    signal.index ||
+    state.selectedIndex;
+
+  const direction =
+    String(
+      signal.direction ??
+      signal.signal ??
+      signal.side ??
+      "WAIT"
+    ).toUpperCase();
+
+  const optionType =
+    String(
+      signal.optionType ??
+      signal.option_type ??
+      signal.option ??
+      ""
+    ).toUpperCase();
+
+  const strike =
+    signal.strikePrice ??
+    signal.strike_price ??
+    signal.strike ??
+    null;
+
+  const entry =
+    signal.entry ??
+    signal.entryPrice ??
+    signal.entry_price;
+
+  const sl =
+    signal.sl ??
+    signal.stopLoss ??
+    signal.stop_loss;
+
+  const t1 =
+    signal.t1 ??
+    signal.target1 ??
+    signal.target_1;
+
+  const t2 =
+    signal.t2 ??
+    signal.target2 ??
+    signal.target_2;
+
+  const t3 =
+    signal.t3 ??
+    signal.target3 ??
+    signal.target_3;
+
+  const rr =
+    signal.rr ??
+    signal.riskReward ??
+    signal.risk_reward;
+
+  const confidence =
+    signal.confidence ??
+    signal.confidenceScore ??
+    signal.score;
+
+  const status =
+    signal.status ??
+    "WAIT";
+
+  const suggestion =
+    signal.suggestion ??
+    signal.eraSuggestion ??
     (
-      data.invalidation ||
-      signal.invalidation ||
-      "--"
-    )
-  );
-
-
-  /* ================= SAVE SIGNAL ================= */
-
-  localStorage.setItem(
-    "era_last_signal",
-    JSON.stringify({
-      index:selectedIndex,
-      direction,
-      confidence,
-      entry:signal.entry ?? null,
-      stopLoss:signal.stopLoss ?? null,
-      target1:signal.target1 ?? null,
-      target2:signal.target2 ?? null,
-      target3:signal.target3 ?? null,
-      time:new Date().toISOString()
-    })
-  );
-
-}
-
-
-/* =========================================
-   REFRESH
-========================================= */
-
-document
-  .getElementById(
-    "refreshAnalysisBtn"
-  )
-  .addEventListener(
-    "click",
-    async()=>{
-
-      const button =
-        document.getElementById(
-          "refreshAnalysisBtn"
-        );
-
-      button.disabled = true;
-      button.textContent =
-        "⟳ Updating...";
-
-      await loadEraAnalysis();
-
-      button.disabled = false;
-      button.textContent =
-        "↻ Refresh Era Analysis";
-
-    }
-  );
-
-
-/* =========================================
-   AUTO REFRESH
-========================================= */
-
-setInterval(
-  ()=>{
-
-    const home =
-      document.getElementById("home");
-
-    if(
-      home &&
-      home.classList.contains("active")
-    ){
-
-      loadEraAnalysis();
-
-    }
-
-  },
-  60000
-);
-
-
-/* =========================================
-   LANGUAGE
-========================================= */
-
-function getSelectedLanguage(){
-  return languageSelect.value;
-}
-
-languageSelect.addEventListener(
-  "change",
-  ()=>{
-
-    const names = {
-
-      "hi-IN":"Hindi selected",
-      "gu-IN":"Gujarati selected",
-      "en-IN":"English selected"
-
-    };
-
-    if(recognition){
-      recognition.lang =
-        getSelectedLanguage();
-    }
-
-    state.textContent =
-      names[getSelectedLanguage()] ||
-      "Language selected";
-
-  }
-);
-
-
-/* =========================================
-   CHAT
-========================================= */
-
-let chatConversation = [];
-let isThinking = false;
-
-
-function addChatMessage(
-  sender,
-  text
-){
-
-  if(chatEmpty){
-    chatEmpty.style.display =
-      "none";
-  }
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.className =
-    "chat-message " + sender;
-
-  const content =
-    document.createElement("div");
-
-  content.className =
-    "chat-content";
-
-  const label =
-    document.createElement("div");
-
-  label.className =
-    "chat-label";
-
-  label.textContent =
-    sender === "user"
-      ? "You"
-      : "Era";
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "chat-bubble";
-
-  bubble.textContent =
-    text;
-
-  content.appendChild(label);
-  content.appendChild(bubble);
-  wrapper.appendChild(content);
-  chatBoard.appendChild(wrapper);
-
-  chatBoard.scrollTop =
-    chatBoard.scrollHeight;
-
-}
-
-
-function addThinking(){
-
-  if(chatEmpty){
-    chatEmpty.style.display =
-      "none";
-  }
-
-  removeThinking();
-
-  const wrapper =
-    document.createElement("div");
-
-  wrapper.id =
-    "thinkingMessage";
-
-  wrapper.className =
-    "chat-message era";
-
-  const content =
-    document.createElement("div");
-
-  content.className =
-    "chat-content";
-
-  const label =
-    document.createElement("div");
-
-  label.className =
-    "chat-label";
-
-  label.textContent = "Era";
-
-  const bubble =
-    document.createElement("div");
-
-  bubble.className =
-    "chat-bubble";
-
-  const thinking =
-    document.createElement("span");
-
-  thinking.className =
-    "chat-thinking";
-
-  thinking.textContent =
-    "Thinking...";
-
-  bubble.appendChild(thinking);
-  content.appendChild(label);
-  content.appendChild(bubble);
-  wrapper.appendChild(content);
-  chatBoard.appendChild(wrapper);
-
-  chatBoard.scrollTop =
-    chatBoard.scrollHeight;
-
-}
-
-
-function removeThinking(){
-
-  const thinking =
-    document.getElementById(
-      "thinkingMessage"
+      direction === "WAIT"
+        ? "WAIT FOR CONFIRMATION"
+        : "TRADE CONSIDER"
     );
 
-  if(thinking){
-    thinking.remove();
-  }
+  const reasons =
+    Array.isArray(
+      signal.reasons
+    )
+      ? signal.reasons.join(
+          " • "
+        )
+      : (
+          signal.reason ||
+          signal.confirmations ||
+          "Market structure and option data evaluated."
+        );
 
+  const directionClass =
+    direction === "BUY"
+      ? "buy"
+      : direction === "SELL"
+      ? "sell"
+      : "";
+
+  return `
+    <div class="signal-card">
+
+      <div class="signal-top">
+
+        <div class="signal-title">
+
+          <span
+            class="signal-direction ${directionClass}"
+          >
+            ${escapeHtml(direction)}
+          </span>
+
+          <span class="signal-index">
+            ${escapeHtml(index)}
+          </span>
+
+        </div>
+
+        <div class="confidence">
+
+          <strong>
+            ${escapeHtml(
+              confidence ?? "—"
+            )}%
+          </strong>
+
+          <span>
+            CONFIDENCE
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div class="trade-contract">
+
+        <div class="contract-item">
+          <span>Strike</span>
+          <strong>
+            ${number(strike)}
+          </strong>
+        </div>
+
+        <div class="contract-item">
+          <span>Option</span>
+          <strong>
+            ${escapeHtml(
+              optionType || "—"
+            )}
+          </strong>
+        </div>
+
+        <div class="contract-item">
+          <span>Status</span>
+          <strong>
+            ${escapeHtml(status)}
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div class="trade-levels">
+
+        <div class="trade-metric">
+          <span>Entry</span>
+          <strong>
+            ${number(entry)}
+          </strong>
+        </div>
+
+        <div class="trade-metric">
+          <span>SL</span>
+          <strong class="red">
+            ${number(sl)}
+          </strong>
+        </div>
+
+        <div class="trade-metric">
+          <span>T1</span>
+          <strong class="green">
+            ${number(t1)}
+          </strong>
+        </div>
+
+        <div class="trade-metric">
+          <span>T2</span>
+          <strong class="green">
+            ${number(t2)}
+          </strong>
+        </div>
+
+        <div class="trade-metric">
+          <span>T3</span>
+          <strong class="green">
+            ${number(t3)}
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div class="trade-reasons">
+
+        <b>R:R:</b>
+        ${escapeHtml(
+          rr ?? "—"
+        )}
+
+        &nbsp;&nbsp;
+
+        <b>Why:</b>
+        ${escapeHtml(
+          reasons
+        )}
+
+      </div>
+
+
+      <div class="suggestion">
+
+        Era Suggestion:
+        ${escapeHtml(
+          suggestion
+        )}
+
+      </div>
+
+    </div>
+  `;
 }
 
 
-function getAnswerFromResponse(result){
+/* =========================================================
+   RADAR
+========================================================= */
 
-  if(!result){
-    return "";
-  }
+function renderRadar(
+  data,
+  signals
+) {
 
-  if(typeof result === "string"){
-    return result;
-  }
+  const indexes = [
+    "NIFTY",
+    "BANKNIFTY",
+    "FINNIFTY",
+    "SENSEX"
+  ];
 
-  return (
-    result.reply ||
-    result.response ||
-    result.answer ||
-    result.message ||
-    result.text ||
-    result.content ||
-    result.data?.reply ||
-    result.data?.response ||
-    result.data?.answer ||
-    result.data?.message ||
-    result.data?.text ||
-    result.data?.content ||
-    ""
+  const container =
+    $("radarList");
+
+  let rows = [];
+
+  indexes.forEach(
+    (index) => {
+
+      let market =
+        state.market[index];
+
+      let signal =
+        signals.find(
+          (item) =>
+            String(
+              item.index
+            ).toUpperCase() ===
+            index
+        );
+
+      let confidence =
+        Number(
+          signal?.confidence ??
+          signal?.score ??
+          0
+        );
+
+      if (
+        !confidence
+      ) {
+        confidence = 10;
+      }
+
+      confidence =
+        Math.max(
+          0,
+          Math.min(
+            100,
+            confidence
+          )
+        );
+
+      const direction =
+        String(
+          signal?.direction ??
+          signal?.signal ??
+          "WAIT"
+        ).toUpperCase();
+
+      rows.push(`
+        <div class="radar-item">
+
+          <div>
+            <div class="radar-name">
+              ${index}
+            </div>
+
+            <div class="radar-price">
+              ${
+                market
+                  ? number(
+                      market.price
+                    )
+                  : "—"
+              }
+            </div>
+          </div>
+
+          <div class="radar-middle">
+
+            <div class="radar-bar">
+              <div
+                class="radar-fill"
+                style="width:${confidence}%"
+              ></div>
+            </div>
+
+            <div class="radar-label">
+              Confidence ${confidence}%
+            </div>
+
+          </div>
+
+          <div
+            class="radar-signal ${
+              direction === "BUY"
+                ? "buy"
+                : direction === "SELL"
+                ? "sell"
+                : "wait"
+            }"
+          >
+            ${escapeHtml(
+              direction
+            )}
+          </div>
+
+        </div>
+      `);
+
+    }
   );
 
+  container.innerHTML =
+    rows.join("");
+
+  $("radarCount")
+    .textContent =
+    `${signals.length} setups`;
 }
 
 
-/* =========================================
-   CHAT REQUEST
-   V6 = TEXT ONLY
-========================================= */
+/* =========================================================
+   OPTIONS
+========================================================= */
 
-async function handleUserMessage(text){
+async function loadExpiries() {
 
-  const cleanText =
-    String(text || "").trim();
+  const index =
+    $("optionIndex").value;
 
-  if(!cleanText){
+  const select =
+    $("expirySelect");
+
+  select.innerHTML =
+    `<option value="">Loading...</option>`;
+
+  try {
+
+    const data =
+      await api(
+        `/api/options/contracts?index=${encodeURIComponent(
+          index
+        )}`
+      );
+
+    let expiries =
+      data?.expiries ||
+      data?.availableExpiries ||
+      [];
+
+    if (
+      !Array.isArray(
+        expiries
+      )
+    ) {
+      expiries = [];
+    }
+
+    if (
+      !expiries.length &&
+      Array.isArray(
+        data?.data
+      )
+    ) {
+
+      expiries = [
+        ...new Set(
+          data.data
+            .map(
+              item =>
+                item.expiry
+            )
+            .filter(Boolean)
+        )
+      ];
+
+    }
+
+    select.innerHTML =
+      expiries.length
+        ? expiries
+            .map(
+              expiry => `
+                <option
+                  value="${escapeHtml(
+                    expiry
+                  )}"
+                >
+                  ${escapeHtml(
+                    expiry
+                  )}
+                </option>
+              `
+            )
+            .join("")
+        : `
+            <option value="">
+              No expiry
+            </option>
+          `;
+
+    await loadOptionData();
+
+  } catch (error) {
+
+    select.innerHTML =
+      `
+        <option value="">
+          Expiry unavailable
+        </option>
+      `;
+
+    showToast(
+      "Option expiry",
+      error.message
+    );
+  }
+}
+
+
+async function loadOptionData() {
+
+  const index =
+    $("optionIndex").value;
+
+  const expiry =
+    $("expirySelect").value;
+
+  try {
+
+    const query =
+      expiry
+        ? `?index=${encodeURIComponent(
+            index
+          )}&expiry=${encodeURIComponent(
+            expiry
+          )}`
+        : `?index=${encodeURIComponent(
+            index
+          )}`;
+
+    const data =
+      await api(
+        `/api/options/chain${query}`
+      );
+
+    state.optionData =
+      data;
+
+    renderOptionChain(
+      data
+    );
+
+  } catch (error) {
+
+    showToast(
+      "Option chain",
+      error.message
+    );
+
+  }
+}
+
+
+/* =========================================================
+   OPTION CHAIN RENDER
+========================================================= */
+
+function renderOptionChain(
+  data
+) {
+
+  const chain =
+    data?.chain ||
+    data?.data ||
+    [];
+
+  const tbody =
+    $("optionTableBody");
+
+  if (
+    !Array.isArray(
+      chain
+    ) ||
+    !chain.length
+  ) {
+
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="11">
+          <div class="loading">
+            No option-chain data available.
+          </div>
+        </td>
+      </tr>
+    `;
+
+    return;
+  }
+
+  const spot =
+    Number(
+      data?.spot ??
+      data?.underlyingSpot ??
+      state.market[
+        $("optionIndex").value
+      ]?.price
+    );
+
+  const sorted =
+    [...chain]
+      .sort(
+        (a,b) =>
+          Math.abs(
+            Number(
+              a.strikePrice ??
+              a.strike_price ??
+              a.strike
+            ) - spot
+          ) -
+          Math.abs(
+            Number(
+              b.strikePrice ??
+              b.strike_price ??
+              b.strike
+            ) - spot
+          )
+      )
+      .slice(
+        0,
+        15
+      )
+      .sort(
+        (a,b) =>
+          Number(
+            a.strikePrice ??
+            a.strike_price ??
+            a.strike
+          ) -
+          Number(
+            b.strikePrice ??
+            b.strike_price ??
+            b.strike
+          )
+      );
+
+  tbody.innerHTML =
+    sorted
+      .map(
+        row => {
+
+          const strike =
+            Number(
+              row.strikePrice ??
+              row.strike_price ??
+              row.strike
+            );
+
+          const ce =
+            row.CE ||
+            row.ce ||
+            row.call ||
+            row.call_options ||
+            {};
+
+          const pe =
+            row.PE ||
+            row.pe ||
+            row.put ||
+            row.put_options ||
+            {};
+
+          const ceData =
+            ce.data ||
+            ce.market_data ||
+            ce.marketData ||
+            ce;
+
+          const peData =
+            pe.data ||
+            pe.market_data ||
+            pe.marketData ||
+            pe;
+
+          const atm =
+            spot &&
+            Math.abs(
+              strike - spot
+            ) <
+              Math.max(
+                30,
+                spot * .0015
+              );
+
+          return `
+            <tr
+              class="${
+                atm
+                  ? "atm-row"
+                  : ""
+              }"
+            >
+
+              <td class="ce-cell">
+                ${number(
+                  ceData.oi,
+                  0
+                )}
+              </td>
+
+              <td class="ce-cell">
+                ${signed(
+                  ceData.changeOi
+                  ??
+                  ceData.change_oi
+                )}
+              </td>
+
+              <td class="ce-cell">
+                ${number(
+                  ceData.ltp ??
+                  ceData.last_price
+                )}
+              </td>
+
+              <td class="ce-cell">
+                ${number(
+                  ceData.iv
+                )}
+              </td>
+
+              <td class="ce-cell">
+                ${number(
+                  ceData.volume,
+                  0
+                )}
+              </td>
+
+              <td>
+                <strong>
+                  ${number(
+                    strike
+                  )}
+                </strong>
+              </td>
+
+              <td class="pe-cell">
+                ${number(
+                  peData.ltp ??
+                  peData.last_price
+                )}
+              </td>
+
+              <td class="pe-cell">
+                ${number(
+                  peData.iv
+                )}
+              </td>
+
+              <td class="pe-cell">
+                ${number(
+                  peData.volume,
+                  0
+                )}
+              </td>
+
+              <td class="pe-cell">
+                ${signed(
+                  peData.changeOi
+                  ??
+                  peData.change_oi
+                )}
+              </td>
+
+              <td class="pe-cell">
+                ${number(
+                  peData.oi,
+                  0
+                )}
+              </td>
+
+            </tr>
+          `;
+        }
+      )
+      .join("");
+
+  $("atmStrike")
+    .textContent =
+    number(
+      data?.atmStrike ??
+      data?.atm ??
+      spot
+    );
+
+  const pcr =
+    data?.pcr ||
+    data?.summary?.pcr ||
+    {};
+
+  $("pcrValue")
+    .textContent =
+    number(
+      pcr.pcr ??
+      data?.pcr
+    );
+
+  $("pcrSentiment")
+    .textContent =
+    pcr.sentiment ||
+    data?.sentiment ||
+    "NEUTRAL";
+}
+
+
+/* =========================================================
+   NEWS
+========================================================= */
+
+async function loadNews() {
+
+  try {
+
+    const data =
+      await api(
+        "/api/news"
+      );
+
+    const news =
+      Array.isArray(
+        data?.news
+      )
+        ? data.news
+        : Array.isArray(
+            data?.data
+          )
+        ? data.data
+        : [];
+
+    const container =
+      $("newsList");
+
+    if (
+      !news.length
+    ) {
+
+      container.innerHTML =
+        `
+          <div class="loading">
+            No current news available.
+          </div>
+        `;
+
+      return;
+    }
+
+    container.innerHTML =
+      news
+        .slice(
+          0,
+          8
+        )
+        .map(
+          item => {
+
+            const title =
+              item.title ||
+              item.headline ||
+              "Market update";
+
+            const source =
+              item.source ||
+              item.publisher ||
+              "";
+
+            return `
+              <a
+                class="news-item"
+                ${
+                  item.link
+                    ? `href="${escapeHtml(
+                        item.link
+                      )}" target="_blank" rel="noopener"`
+                    : ""
+                }
+              >
+
+                <strong>
+                  ${escapeHtml(
+                    title
+                  )}
+                </strong>
+
+                <span>
+                  ${escapeHtml(
+                    source
+                  )}
+                </span>
+
+              </a>
+            `;
+          }
+        )
+        .join("");
+
+  } catch (error) {
+
+    $("newsList")
+      .innerHTML = `
+        <div class="loading">
+          News unavailable.
+        </div>
+      `;
+  }
+}
+
+
+/* =========================================================
+   RISK
+========================================================= */
+
+function renderRisk(
+  data
+) {
+
+  const selected =
+    getSelectedAnalysis(
+      data
+    );
+
+  const rsi =
+    Number(
+      selected?.technicals?.rsi ??
+      selected?.technical?.rsi ??
+      selected?.rsi
+    );
+
+  let risk = 35;
+
+  if (
+    Number.isFinite(
+      rsi
+    )
+  ) {
+
+    if (
+      rsi >= 70 ||
+      rsi <= 30
+    ) {
+      risk += 20;
+    }
+
+    if (
+      rsi >= 80 ||
+      rsi <= 20
+    ) {
+      risk += 20;
+    }
+  }
+
+  risk =
+    Math.min(
+      100,
+      risk
+    );
+
+  $("riskScore")
+    .textContent =
+    risk;
+
+  $("riskStatus")
+    .textContent =
+    risk >= 70
+      ? "HIGH"
+      : risk >= 45
+      ? "MODERATE"
+      : "ACTIVE";
+}
+
+
+/* =========================================================
+   ENGINE
+========================================================= */
+
+async function startEngine() {
+
+  try {
+
+    const data =
+      await api(
+        "/api/engine/start",
+        {
+          method:
+            "POST"
+        }
+      );
+
+    state.engine =
+      true;
+
+    $("engineState")
+      .textContent =
+      "MONITORING";
+
+    showToast(
+      "Era Radar",
+      data?.message ||
+        "Autonomous monitoring started."
+    );
+
+  } catch (error) {
+
+    showToast(
+      "Radar",
+      error.message
+    );
+
+  }
+}
+
+
+async function stopEngine() {
+
+  try {
+
+    const data =
+      await api(
+        "/api/engine/stop",
+        {
+          method:
+            "POST"
+        }
+      );
+
+    state.engine =
+      false;
+
+    $("engineState")
+      .textContent =
+      "PAUSED";
+
+    showToast(
+      "Era Radar",
+      data?.message ||
+        "Autonomous monitoring paused."
+    );
+
+  } catch (error) {
+
+    showToast(
+      "Radar",
+      error.message
+    );
+
+  }
+}
+
+
+/* =========================================================
+   ENGINE STATUS
+========================================================= */
+
+async function loadEngineStatus() {
+
+  try {
+
+    const data =
+      await api(
+        "/api/engine"
+      );
+
+    const running =
+      Boolean(
+        data?.running ??
+        data?.engine?.running
+      );
+
+    state.engine =
+      running;
+
+    $("engineState")
+      .textContent =
+      running
+        ? "MONITORING"
+        : "PAUSED";
+
+  } catch {
+    $("engineState")
+      .textContent =
+      "UNKNOWN";
+  }
+}
+
+
+/* =========================================================
+   CHAT
+========================================================= */
+
+function addChatMessage(
+  text,
+  role
+) {
+
+  const container =
+    $("chatMessages");
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+  message.className =
+    `chat-message ${role}`;
+
+  message.textContent =
+    text;
+
+  container.appendChild(
+    message
+  );
+
+  container.scrollTop =
+    container.scrollHeight;
+}
+
+
+async function sendChat() {
+
+  const input =
+    $("chatInput");
+
+  const message =
+    input.value.trim();
+
+  if (!message) {
     return;
   }
 
   addChatMessage(
-    "user",
-    cleanText
+    message,
+    "user"
   );
 
-  saveChat(cleanText);
+  input.value = "";
 
-  chatConversation.push({
-    role:"user",
-    content:cleanText
-  });
+  try {
 
-  addThinking();
-
-  isThinking = true;
-
-  orb.classList.remove(
-    "listening"
-  );
-
-  orb.classList.add(
-    "thinking"
-  );
-
-  state.textContent =
-    "Thinking...";
-
-  status.textContent =
-    "● Thinking";
-
-  try{
-
-    const result =
-      await apiFetch(
+    const data =
+      await api(
         "/api/chat",
         {
-          method:"POST",
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
-          body:JSON.stringify({
+          method:
+            "POST",
 
-            message:cleanText,
+          body:
+            JSON.stringify({
+              message,
 
-            language:
-              getSelectedLanguage(),
-
-            history:
-              chatConversation.slice(-10),
-
-            index:
-              getSelectedIndex()
-
-          })
+              index:
+                state.selectedIndex
+            })
         }
       );
 
-    const answer =
-      getAnswerFromResponse(result);
-
-    if(!answer){
-
-      throw new Error(
-        "Empty response from Era"
-      );
-
-    }
-
-    removeThinking();
-
-    isThinking = false;
-
-    orb.classList.remove(
-      "thinking"
-    );
+    const reply =
+      data?.reply ||
+      data?.message ||
+      data?.content ||
+      "Era could not generate a response.";
 
     addChatMessage(
-      "era",
-      answer
+      reply,
+      "ai"
     );
 
-    chatConversation.push({
-      role:"assistant",
-      content:answer
-    });
-
-    state.textContent = "Ready";
-    status.textContent = "● Live";
-
-  }catch(error){
-
-    console.error(
-      "Era chat error:",
-      error
-    );
-
-    removeThinking();
-
-    isThinking = false;
-
-    orb.classList.remove(
-      "thinking"
-    );
-
-    const errorMessage =
-      "Era se connection nahi ho pa raha: " +
-      (
-        error.message ||
-        "Unknown error"
-      );
+  } catch (error) {
 
     addChatMessage(
-      "era",
-      errorMessage
+      "Connection error. Please try again.",
+      "ai"
     );
-
-    state.textContent = "Ready";
-    status.textContent = "● Ready";
 
   }
-
 }
 
 
-/* =========================================
-   SEND
-========================================= */
+/* =========================================================
+   MICROPHONE INPUT
+========================================================= */
 
-sendBtn.addEventListener(
-  "click",
-  ()=>{
+function setupMic() {
 
-    const text =
-      textInput.value.trim();
+  const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
 
-    if(!text){
-      return;
-    }
+  const button =
+    $("micBtn");
 
-    textInput.value = "";
+  if (
+    !SpeechRecognition
+  ) {
 
-    handleUserMessage(text);
+    button.disabled =
+      true;
 
+    button.title =
+      "Voice input is not supported in this browser.";
+
+    return;
   }
-);
 
-
-textInput.addEventListener(
-  "keydown",
-  event=>{
-
-    if(event.key !== "Enter"){
-      return;
-    }
-
-    event.preventDefault();
-
-    const text =
-      textInput.value.trim();
-
-    if(!text){
-      return;
-    }
-
-    textInput.value = "";
-
-    handleUserMessage(text);
-
-  }
-);
-
-
-/* =========================================
-   SPEECH RECOGNITION
-   MIC INPUT ONLY
-========================================= */
-
-const SpeechRecognition =
-  window.SpeechRecognition ||
-  window.webkitSpeechRecognition;
-
-let recognition = null;
-let listening = false;
-let isListening = false;
-
-
-if(SpeechRecognition){
-
-  recognition =
+  const recognition =
     new SpeechRecognition();
 
-  recognition.continuous = false;
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
   recognition.lang =
-    getSelectedLanguage();
+    "en-IN";
 
+  recognition.interimResults =
+    false;
 
-  recognition.onstart = ()=>{
+  recognition.maxAlternatives =
+    1;
 
-    listening = true;
-    isListening = true;
-
-    orb.classList.remove(
-      "thinking"
-    );
-
-    orb.classList.add(
-      "listening"
-    );
-
-    micBtn.classList.add(
-      "listening"
-    );
-
-    state.textContent =
-      "Listening...";
-
-    status.textContent =
-      "● Listening";
-
-  };
-
-
-  recognition.onresult =
-    event=>{
-
-      const text =
-        event.results[0][0].transcript;
-
-      if(!text){
-        return;
-      }
-
-      textInput.value = text;
-
-      isListening = false;
-      listening = false;
-
-      micBtn.classList.remove(
-        "listening"
-      );
-
-      orb.classList.remove(
-        "listening"
-      );
-
-      handleUserMessage(text);
-
-    };
-
-
-  recognition.onerror =
-    event=>{
-
-      console.log(
-        "Speech recognition error:",
-        event.error
-      );
-
-      listening = false;
-      isListening = false;
-
-      micBtn.classList.remove(
-        "listening"
-      );
-
-      orb.classList.remove(
-        "listening"
-      );
-
-      if(event.error === "not-allowed"){
-
-        state.textContent =
-          "Microphone permission required";
-
-        status.textContent =
-          "● Mic blocked";
-
-      }else if(
-        event.error === "no-speech"
-      ){
-
-        state.textContent =
-          "No speech detected";
-
-        status.textContent =
-          "● Ready";
-
-      }else{
-
-        state.textContent =
-          "Voice input error";
-
-        status.textContent =
-          "● Ready";
-
-      }
-
-    };
-
-
-  recognition.onend = ()=>{
-
-    listening = false;
-    isListening = false;
-
-    micBtn.classList.remove(
-      "listening"
-    );
-
-    orb.classList.remove(
-      "listening"
-    );
-
-    if(!isThinking){
-
-      state.textContent =
-        "Ready";
-
-      status.textContent =
-        "● Live";
-
-    }
-
-  };
-
-
-  micBtn.addEventListener(
+  button.addEventListener(
     "click",
-    ()=>{
+    () => {
 
-      if(listening){
-
-        recognition.stop();
-        return;
-
-      }
-
-      recognition.lang =
-        getSelectedLanguage();
-
-      try{
-
+      try {
         recognition.start();
 
-      }catch(error){
+        button.textContent =
+          "🔴";
 
-        console.log(
-          "Recognition start:",
-          error
-        );
-
+      } catch {
+        // Recognition may already be running.
       }
 
     }
   );
 
-}else{
+  recognition.onresult =
+    (event) => {
 
-  micBtn.disabled = true;
+      const transcript =
+        event
+          .results[0][0]
+          .transcript;
 
-  state.textContent =
-    "Mic input not supported";
+      $("chatInput")
+        .value =
+        transcript;
 
+    };
+
+  recognition.onend =
+    () => {
+
+      button.textContent =
+        "🎙";
+
+    };
+
+  recognition.onerror =
+    () => {
+
+      button.textContent =
+        "🎙";
+
+      showToast(
+        "Microphone",
+        "Voice input could not be started."
+      );
+
+    };
 }
 
 
-/* =========================================
-   NEWS
-========================================= */
+/* =========================================================
+   PUSH NOTIFICATIONS
+========================================================= */
 
-let newsLoaded = false;
+async function enablePushNotifications() {
 
-async function loadNews(force=false){
+  if (
+    !("Notification" in window)
+  ) {
 
-  const container =
-    document.getElementById(
-      "newsContainer"
+    showToast(
+      "Notifications",
+      "This browser does not support notifications."
     );
 
-  if(newsLoaded && !force){
     return;
   }
 
-  container.innerHTML =
-    '<div class="empty">Loading market news...</div>';
+  if (
+    !("serviceWorker" in navigator)
+  ) {
 
-  try{
+    showToast(
+      "Notifications",
+      "Service worker is not supported."
+    );
 
-    const result =
-      await apiFetch(
-        "/api/news"
+    return;
+  }
+
+  try {
+
+    const permission =
+      await Notification.requestPermission();
+
+    if (
+      permission !== "granted"
+    ) {
+
+      showToast(
+        "Notifications",
+        "Notification permission was not granted."
       );
 
-    const articles =
-      Array.isArray(result?.data)
-        ? result.data
-        : Array.isArray(result?.articles)
-          ? result.articles
-          : Array.isArray(result?.news)
-            ? result.news
-            : [];
-
-    if(!articles.length){
-
-      container.innerHTML = `
-        <div class="card">
-
-          <h3>📰 MARKET NEWS</h3>
-
-          <p style="
-            color:var(--muted);
-            margin-top:8px;
-            font-size:12px;
-          ">
-            No live news available right now.
-          </p>
-
-        </div>
-      `;
-
-      newsLoaded = true;
       return;
-
     }
 
-    container.innerHTML = "";
+    const registration =
+      await navigator.serviceWorker.ready;
 
-    articles.forEach(article=>{
-
-      const item =
-        document.createElement("div");
-
-      item.className =
-        "news-item";
-
-
-      const title =
-        document.createElement("div");
-
-      title.className =
-        "news-title";
-
-      title.textContent =
-        article.title ||
-        article.name ||
-        "Untitled";
-
-      item.appendChild(title);
-
-
-      const description =
-        article.description ||
-        article.summary ||
-        "";
-
-      if(description){
-
-        const desc =
-          document.createElement("div");
-
-        desc.className =
-          "news-description";
-
-        desc.textContent =
-          description;
-
-        item.appendChild(desc);
-
-      }
-
-
-      if(
-        article.source ||
-        article.publisher ||
-        article.publishedAt ||
-        article.pubDate
-      ){
-
-        const meta =
-          document.createElement("div");
-
-        meta.className =
-          "news-meta";
-
-        const source =
-          article.source ||
-          article.publisher ||
-          "";
-
-        const dateValue =
-          article.publishedAt ||
-          article.pubDate ||
-          "";
-
-        let dateText = "";
-
-        if(dateValue){
-
-          const parsed =
-            new Date(dateValue);
-
-          dateText =
-            Number.isNaN(
-              parsed.getTime()
-            )
-              ? String(dateValue)
-              : parsed.toLocaleString(
-                  "en-IN"
-                );
-
-        }
-
-        meta.textContent =
-          source +
-          (
-            source && dateText
-              ? " • "
-              : ""
-          ) +
-          dateText;
-
-        item.appendChild(meta);
-
-      }
-
-
-      const url =
-        article.url ||
-        article.link ||
-        article.guid ||
-        "";
-
-      if(url){
-
-        const link =
-          document.createElement("a");
-
-        link.href = url;
-        link.target = "_blank";
-        link.rel =
-          "noopener noreferrer";
-
-        link.textContent =
-          "Read full news →";
-
-        link.style.display =
-          "block";
-
-        link.style.marginTop =
-          "9px";
-
-        item.appendChild(link);
-
-      }
-
-      container.appendChild(item);
-
-    });
-
-    newsLoaded = true;
-
-  }catch(error){
-
-    console.error(
-      "News error:",
-      error
-    );
-
-    container.innerHTML = `
-      <div class="card">
-
-        <h3>📰 NEWS</h3>
-
-        <p style="
-          color:var(--red);
-          margin-top:8px;
-        ">
-          News load nahi ho pa rahi.
-        </p>
-
-        <p style="
-          color:var(--muted);
-          margin-top:6px;
-          font-size:11px;
-        ">
-          ${escapeHTML(
-            error.message ||
-            "Unknown error"
-          )}
-        </p>
-
-        <button
-          id="retryNewsBtn"
-          class="refresh-btn"
-          type="button"
-        >
-          ↻ Retry News
-        </button>
-
-      </div>
-    `;
-
-    const retry =
-      document.getElementById(
-        "retryNewsBtn"
+    const keyData =
+      await api(
+        "/api/push/public-key"
       );
 
-    if(retry){
+    const publicKey =
+      keyData?.publicKey ||
+      keyData?.key;
 
-      retry.addEventListener(
-        "click",
-        ()=>loadNews(true)
+    if (!publicKey) {
+      throw new Error(
+        "Push public key unavailable."
       );
-
     }
 
-  }
-
-}
-
-
-/* =========================================
-   OPTIONS
-========================================= */
-
-const indexSelect =
-  document.getElementById(
-    "indexSelect"
-  );
-
-const expirySelect =
-  document.getElementById(
-    "expirySelect"
-  );
-
-const optionBody =
-  document.getElementById(
-    "optionBody"
-  );
-
-const optionStatus =
-  document.getElementById(
-    "optionStatus"
-  );
-
-
-async function loadExpiries(){
-
-  const instrumentKey =
-    indexSelect.value;
-
-  optionStatus.textContent =
-    "Loading expiry dates...";
-
-  expirySelect.innerHTML =
-    '<option value="">Loading...</option>';
-
-  try{
-
-    const result =
-      await apiFetch(
-        `/api/options/contracts?instrument_key=${encodeURIComponent(instrumentKey)}`
-      );
-
-    const contracts =
-      Array.isArray(result?.data)
-        ? result.data
-        : Array.isArray(result?.contracts)
-          ? result.contracts
-          : Array.isArray(result?.data?.contracts)
-            ? result.data.contracts
-            : [];
-
-    const expiries = [
-      ...new Set(
-        contracts
-          .map(item=>
-            item.expiry ||
-            item.expiry_date ||
-            item.expiryDate
-          )
-          .filter(Boolean)
-      )
-    ].sort();
-
-    expirySelect.innerHTML =
-      '<option value="">Select Expiry</option>';
-
-    expiries.forEach(expiry=>{
-
-      const option =
-        document.createElement("option");
-
-      option.value = expiry;
-      option.textContent = expiry;
-
-      expirySelect.appendChild(option);
-
-    });
-
-    optionStatus.textContent =
-      expiries.length
-        ? "Expiry loaded. Select expiry and load option chain."
-        : "No expiry data returned.";
-
-  }catch(error){
-
-    console.error(
-      "Expiry error:",
-      error
-    );
-
-    expirySelect.innerHTML =
-      '<option value="">Unable to load</option>';
-
-    optionStatus.textContent =
-      "Option expiry error: " +
-      error.message;
-
-  }
-
-}
-
-
-async function loadOptionChain(){
-
-  const instrumentKey =
-    indexSelect.value;
-
-  const expiry =
-    expirySelect.value;
-
-  if(!expiry){
-
-    optionStatus.textContent =
-      "Pehle expiry select kijiye.";
-
-    return;
-
-  }
-
-  optionStatus.textContent =
-    "Loading live option chain...";
-
-  optionBody.innerHTML = `
-    <tr>
-      <td colspan="11" class="loading">
-        Loading live option chain...
-      </td>
-    </tr>
-  `;
-
-  try{
-
-    const result =
-      await apiFetch(
-        `/api/options/chain?instrument_key=${encodeURIComponent(instrumentKey)}&expiry_date=${encodeURIComponent(expiry)}`
-      );
-
-    renderOptionChain(
-      result?.data ??
-      result?.chain ??
-      result?.option_chain ??
-      result
-    );
-
-    optionStatus.textContent =
-      "Live option-chain data loaded.";
-
-  }catch(error){
-
-    console.error(
-      "Option chain error:",
-      error
-    );
-
-    optionBody.innerHTML = `
-      <tr>
-        <td colspan="11" class="loading">
-          Live option-chain data unavailable.
-        </td>
-      </tr>
-    `;
-
-    optionStatus.textContent =
-      "Option chain error: " +
-      error.message;
-
-  }
-
-}
-
-
-function renderOptionChain(data){
-
-  optionBody.innerHTML = "";
-
-  let rows = [];
-
-  if(Array.isArray(data)){
-
-    rows = data;
-
-  }else if(
-    data &&
-    Array.isArray(data.option_chain)
-  ){
-
-    rows =
-      data.option_chain;
-
-  }else if(
-    data &&
-    Array.isArray(data.data)
-  ){
-
-    rows =
-      data.data;
-
-  }else if(
-    data &&
-    Array.isArray(data.rows)
-  ){
-
-    rows =
-      data.rows;
-
-  }
-
-  if(!rows.length){
-
-    optionBody.innerHTML = `
-      <tr>
-        <td colspan="11" class="loading">
-          API ne option-chain rows return nahi kiye.
-        </td>
-      </tr>
-    `;
-
-    return;
-
-  }
-
-  rows.forEach(row=>{
-
-    const strike =
-      row.strike_price ??
-      row.strike ??
-      row.strikePrice ??
-      "--";
-
-    const call =
-      row.call_options ||
-      row.callOptions ||
-      row.CE ||
-      row.ce ||
-      {};
-
-    const put =
-      row.put_options ||
-      row.putOptions ||
-      row.PE ||
-      row.pe ||
-      {};
-
-    const callMarket =
-      call.market_data ||
-      call.marketData ||
-      call ||
-      {};
-
-    const putMarket =
-      put.market_data ||
-      put.marketData ||
-      put ||
-      {};
-
-    const callGreeks =
-      call.option_greeks ||
-      call.greeks ||
-      {};
-
-    const putGreeks =
-      put.option_greeks ||
-      put.greeks ||
-      {};
-
-    const tr =
-      document.createElement("tr");
-
-
-    appendCell(
-      tr,
-      callMarket.oi,
-      "ce"
-    );
-
-    appendCell(
-      tr,
-      callMarket.oi_change ??
-      callMarket.change_in_oi ??
-      callMarket.oiChange,
-      "ce"
-    );
-
-    appendCell(
-      tr,
-      callMarket.volume,
-      "ce"
-    );
-
-    appendCell(
-      tr,
-      callGreeks.iv ??
-      callMarket.iv,
-      "ce"
-    );
-
-    appendCell(
-      tr,
-      callMarket.ltp ??
-      callMarket.last_price ??
-      callMarket.lastPrice,
-      "ce"
-    );
-
-
-    appendCell(
-      tr,
-      strike,
-      "",
-      true
-    );
-
-
-    appendCell(
-      tr,
-      putMarket.ltp ??
-      putMarket.last_price ??
-      putMarket.lastPrice,
-      "pe"
-    );
-
-    appendCell(
-      tr,
-      putGreeks.iv ??
-      putMarket.iv,
-      "pe"
-    );
-
-    appendCell(
-      tr,
-      putMarket.volume,
-      "pe"
-    );
-
-    appendCell(
-      tr,
-      putMarket.oi_change ??
-      putMarket.change_in_oi ??
-      putMarket.oiChange,
-      "pe"
-    );
-
-    appendCell(
-      tr,
-      putMarket.oi,
-      "pe"
-    );
-
-    optionBody.appendChild(tr);
-
-  });
-
-}
-
-
-function appendCell(
-  row,
-  value,
-  className="",
-  strong=false
-){
-
-  const td =
-    document.createElement("td");
-
-  if(className){
-    td.className =
-      className;
-  }
-
-  const text =
-    formatNumber(value);
-
-  if(strong){
-
-    const element =
-      document.createElement("strong");
-
-    element.textContent =
-      text;
-
-    td.appendChild(element);
-
-  }else{
-
-    td.textContent =
-      text;
-
-  }
-
-  row.appendChild(td);
-
-}
-
-
-function formatNumber(value){
-
-  if(
-    value === null ||
-    value === undefined ||
-    value === ""
-  ){
-
-    return "--";
-
-  }
-
-  const number =
-    Number(value);
-
-  if(Number.isFinite(number)){
-
-    return Number.isInteger(number)
-      ? number.toLocaleString("en-IN")
-      : number.toFixed(2);
-
-  }
-
-  return String(value);
-
-}
-
-
-indexSelect.addEventListener(
-  "change",
-  loadExpiries
-);
-
-document
-  .getElementById(
-    "loadOptionsBtn"
-  )
-  .addEventListener(
-    "click",
-    loadOptionChain
-  );
-
-
-/* =========================================
-   CHAT HISTORY
-========================================= */
-
-function saveChat(message){
-
-  let history = [];
-
-  try{
-
-    history =
-      JSON.parse(
-        localStorage.getItem(
-          "era_chat_history"
-        ) || "[]"
-      );
-
-  }catch(error){
-
-    history = [];
-
-  }
-
-  history.push({
-
-    time:
-      new Date().toLocaleString(
-        "en-IN"
-      ),
-
-    message
-
-  });
-
-  history =
-    history.slice(-100);
-
-  localStorage.setItem(
-    "era_chat_history",
-    JSON.stringify(history)
-  );
-
-  renderChatHistory();
-
-}
-
-
-function renderChatHistory(){
-
-  const container =
-    document.getElementById(
-      "chatHistory"
-    );
-
-  let history = [];
-
-  try{
-
-    history =
-      JSON.parse(
-        localStorage.getItem(
-          "era_chat_history"
-        ) || "[]"
-      );
-
-  }catch(error){
-
-    history = [];
-
-  }
-
-  if(!history.length){
-
-    container.innerHTML =
-      '<div class="empty">No chat history yet.</div>';
-
-    return;
-
-  }
-
-  container.innerHTML = "";
-
-  history
-    .slice()
-    .reverse()
-    .forEach(item=>{
-
-      const wrapper =
-        document.createElement("div");
-
-      wrapper.style.cssText =
-        "padding:10px 0;border-bottom:1px solid var(--border);";
-
-      const time =
-        document.createElement("small");
-
-      time.style.color =
-        "var(--muted)";
-
-      time.textContent =
-        item.time || "";
-
-      const message =
-        document.createElement("div");
-
-      message.style.marginTop =
-        "5px";
-
-      message.textContent =
-        item.message || "";
-
-      wrapper.appendChild(time);
-      wrapper.appendChild(message);
-
-      container.appendChild(wrapper);
-
-    });
-
-}
-
-
-/* =========================================
-   ESCAPE
-========================================= */
-
-function escapeHTML(text){
-
-  return String(text)
-
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-
-}
-
-
-/* =========================================
-   SERVICE WORKER
-========================================= */
-
-let serviceWorkerRegistration =
-  null;
-
-
-async function registerServiceWorker(){
-
-  if(!("serviceWorker" in navigator)){
-
-    console.log(
-      "Service Worker not supported."
-    );
-
-    return null;
-
-  }
-
-  try{
-
-    serviceWorkerRegistration =
-      await navigator.serviceWorker.register(
-        "/sw.js",
+    const existing =
+      await registration.pushManager.getSubscription();
+
+    const subscription =
+      existing ||
+      await registration.pushManager.subscribe(
         {
-          scope:"/"
+          userVisibleOnly:
+            true,
+
+          applicationServerKey:
+            urlBase64ToUint8Array(
+              publicKey
+            )
         }
       );
 
-    console.log(
-      "Era AI Service Worker registered:",
-      serviceWorkerRegistration.scope
+    await api(
+      "/api/subscribe",
+      {
+        method:
+          "POST",
+
+        body:
+          JSON.stringify({
+            subscription
+          })
+      }
     );
 
-    return serviceWorkerRegistration;
-
-  }catch(error){
-
-    console.error(
-      "Service Worker registration error:",
-      error
+    showToast(
+      "Notifications enabled",
+      "Era can now send market alerts."
     );
 
-    return null;
+  } catch (error) {
+
+    showToast(
+      "Push setup failed",
+      error.message
+    );
 
   }
-
 }
 
-
-/* =========================================
-   PUSH
-========================================= */
 
 function urlBase64ToUint8Array(
   base64String
-){
+) {
 
   const padding =
     "=".repeat(
-      (4 - base64String.length % 4) % 4
+      (4 -
+        base64String.length %
+          4) %
+        4
     );
 
   const base64 =
@@ -4475,352 +4614,326 @@ function urlBase64ToUint8Array(
       base64String +
       padding
     )
-    .replace(/-/g,"+")
-    .replace(/_/g,"/");
+      .replace(
+        /-/g,
+        "+"
+      )
+      .replace(
+        /_/g,
+        "/"
+      );
 
   const rawData =
-    window.atob(base64);
+    atob(base64);
 
-  const outputArray =
-    new Uint8Array(
-      rawData.length
-    );
-
-  for(
-    let i=0;
-    i<rawData.length;
-    ++i
-  ){
-
-    outputArray[i] =
-      rawData.charCodeAt(i);
-
-  }
-
-  return outputArray;
-
+  return Uint8Array.from(
+    [...rawData].map(
+      char =>
+        char.charCodeAt(0)
+    )
+  );
 }
 
 
-async function enableNotifications(){
+/* =========================================================
+   NOTIFICATION SETTINGS
+========================================================= */
 
-  if(!("Notification" in window)){
+function setupNotificationSettings() {
 
-    alert(
-      "Is browser/device par notifications supported nahi hain."
-    );
+  document
+    .querySelectorAll(
+      "[data-notify]"
+    )
+    .forEach(
+      checkbox => {
 
-    return;
+        const key =
+          checkbox.dataset.notify;
 
-  }
-
-  if(
-    !("serviceWorker" in navigator) ||
-    !("PushManager" in window)
-  ){
-
-    alert(
-      "Push notifications supported nahi hain."
-    );
-
-    return;
-
-  }
-
-  try{
-
-    const permission =
-      await Notification.requestPermission();
-
-    if(permission !== "granted"){
-
-      notificationBtn.textContent =
-        "Notifications Blocked";
-
-      return;
-
-    }
-
-    const registration =
-      serviceWorkerRegistration ||
-      await registerServiceWorker();
-
-    if(!registration){
-
-      throw new Error(
-        "Service Worker unavailable"
-      );
-
-    }
-
-    const publicKeyResult =
-      await apiFetch(
-        "/api/push/public-key"
-      );
-
-    if(
-      !publicKeyResult?.success ||
-      !publicKeyResult?.publicKey
-    ){
-
-      throw new Error(
-        publicKeyResult?.error ||
-        "Push public key unavailable"
-      );
-
-    }
-
-    let subscription =
-      await registration.pushManager
-        .getSubscription();
-
-    if(!subscription){
-
-      subscription =
-        await registration.pushManager.subscribe({
-
-          userVisibleOnly:true,
-
-          applicationServerKey:
-            urlBase64ToUint8Array(
-              publicKeyResult.publicKey
-            )
-
-        });
-
-    }
-
-    const subscribeResult =
-      await apiFetch(
-        "/api/subscribe",
-        {
-          method:"POST",
-          headers:{
-            "Content-Type":
-              "application/json"
-          },
-          body:JSON.stringify({
-            subscription
-          })
+        if (
+          Object.prototype.hasOwnProperty.call(
+            state.notificationSettings,
+            key
+          )
+        ) {
+          checkbox.checked =
+            Boolean(
+              state.notificationSettings[
+                key
+              ]
+            );
         }
-      );
 
-    if(
-      !subscribeResult?.success
-    ){
+        checkbox.addEventListener(
+          "change",
+          () => {
 
-      throw new Error(
-        subscribeResult?.error ||
-        "Subscription failed"
-      );
+            state.notificationSettings[
+              key
+            ] =
+              checkbox.checked;
 
-    }
+            localStorage.setItem(
+              "eraNotificationSettings",
+              JSON.stringify(
+                state.notificationSettings
+              )
+            );
 
-    notificationBtn.textContent =
-      "✓ Notifications Enabled";
+          }
+        );
 
-    notificationBtn.disabled =
-      true;
+      }
+    );
+}
 
-  }catch(error){
 
-    console.error(
-      "Notification setup error:",
+/* =========================================================
+   SERVICE WORKER
+========================================================= */
+
+async function registerServiceWorker() {
+
+  if (
+    !("serviceWorker" in navigator)
+  ) {
+    return;
+  }
+
+  try {
+
+    await navigator.serviceWorker.register(
+      "/sw.js"
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "Service worker registration failed:",
       error
     );
 
-    notificationBtn.textContent =
-      "Enable Notifications";
-
-    alert(
-      "Notifications enable nahi ho paayi: " +
-      error.message
-    );
-
   }
-
 }
 
 
-notificationBtn.addEventListener(
-  "click",
-  enableNotifications
-);
+/* =========================================================
+   AUTO REFRESH
+========================================================= */
 
+async function refreshAll() {
 
-function checkNotificationButtonState(){
+  await checkConnection();
 
-  if(!("Notification" in window)){
+  await loadMarket();
 
-    notificationBtn.style.display =
-      "none";
+  await loadAnalysis();
 
-    return;
+  await loadEngineStatus();
 
-  }
+  await loadNews();
 
-  if(
-    Notification.permission ===
-    "granted"
-  ){
-
-    notificationBtn.textContent =
-      "✓ Notifications Enabled";
-
-    notificationBtn.disabled =
-      true;
-
-  }
-
+  await loadOptionData();
 }
 
 
-/* =========================================
-   SIGNAL MODAL
-========================================= */
+function startAutoRefresh() {
 
-function closeSignalModal(){
+  if (
+    state.refreshTimer
+  ) {
+    clearInterval(
+      state.refreshTimer
+    );
+  }
 
-  eraSignalModal.style.display =
-    "none";
+  state.refreshTimer =
+    setInterval(
+      async () => {
 
+        await loadMarket();
+
+        await loadAnalysis();
+
+      },
+      60000
+    );
+
+  if (
+    state.optionTimer
+  ) {
+    clearInterval(
+      state.optionTimer
+    );
+  }
+
+  state.optionTimer =
+    setInterval(
+      async () => {
+
+        await loadOptionData();
+
+      },
+      60000
+    );
 }
 
 
-document
-  .getElementById(
-    "closeModalBtn"
-  )
-  .addEventListener(
-    "click",
-    closeSignalModal
-  );
+/* =========================================================
+   EVENTS
+========================================================= */
 
+function setupEvents() {
 
-eraSignalModal.addEventListener(
-  "click",
-  event=>{
+  setupIndexTabs();
 
-    if(
-      event.target ===
-      eraSignalModal
-    ){
-
-      closeSignalModal();
-
-    }
-
-  }
-);
-
-
-/* =========================================
-   NOTIFICATION LANDING
-========================================= */
-
-function checkNotificationLanding(){
-
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-  if(
-    params.get("from") !==
-    "notification"
-  ){
-
-    return;
-
-  }
-
-  modalSignalsList.innerHTML = `
-
-    <div class="trade-card">
-
-      <div style="font-weight:bold;">
-        🎯 Era AI Signal
-      </div>
-
-      <div style="
-        margin-top:7px;
-        color:var(--muted);
-        font-size:11px;
-        line-height:1.5;
-      ">
-        Era AI notification se app open hua hai.
-        Live analysis neeche available hai.
-      </div>
-
-      <button
-        id="modalRefreshBtn"
-        class="notification-btn"
-        type="button"
-      >
-        Open Live Analysis
-      </button>
-
-    </div>
-
-  `;
-
-  eraSignalModal.style.display =
-    "flex";
-
-  const modalRefreshBtn =
-    document.getElementById(
-      "modalRefreshBtn"
-    );
-
-  if(modalRefreshBtn){
-
-    modalRefreshBtn.addEventListener(
+  $("startEngineBtn")
+    .addEventListener(
       "click",
-      async()=>{
+      startEngine
+    );
 
-        closeSignalModal();
+  $("stopEngineBtn")
+    .addEventListener(
+      "click",
+      stopEngine
+    );
 
-        await loadEraAnalysis();
+  $("refreshBtn")
+    .addEventListener(
+      "click",
+      refreshAll
+    );
 
-        window.scrollTo({
-          top:0,
-          behavior:"smooth"
-        });
+  $("notificationBtn")
+    .addEventListener(
+      "click",
+      enablePushNotifications
+    );
+
+  $("enablePushBtn")
+    .addEventListener(
+      "click",
+      enablePushNotifications
+    );
+
+  $("optionIndex")
+    .addEventListener(
+      "change",
+      async () => {
+
+        state.selectedIndex =
+          $("optionIndex")
+            .value;
+
+        localStorage.setItem(
+          "eraSelectedIndex",
+          state.selectedIndex
+        );
+
+        document
+          .querySelectorAll(
+            ".index-tab"
+          )
+          .forEach(
+            button =>
+              button.classList.toggle(
+                "active",
+                button.dataset.index ===
+                  state.selectedIndex
+              )
+          );
+
+        $("selectedIndexTitle")
+          .textContent =
+          state.selectedIndex;
+
+        await loadExpiries();
 
       }
     );
 
-  }
+  $("expirySelect")
+    .addEventListener(
+      "change",
+      loadOptionData
+    );
 
+  $("sendChatBtn")
+    .addEventListener(
+      "click",
+      sendChat
+    );
+
+  $("chatInput")
+    .addEventListener(
+      "keydown",
+      event => {
+
+        if (
+          event.key ===
+          "Enter"
+        ) {
+          sendChat();
+        }
+
+      }
+    );
+
+  setupMic();
+
+  setupNotificationSettings();
 }
 
 
-/* =========================================
-   START
-========================================= */
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
-async function initEra(){
+async function init() {
 
-  renderChatHistory();
+  setupEvents();
 
-  updateHomeIndexUI();
+  $("optionIndex")
+    .value =
+    state.selectedIndex;
 
-  checkNotificationButtonState();
+  $("selectedIndexTitle")
+    .textContent =
+    state.selectedIndex;
+
+  document
+    .querySelectorAll(
+      ".index-tab"
+    )
+    .forEach(
+      button =>
+        button.classList.toggle(
+          "active",
+          button.dataset.index ===
+            state.selectedIndex
+        )
+    );
 
   await registerServiceWorker();
 
-  checkNotificationLanding();
+  await refreshAll();
 
-  await loadEraAnalysis();
+  await loadExpiries();
 
-  console.log(
-    `Era AI ${APP_VERSION} frontend loaded successfully.`
-  );
-
+  startAutoRefresh();
 }
 
 
-initEra();
+/* =========================================================
+   START
+========================================================= */
+
+window.addEventListener(
+  "DOMContentLoaded",
+  init
+);
 
 </script>
 
