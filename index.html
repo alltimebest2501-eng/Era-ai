@@ -211,10 +211,6 @@ body.light header{
   animation:orbThink 1.8s infinite;
 }
 
-.orb.speaking{
-  animation:orbSpeak .75s infinite;
-}
-
 @keyframes orbPulse{
   0%,100%{
     transform:scale(1);
@@ -231,13 +227,12 @@ body.light header{
 }
 
 @keyframes orbThink{
-  0%,100%{transform:scale(1) rotate(0deg)}
-  50%{transform:scale(1.035) rotate(3deg)}
-}
-
-@keyframes orbSpeak{
-  0%,100%{transform:scale(1)}
-  50%{transform:scale(1.045)}
+  0%,100%{
+    transform:scale(1) rotate(0deg);
+  }
+  50%{
+    transform:scale(1.035) rotate(3deg);
+  }
 }
 
 .state{
@@ -262,26 +257,16 @@ body.light header{
   animation:pulse 1.2s infinite;
 }
 
-.mic.speaking{
-  background:linear-gradient(145deg,#5d4cff,#a48fff);
-}
-
 @keyframes pulse{
-  0%{box-shadow:0 0 0 0 rgba(130,110,255,.45)}
-  70%{box-shadow:0 0 0 18px rgba(130,110,255,0)}
-  100%{box-shadow:0 0 0 0 rgba(130,110,255,0)}
-}
-
-.voice-test{
-  display:block;
-  margin:12px auto 0;
-  padding:10px 16px;
-  border-radius:11px;
-  background:var(--card);
-  color:var(--accent2);
-  border:1px solid var(--border);
-  font-size:11px;
-  font-weight:bold;
+  0%{
+    box-shadow:0 0 0 0 rgba(130,110,255,.45);
+  }
+  70%{
+    box-shadow:0 0 0 18px rgba(130,110,255,0);
+  }
+  100%{
+    box-shadow:0 0 0 0 rgba(130,110,255,0);
+  }
 }
 
 /* LANGUAGE */
@@ -402,10 +387,10 @@ select:focus{
   border-bottom:0;
 }
 
-.green{color:var(--green)}
-.red{color:var(--red)}
-.yellow{color:var(--yellow)}
-.blue{color:var(--blue)}
+.green{color:var(--green)!important}
+.red{color:var(--red)!important}
+.yellow{color:var(--yellow)!important}
+.blue{color:var(--blue)!important}
 
 /* MARKET SELECTOR */
 
@@ -561,6 +546,13 @@ select{
 
 /* OPTIONS */
 
+.options-info{
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+  margin-bottom:12px;
+}
+
 .option-box{
   overflow-x:auto;
   border-radius:14px;
@@ -614,7 +606,6 @@ td{
   border-bottom:1px solid var(--border);
   font-size:12px;
   font-weight:bold;
-  color:var(--text);
 }
 
 .chat-board{
@@ -693,16 +684,31 @@ td{
   background:var(--card);
 }
 
+.news-title{
+  color:var(--text);
+  font-size:13px;
+  font-weight:bold;
+  line-height:1.4;
+}
+
+.news-description{
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+  margin-top:7px;
+}
+
 .news-item a{
   color:var(--accent2);
   text-decoration:none;
   font-weight:bold;
+  font-size:11px;
 }
 
 .news-meta{
   font-size:9px;
   color:var(--muted2);
-  margin-top:5px;
+  margin-top:7px;
 }
 
 /* NOTIFICATION */
@@ -783,16 +789,6 @@ td{
   margin-top:10px;
 }
 
-.badge-hit{
-  color:var(--green);
-  font-weight:bold;
-}
-
-.badge-sl{
-  color:var(--red);
-  font-weight:bold;
-}
-
 /* BOTTOM NAV */
 
 .bottom-nav{
@@ -864,19 +860,17 @@ body.light .bottom-nav{
 <header>
 
 <div class="logo-wrap">
-
 <div class="logo-mark">✦</div>
 
 <div>
 <div class="logo">Era AI</div>
 <div class="logo-sub">AI MARKET COPILOT</div>
 </div>
-
 </div>
 
 <div class="header-right">
 
-<div id="status" class="status">● Ready</div>
+<div id="status" class="status">● Connecting</div>
 
 <button
 id="themeBtn"
@@ -892,7 +886,7 @@ title="Change theme"
 </header>
 
 
-<!-- ================= HOME ================= -->
+<!-- HOME -->
 
 <section id="home" class="screen active">
 
@@ -901,7 +895,7 @@ title="Change theme"
 <div id="orb" class="orb"></div>
 
 <div id="state" class="state">
-Say something to Era
+Connecting to Era...
 </div>
 
 <button
@@ -912,14 +906,6 @@ type="button"
 🎙️
 </button>
 
-<button
-id="voiceTestBtn"
-class="voice-test"
-type="button"
->
-🔊 Test Era Voice
-</button>
-
 <div class="language-box">
 
 <label class="language-label">
@@ -927,11 +913,9 @@ Era Language
 </label>
 
 <select id="languageSelect">
-
 <option value="hi-IN">🇮🇳 Hindi</option>
 <option value="gu-IN">🟢 Gujarati</option>
 <option value="en-IN">🇬🇧 English</option>
-
 </select>
 
 </div>
@@ -1308,7 +1292,7 @@ class="metric-value"
 </div>
 
 
-<!-- TRADE SETUP -->
+<!-- TRADE -->
 
 <div class="trade">
 
@@ -1388,7 +1372,7 @@ Invalidation: --
 </section>
 
 
-<!-- ================= NEWS ================= -->
+<!-- NEWS -->
 
 <section id="news" class="screen">
 
@@ -1411,7 +1395,7 @@ Open this section to load market news.
 </section>
 
 
-<!-- ================= OPTIONS ================= -->
+<!-- OPTIONS -->
 
 <section id="options" class="screen">
 
@@ -1420,7 +1404,7 @@ Open this section to load market news.
 </div>
 
 <div class="options-info">
-Select a supported index, choose its expiry and load the available option chain.
+Select a supported index, choose expiry and load the available option chain.
 </div>
 
 <select id="indexSelect">
@@ -1469,7 +1453,6 @@ Load Live Option Chain
 
 <div
 id="optionStatus"
-class="message"
 style="
 font-size:11px;
 color:var(--muted);
@@ -1479,10 +1462,7 @@ margin-bottom:8px;
 Select expiry to load option chain.
 </div>
 
-<div
-class="option-box"
-style="margin-top:12px;"
->
+<div class="option-box">
 
 <table>
 
@@ -1527,11 +1507,9 @@ PUT / PE
 <tbody id="optionBody">
 
 <tr>
-
 <td colspan="11" class="loading">
 No data loaded
 </td>
-
 </tr>
 
 </tbody>
@@ -1543,7 +1521,7 @@ No data loaded
 </section>
 
 
-<!-- ================= HISTORY ================= -->
+<!-- HISTORY -->
 
 <section id="history" class="screen">
 
@@ -1585,7 +1563,7 @@ No trade history yet.
 </section>
 
 
-<!-- ================= PERFORMANCE ================= -->
+<!-- PERFORMANCE -->
 
 <section id="performance" class="screen">
 
@@ -1636,51 +1614,31 @@ Performance tracking will update as trade-history functionality is connected.
 </div>
 
 
-<!-- ================= NAV ================= -->
+<!-- NAV -->
 
 <nav class="bottom-nav">
 
-<button
-class="nav-btn active"
-data-screen="home"
-type="button"
->
+<button class="nav-btn active" data-screen="home" type="button">
 <span class="nav-icon">⌂</span>
 Home
 </button>
 
-<button
-class="nav-btn"
-data-screen="news"
-type="button"
->
+<button class="nav-btn" data-screen="news" type="button">
 <span class="nav-icon">📰</span>
 News
 </button>
 
-<button
-class="nav-btn"
-data-screen="options"
-type="button"
->
+<button class="nav-btn" data-screen="options" type="button">
 <span class="nav-icon">📊</span>
 Options
 </button>
 
-<button
-class="nav-btn"
-data-screen="history"
-type="button"
->
+<button class="nav-btn" data-screen="history" type="button">
 <span class="nav-icon">📚</span>
 History
 </button>
 
-<button
-class="nav-btn"
-data-screen="performance"
-type="button"
->
+<button class="nav-btn" data-screen="performance" type="button">
 <span class="nav-icon">📈</span>
 Performance
 </button>
@@ -1688,7 +1646,7 @@ Performance
 </nav>
 
 
-<!-- ================= SIGNAL MODAL ================= -->
+<!-- SIGNAL MODAL -->
 
 <div
 id="eraSignalModal"
@@ -1736,102 +1694,62 @@ margin-top:10px;
    CONFIG
 ========================================= */
 
-const BACKEND_URL =
-"https://era-ai.onrender.com";
-
-const APP_VERSION =
-"6.0.0";
+const BACKEND_URL = "https://era-ai.onrender.com";
+const APP_VERSION = "6.1.0";
 
 
 /* =========================================
    ELEMENTS
 ========================================= */
 
-const state =
-document.getElementById("state");
-
-const status =
-document.getElementById("status");
-
-const textInput =
-document.getElementById("textInput");
-
-const sendBtn =
-document.getElementById("sendBtn");
-
-const chatOutput =
-document.getElementById("chatOutput");
-
-const chatBoard =
-document.getElementById("chatBoard");
-
-const chatEmpty =
-document.getElementById("chatEmpty");
-
-const languageSelect =
-document.getElementById("languageSelect");
-
-const homeIndexSelect =
-document.getElementById("homeIndexSelect");
-
-const selectedIndexTitle =
-document.getElementById("selectedIndexTitle");
-
-const analysisIndexLabel =
-document.getElementById("analysisIndexLabel");
-
-const selectedMarketBadge =
-document.getElementById("selectedMarketBadge");
-
-const themeBtn =
-document.getElementById("themeBtn");
-
-const micBtn =
-document.getElementById("micBtn");
-
-const orb =
-document.getElementById("orb");
-
-const notificationBtn =
-document.getElementById("notificationBtn");
-
-const eraSignalModal =
-document.getElementById("eraSignalModal");
-
-const modalSignalsList =
-document.getElementById("modalSignalsList");
+const state = document.getElementById("state");
+const status = document.getElementById("status");
+const textInput = document.getElementById("textInput");
+const sendBtn = document.getElementById("sendBtn");
+const chatBoard = document.getElementById("chatBoard");
+const chatEmpty = document.getElementById("chatEmpty");
+const languageSelect = document.getElementById("languageSelect");
+const homeIndexSelect = document.getElementById("homeIndexSelect");
+const selectedIndexTitle = document.getElementById("selectedIndexTitle");
+const analysisIndexLabel = document.getElementById("analysisIndexLabel");
+const selectedMarketBadge = document.getElementById("selectedMarketBadge");
+const themeBtn = document.getElementById("themeBtn");
+const micBtn = document.getElementById("micBtn");
+const orb = document.getElementById("orb");
+const notificationBtn = document.getElementById("notificationBtn");
+const eraSignalModal = document.getElementById("eraSignalModal");
+const modalSignalsList = document.getElementById("modalSignalsList");
 
 
 /* =========================================
    INDEX CONFIG
-   Backend currently supports these 4.
 ========================================= */
 
 const INDEX_CONFIG = {
 
-NIFTY:{
-  label:"NIFTY 50",
-  short:"NIFTY",
-  instrumentKey:"NSE_INDEX|Nifty 50"
-},
+  NIFTY:{
+    label:"NIFTY 50",
+    short:"NIFTY",
+    instrumentKey:"NSE_INDEX|Nifty 50"
+  },
 
-BANKNIFTY:{
-  label:"BANKNIFTY",
-  short:"BANKNIFTY",
-  instrumentKey:"NSE_INDEX|Nifty Bank"
-},
+  BANKNIFTY:{
+    label:"BANKNIFTY",
+    short:"BANKNIFTY",
+    instrumentKey:"NSE_INDEX|Nifty Bank"
+  },
 
-FINNIFTY:{
-  label:"FINNIFTY",
-  short:"FINNIFTY",
-  instrumentKey:"NSE_INDEX|Nifty Fin Service"
-},
+  FINNIFTY:{
+    label:"FINNIFTY",
+    short:"FINNIFTY",
+    instrumentKey:"NSE_INDEX|Nifty Fin Service"
+  },
 
-SENSEX:{
-  label:"SENSEX",
-  short:"SENSEX",
-  instrumentKey:"BSE_INDEX|SENSEX"
-}
+  SENSEX:{
+    label:"SENSEX",
+    short:"SENSEX",
+    instrumentKey:"BSE_INDEX|SENSEX"
+  }
 
 };
 
@@ -1842,15 +1760,45 @@ SENSEX:{
 
 async function readJSON(response){
 
-try{
-
-return await response.json();
-
-}catch(error){
-
-return null;
+  try{
+    return await response.json();
+  }catch(error){
+    return null;
+  }
 
 }
+
+
+/* =========================================
+   API HELPER
+========================================= */
+
+async function apiFetch(
+  path,
+  options={}
+){
+
+  const response = await fetch(
+    `${BACKEND_URL}${path}`,
+    {
+      cache:"no-store",
+      ...options
+    }
+  );
+
+  const result = await readJSON(response);
+
+  if(!response.ok){
+
+    throw new Error(
+      result?.error ||
+      result?.message ||
+      `HTTP ${response.status}`
+    );
+
+  }
+
+  return result;
 
 }
 
@@ -1861,45 +1809,38 @@ return null;
 
 function applyTheme(theme){
 
-if(theme === "light"){
+  if(theme === "light"){
 
-document.body.classList.add("light");
+    document.body.classList.add("light");
+    themeBtn.textContent = "☀️";
 
-themeBtn.textContent =
-"☀️";
+  }else{
 
-}else{
+    document.body.classList.remove("light");
+    themeBtn.textContent = "🌙";
 
-document.body.classList.remove("light");
+  }
 
-themeBtn.textContent =
-"🌙";
-
-}
-
-localStorage.setItem(
-"era_theme",
-theme
-);
+  localStorage.setItem("era_theme",theme);
 
 }
 
 applyTheme(
-localStorage.getItem("era_theme") || "dark"
+  localStorage.getItem("era_theme") || "dark"
 );
 
 themeBtn.addEventListener(
-"click",
-()=>{
+  "click",
+  ()=>{
 
-const isLight =
-document.body.classList.contains("light");
+    const isLight =
+      document.body.classList.contains("light");
 
-applyTheme(
-isLight ? "dark" : "light"
-);
+    applyTheme(
+      isLight ? "dark" : "light"
+    );
 
-}
+  }
 );
 
 
@@ -1909,85 +1850,65 @@ isLight ? "dark" : "light"
 
 function getSelectedIndex(){
 
-const saved =
-localStorage.getItem(
-"era_selected_index"
-);
+  const saved =
+    localStorage.getItem("era_selected_index");
 
-if(
-saved &&
-INDEX_CONFIG[saved]
-){
+  if(saved && INDEX_CONFIG[saved]){
+    return saved;
+  }
 
-return saved;
-
-}
-
-return "NIFTY";
+  return "NIFTY";
 
 }
 
 
 function updateHomeIndexUI(){
 
-const selected =
-getSelectedIndex();
+  const selected =
+    getSelectedIndex();
 
-const config =
-INDEX_CONFIG[selected] ||
-INDEX_CONFIG.NIFTY;
+  const config =
+    INDEX_CONFIG[selected] ||
+    INDEX_CONFIG.NIFTY;
 
-homeIndexSelect.value =
-selected;
+  homeIndexSelect.value = selected;
 
-selectedIndexTitle.textContent =
-config.label;
+  selectedIndexTitle.textContent =
+    config.label;
 
-analysisIndexLabel.textContent =
-config.short;
+  analysisIndexLabel.textContent =
+    config.short;
 
-selectedMarketBadge.textContent =
-"● " + config.short;
-
-}
-
-
-function configForState(index){
-
-const config =
-INDEX_CONFIG[index] ||
-INDEX_CONFIG.NIFTY;
-
-return config.label +
-" selected";
+  selectedMarketBadge.textContent =
+    "● " + config.short;
 
 }
 
 
 homeIndexSelect.addEventListener(
-"change",
-async()=>{
+  "change",
+  async()=>{
 
-const selected =
-homeIndexSelect.value;
+    const selected =
+      homeIndexSelect.value;
 
-if(!INDEX_CONFIG[selected]){
-return;
-}
+    if(!INDEX_CONFIG[selected]){
+      return;
+    }
 
-localStorage.setItem(
-"era_selected_index",
-selected
-);
+    localStorage.setItem(
+      "era_selected_index",
+      selected
+    );
 
-updateHomeIndexUI();
+    updateHomeIndexUI();
 
-state.textContent =
-configForState(selected);
+    state.textContent =
+      `${INDEX_CONFIG[selected].label} selected`;
 
-await loadEraAnalysis();
+    await loadEraAnalysis();
 
-}
+  }
 );
 
 updateHomeIndexUI();
@@ -1998,626 +1919,359 @@ updateHomeIndexUI();
 ========================================= */
 
 const navButtons =
-document.querySelectorAll(".nav-btn");
+  document.querySelectorAll(".nav-btn");
 
 const screens =
-document.querySelectorAll(".screen");
+  document.querySelectorAll(".screen");
 
 navButtons.forEach(button=>{
 
-button.addEventListener(
-"click",
-async()=>{
+  button.addEventListener(
+    "click",
+    async()=>{
 
-const screenName =
-button.dataset.screen;
+      const screenName =
+        button.dataset.screen;
 
-screens.forEach(screen=>{
-screen.classList.remove("active");
-});
+      screens.forEach(screen=>{
+        screen.classList.remove("active");
+      });
 
-const targetScreen =
-document.getElementById(
-screenName
-);
+      const targetScreen =
+        document.getElementById(screenName);
 
-if(targetScreen){
-targetScreen.classList.add("active");
-}
+      if(targetScreen){
+        targetScreen.classList.add("active");
+      }
 
-navButtons.forEach(btn=>{
-btn.classList.remove("active");
-});
+      navButtons.forEach(btn=>{
+        btn.classList.remove("active");
+      });
 
-button.classList.add("active");
+      button.classList.add("active");
 
-if(screenName === "options"){
-await loadExpiries();
-}
+      if(screenName === "options"){
+        await loadExpiries();
+      }
 
-if(screenName === "news"){
-await loadNews();
-}
+      if(screenName === "news"){
+        await loadNews(true);
+      }
 
-if(screenName === "home"){
-await loadEraAnalysis();
-}
+      if(screenName === "home"){
+        await loadEraAnalysis();
+      }
 
-}
-);
+    }
+  );
 
 });
 
 
 /* =========================================
-   OPTION CHAIN
+   NUMBER HELPERS
 ========================================= */
 
-const indexSelect =
-document.getElementById(
-"indexSelect"
-);
+function numberValue(value){
 
-const expirySelect =
-document.getElementById(
-"expirySelect"
-);
+  if(
+    value === null ||
+    value === undefined ||
+    value === ""
+  ){
+    return null;
+  }
 
-const optionBody =
-document.getElementById(
-"optionBody"
-);
+  const number = Number(value);
 
-const optionStatus =
-document.getElementById(
-"optionStatus"
-);
-
-
-async function loadExpiries(){
-
-const instrumentKey =
-indexSelect.value;
-
-optionStatus.textContent =
-"Loading expiry dates...";
-
-expirySelect.innerHTML =
-'<option value="">Loading...</option>';
-
-try{
-
-const url =
-`${BACKEND_URL}/api/options/contracts` +
-`?instrument_key=${encodeURIComponent(instrumentKey)}`;
-
-const response =
-await fetch(
-url,
-{
-cache:"no-store"
-}
-);
-
-const result =
-await readJSON(response);
-
-if(
-!response.ok ||
-!result?.success
-){
-
-throw new Error(
-result?.error ||
-"Unable to load contracts"
-);
+  return Number.isFinite(number)
+    ? number
+    : null;
 
 }
 
-const contracts =
-Array.isArray(result.data)
-? result.data
-: [];
-
-const expiries = [
-...new Set(
-contracts
-.map(item=>
-item.expiry ||
-item.expiry_date
-)
-.filter(Boolean)
-)
-].sort();
-
-expirySelect.innerHTML =
-'<option value="">Select Expiry</option>';
-
-expiries.forEach(expiry=>{
-
-const option =
-document.createElement("option");
-
-option.value =
-expiry;
-
-option.textContent =
-expiry;
-
-expirySelect.appendChild(option);
-
-});
-
-optionStatus.textContent =
-expiries.length
-? "Expiry loaded. Select expiry and load option chain."
-: "No expiry data returned.";
-
-}catch(error){
-
-console.error(
-"Expiry error:",
-error
-);
-
-expirySelect.innerHTML =
-'<option value="">Unable to load</option>';
-
-optionStatus.textContent =
-"Option data load nahi ho pa raha: " +
-error.message;
-
-}
-
-}
-
-
-async function loadOptionChain(){
-
-const instrumentKey =
-indexSelect.value;
-
-const expiry =
-expirySelect.value;
-
-if(!expiry){
-
-optionStatus.textContent =
-"Pehle expiry select kijiye.";
-
-return;
-
-}
-
-optionStatus.textContent =
-"Loading live option chain...";
-
-optionBody.innerHTML =
-`
-<tr>
-<td colspan="11" class="loading">
-Loading...
-</td>
-</tr>
-`;
-
-try{
-
-const url =
-`${BACKEND_URL}/api/options/chain` +
-`?instrument_key=${encodeURIComponent(instrumentKey)}` +
-`&expiry_date=${encodeURIComponent(expiry)}`;
-
-const response =
-await fetch(
-url,
-{
-cache:"no-store"
-}
-);
-
-const result =
-await readJSON(response);
-
-if(
-!response.ok ||
-!result?.success
-){
-
-throw new Error(
-result?.error ||
-"Unable to load option chain"
-);
-
-}
-
-renderOptionChain(
-result.data
-);
-
-optionStatus.textContent =
-"Live option-chain data loaded.";
-
-}catch(error){
-
-console.error(
-"Option chain error:",
-error
-);
-
-optionBody.innerHTML =
-`
-<tr>
-<td colspan="11" class="loading">
-Live data unavailable
-</td>
-</tr>
-`;
-
-optionStatus.textContent =
-"Option chain error: " +
-error.message;
-
-}
-
-}
-
-
-function renderOptionChain(data){
-
-optionBody.innerHTML = "";
-
-let rows = [];
-
-if(Array.isArray(data)){
-
-rows = data;
-
-}else if(
-data &&
-Array.isArray(data.option_chain)
-){
-
-rows = data.option_chain;
-
-}else if(
-data &&
-Array.isArray(data.data)
-){
-
-rows = data.data;
-
-}
-
-if(!rows.length){
-
-optionBody.innerHTML =
-`
-<tr>
-<td colspan="11" class="loading">
-API ne option-chain rows return nahi kiye.
-</td>
-</tr>
-`;
-
-return;
-
-}
-
-rows.forEach(row=>{
-
-const strike =
-row.strike_price ??
-row.strike ??
-"--";
-
-const call =
-row.call_options ||
-row.CE ||
-row.ce ||
-{};
-
-const put =
-row.put_options ||
-row.PE ||
-row.pe ||
-{};
-
-const callMarket =
-call.market_data ||
-call.marketData ||
-{};
-
-const putMarket =
-put.market_data ||
-put.marketData ||
-{};
-
-const callGreeks =
-call.option_greeks ||
-call.greeks ||
-{};
-
-const putGreeks =
-put.option_greeks ||
-put.greeks ||
-{};
-
-const tr =
-document.createElement("tr");
-
-appendCell(
-tr,
-callMarket.oi,
-"ce"
-);
-
-appendCell(
-tr,
-callMarket.oi_change ??
-callMarket.change_in_oi,
-"ce"
-);
-
-appendCell(
-tr,
-callMarket.volume,
-"ce"
-);
-
-appendCell(
-tr,
-callGreeks.iv ??
-callMarket.iv,
-"ce"
-);
-
-appendCell(
-tr,
-callMarket.ltp,
-"ce"
-);
-
-appendCell(
-tr,
-strike,
-""
-,true
-);
-
-appendCell(
-tr,
-putMarket.ltp,
-"pe"
-);
-
-appendCell(
-tr,
-putGreeks.iv ??
-putMarket.iv,
-"pe"
-);
-
-appendCell(
-tr,
-putMarket.volume,
-"pe"
-);
-
-appendCell(
-tr,
-putMarket.oi_change ??
-putMarket.change_in_oi,
-"pe"
-);
-
-appendCell(
-tr,
-putMarket.oi,
-"pe"
-);
-
-optionBody.appendChild(tr);
-
-});
-
-}
-
-
-function appendCell(
-row,
-value,
-className="",
-strong=false
-){
-
-const td =
-document.createElement("td");
-
-if(className){
-td.className =
-className;
-}
-
-const text =
-formatNumber(value);
-
-if(strong){
-
-const element =
-document.createElement("strong");
-
-element.textContent =
-text;
-
-td.appendChild(element);
-
-}else{
-
-td.textContent =
-text;
-
-}
-
-row.appendChild(td);
-
-}
-
-
-function formatNumber(value){
-
-if(
-value === null ||
-value === undefined ||
-value === ""
-){
-
-return "--";
-
-}
-
-if(typeof value === "number"){
-
-return Number.isInteger(value)
-? value.toLocaleString("en-IN")
-: value.toFixed(2);
-
-}
-
-return String(value);
-
-}
-
-
-indexSelect.addEventListener(
-"change",
-loadExpiries
-);
-
-document
-.getElementById("loadOptionsBtn")
-.addEventListener(
-"click",
-loadOptionChain
-);
-
-
-/* =========================================
-   ANALYSIS HELPERS
-========================================= */
 
 function formatPrice(value){
 
-if(
-value === null ||
-value === undefined ||
-value === ""
+  const number =
+    numberValue(value);
+
+  if(number === null){
+    return "--";
+  }
+
+  return number.toLocaleString(
+    "en-IN",
+    {
+      minimumFractionDigits:2,
+      maximumFractionDigits:2
+    }
+  );
+
+}
+
+
+function formatChange(
+  value,
+  percent=false
 ){
 
-return "--";
+  const number =
+    numberValue(value);
+
+  if(number === null){
+    return "--";
+  }
+
+  return (
+    number >= 0 ? "+" : ""
+  ) +
+  number.toFixed(
+    percent ? 2 : 2
+  ) +
+  (percent ? "%" : "");
 
 }
 
-const number =
-Number(value);
 
-if(!Number.isFinite(number)){
+/* =========================================
+   DOM HELPERS
+========================================= */
 
-return "--";
+function setText(id,value){
 
-}
+  const element =
+    document.getElementById(id);
 
-return number.toLocaleString(
-"en-IN",
-{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-}
-);
+  if(element){
+    element.textContent =
+      value;
+  }
 
 }
 
 
 function setDirectionStyle(
-element,
-direction
+  element,
+  direction
 ){
 
-if(!element){
-return;
-}
+  if(!element){
+    return;
+  }
 
-element.classList.remove(
-"green",
-"red",
-"yellow",
-"blue"
-);
+  element.classList.remove(
+    "green",
+    "red",
+    "yellow",
+    "blue"
+  );
 
-if(direction === "BUY"){
+  if(direction === "BUY"){
 
-element.classList.add("green");
+    element.classList.add("green");
 
-}else if(direction === "SELL"){
+  }else if(direction === "SELL"){
 
-element.classList.add("red");
+    element.classList.add("red");
 
-}else{
+  }else{
 
-element.classList.add("yellow");
+    element.classList.add("yellow");
 
-}
-
-}
-
-
-function setText(id,value){
-
-const element =
-document.getElementById(id);
-
-if(element){
-
-element.textContent =
-value;
-
-}
+  }
 
 }
 
 
 /* =========================================
-   SELECTED MARKET
+   MARKET NORMALIZER
+========================================= */
+
+function normalizeMarket(market){
+
+  if(!market){
+    return null;
+  }
+
+  const price =
+    numberValue(
+      market.price ??
+      market.lastPrice ??
+      market.last_price
+    );
+
+  const change =
+    numberValue(
+      market.change ??
+      market.netChange ??
+      market.net_change
+    );
+
+  let previousClose =
+    numberValue(
+      market.previousClose ??
+      market.previous_close ??
+      market.prevClose ??
+      market.prev_close_price
+    );
+
+  if(
+    previousClose === null &&
+    price !== null &&
+    change !== null
+  ){
+
+    previousClose =
+      price - change;
+
+  }
+
+  let changePercent =
+    numberValue(
+      market.changePercent ??
+      market.change_percent ??
+      market.netChangePercent
+    );
+
+  if(
+    changePercent === null &&
+    previousClose !== null &&
+    previousClose !== 0 &&
+    change !== null
+  ){
+
+    changePercent =
+      (change / previousClose) * 100;
+
+  }
+
+  return {
+
+    ...market,
+
+    price,
+    lastPrice:price,
+    change,
+    netChange:change,
+    changePercent,
+    previousClose,
+
+    open:numberValue(
+      market.open ??
+      market.ohlc?.open
+    ),
+
+    high:numberValue(
+      market.high ??
+      market.ohlc?.high
+    ),
+
+    low:numberValue(
+      market.low ??
+      market.ohlc?.low
+    )
+
+  };
+
+}
+
+
+/* =========================================
+   MARKET FINDER
 ========================================= */
 
 function getIndexMarketFromResponse(
-market,
-selected
+  market,
+  selected
 ){
 
-if(!market){
-return null;
+  if(!market){
+    return null;
+  }
+
+  if(
+    market.indices &&
+    market.indices[selected]
+  ){
+
+    return normalizeMarket(
+      market.indices[selected]
+    );
+
+  }
+
+  if(
+    market[selected]
+  ){
+
+    return normalizeMarket(
+      market[selected]
+    );
+
+  }
+
+  if(
+    selected === "NIFTY" &&
+    market.nifty
+  ){
+
+    return normalizeMarket(
+      market.nifty
+    );
+
+  }
+
+  if(
+    market.price !== undefined ||
+    market.lastPrice !== undefined
+  ){
+
+    return normalizeMarket(market);
+
+  }
+
+  return null;
+
 }
 
-if(
-market.indices &&
-market.indices[selected]
+
+/* =========================================
+   SPECIAL MARKET FINDER
+========================================= */
+
+function findSpecialMarket(
+  market,
+  name
 ){
 
-return market.indices[selected];
+  if(!market){
+    return null;
+  }
 
-}
+  if(
+    name === "GIFT" &&
+    market.giftNifty
+  ){
 
-if(
-selected === "NIFTY" &&
-market.nifty
-){
+    return normalizeMarket(
+      market.giftNifty
+    );
 
-return market.nifty;
+  }
 
-}
+  if(
+    name === "VIX" &&
+    market.indiaVix
+  ){
 
-return null;
+    return normalizeMarket(
+      market.indiaVix
+    );
+
+  }
+
+  return null;
 
 }
 
@@ -2628,183 +2282,139 @@ return null;
 
 function clearAnalysisUI(){
 
-const ids = [
+  const ids = [
 
-"niftyValue",
-"niftyChange",
-"giftValue",
-"giftChange",
-"vixValue",
-"vixChange",
-"analysisNifty",
-"analysisGift",
-"analysisVix",
-"analysisTrend",
-"rsiValue",
-"vwapValue",
-"ema9Value",
-"ema20Value",
-"ema50Value",
-"momentumValue",
-"pcrValue",
-"maxPainValue",
-"optionBiasValue",
-"expiryValue",
-"entry",
-"sl",
-"target1",
-"target2",
-"target3",
-"rr",
-"tradeConfidence"
+    "niftyValue",
+    "niftyChange",
+    "giftValue",
+    "giftChange",
+    "vixValue",
+    "vixChange",
+    "analysisNifty",
+    "analysisGift",
+    "analysisVix",
+    "analysisTrend",
+    "rsiValue",
+    "vwapValue",
+    "ema9Value",
+    "ema20Value",
+    "ema50Value",
+    "momentumValue",
+    "pcrValue",
+    "maxPainValue",
+    "optionBiasValue",
+    "expiryValue",
+    "entry",
+    "sl",
+    "target1",
+    "target2",
+    "target3",
+    "rr",
+    "tradeConfidence"
 
-];
+  ];
 
-ids.forEach(id=>{
-setText(id,"--");
-});
+  ids.forEach(id=>{
+    setText(id,"--");
+  });
 
-setText(
-"directionBig",
-"WAIT"
-);
+  setText("directionBig","WAIT");
+  setText("direction","WAIT");
+  setText("confidenceBig","Confidence: --");
+  setText("marketStatus","DATA UNAVAILABLE");
+  setText("tradeStatus","NO TRADE");
+  setText("invalidation","Invalidation: --");
 
-setText(
-"direction",
-"WAIT"
-);
+  setDirectionStyle(
+    document.getElementById("directionBig"),
+    "WAIT"
+  );
 
-setText(
-"confidenceBig",
-"Confidence: --"
-);
+  setDirectionStyle(
+    document.getElementById("direction"),
+    "WAIT"
+  );
 
-setText(
-"marketStatus",
-"DATA UNAVAILABLE"
-);
+  const tradeStatus =
+    document.getElementById("tradeStatus");
 
-setText(
-"tradeStatus",
-"NO TRADE"
-);
+  if(tradeStatus){
+    tradeStatus.className = "yellow";
+  }
 
-setText(
-"invalidation",
-"Invalidation: --"
-);
-
-setDirectionStyle(
-document.getElementById(
-"directionBig"
-),
-"WAIT"
-);
-
-setDirectionStyle(
-document.getElementById(
-"direction"
-),
-"WAIT"
-);
-
-document
-.getElementById("tradeStatus")
-.className =
-"yellow";
-
-document
-.getElementById("reasonsList")
-.innerHTML =
-`
-<div class="reason">
-Waiting for live analysis...
-</div>
-`;
+  document.getElementById(
+    "reasonsList"
+  ).innerHTML = `
+    <div class="reason">
+      Live analysis unavailable.
+    </div>
+  `;
 
 }
 
 
 /* =========================================
-   LOAD ERA ANALYSIS
+   LOAD ANALYSIS
 ========================================= */
 
 let analysisLoading = false;
 
 async function loadEraAnalysis(){
 
-if(analysisLoading){
-return;
-}
+  if(analysisLoading){
+    return;
+  }
 
-analysisLoading = true;
+  analysisLoading = true;
 
-status.textContent =
-"● Analyzing";
+  status.textContent = "● Analyzing";
+  state.textContent = "Updating live market...";
 
-try{
+  try{
 
-const selectedIndex =
-getSelectedIndex();
+    const selectedIndex =
+      getSelectedIndex();
 
-const response =
-await fetch(
-`${BACKEND_URL}/api/analysis?index=${encodeURIComponent(selectedIndex)}`,
-{
-cache:"no-store"
-}
-);
+    const result =
+      await apiFetch(
+        `/api/analysis?index=${encodeURIComponent(selectedIndex)}`
+      );
 
-const result =
-await readJSON(response);
+    if(
+      result?.success === false
+    ){
 
-if(
-!response.ok ||
-!result?.success
-){
+      throw new Error(
+        result?.error ||
+        "Analysis unavailable"
+      );
 
-throw new Error(
-result?.error ||
-"Analysis unavailable"
-);
+    }
 
-}
+    renderEraAnalysis(result);
 
-renderEraAnalysis(
-result
-);
+    status.textContent = "● Live";
+    state.textContent =
+      `${INDEX_CONFIG[selectedIndex].label} live`;
 
-if(
-!isListening &&
-!isSpeaking &&
-!isThinking
-){
+  }catch(error){
 
-status.textContent =
-"● Live";
+    console.error(
+      "Era analysis error:",
+      error
+    );
 
-}
+    clearAnalysisUI();
 
-}catch(error){
+    status.textContent = "● Backend Error";
+    state.textContent =
+      "Live analysis unavailable";
 
-console.error(
-"Era analysis error:",
-error
-);
+  }finally{
 
-clearAnalysisUI();
+    analysisLoading = false;
 
-status.textContent =
-"● Ready";
-
-state.textContent =
-"Live analysis unavailable";
-
-}finally{
-
-analysisLoading = false;
-
-}
+  }
 
 }
 
@@ -2815,472 +2425,517 @@ analysisLoading = false;
 
 function renderEraAnalysis(data){
 
-const signal =
-data.signal || {};
-
-const market =
-data.market || {};
-
-const technical =
-data.technical || {};
-
-const options =
-data.options || {};
-
-const direction =
-String(
-signal.direction ||
-"WAIT"
-).toUpperCase();
-
-const confidence =
-Number(
-signal.confidence ?? 0
-);
-
-const selectedIndex =
-getSelectedIndex();
-
-const selectedMarket =
-getIndexMarketFromResponse(
-market,
-selectedIndex
-);
-
-const gift =
-market.giftNifty || {};
-
-const vix =
-market.indiaVix || {};
-
-const primaryMarket =
-selectedMarket || {};
-
-
-/* MARKET */
-
-setText(
-"niftyValue",
-formatPrice(
-primaryMarket.lastPrice
-)
-);
-
-const primaryChange =
-Number(
-primaryMarket.netChange
-);
-
-const primaryChangeElement =
-document.getElementById(
-"niftyChange"
-);
-
-setText(
-"niftyChange",
-Number.isFinite(primaryChange)
-? (primaryChange >= 0 ? "+" : "") +
-primaryChange.toFixed(2)
-: "--"
-);
-
-if(primaryChangeElement){
-
-primaryChangeElement.className =
-"small-value " +
-(
-Number.isFinite(primaryChange)
-? primaryChange >= 0
-? "green"
-: "red"
-: ""
-);
-
-}
-
-
-/* GIFT */
-
-setText(
-"giftValue",
-formatPrice(
-gift.lastPrice
-)
-);
-
-const giftChange =
-Number(gift.netChange);
-
-setText(
-"giftChange",
-Number.isFinite(giftChange)
-? (giftChange >= 0 ? "+" : "") +
-giftChange.toFixed(2)
-: "--"
-);
-
-const giftChangeElement =
-document.getElementById(
-"giftChange"
-);
-
-if(giftChangeElement){
-
-giftChangeElement.className =
-"small-value " +
-(
-Number.isFinite(giftChange)
-? giftChange >= 0
-? "green"
-: "red"
-: ""
-);
-
-}
-
-
-/* VIX */
-
-setText(
-"vixValue",
-formatPrice(
-vix.lastPrice
-)
-);
-
-const vixChange =
-Number(vix.netChange);
-
-setText(
-"vixChange",
-Number.isFinite(vixChange)
-? (vixChange >= 0 ? "+" : "") +
-vixChange.toFixed(2)
-: "--"
-);
-
-const vixChangeElement =
-document.getElementById(
-"vixChange"
-);
-
-if(vixChangeElement){
-
-vixChangeElement.className =
-"small-value " +
-(
-Number.isFinite(vixChange)
-? vixChange >= 0
-? "red"
-: "green"
-: ""
-);
-
-}
-
-
-/* STATUS */
-
-setText(
-"marketStatus",
-direction === "BUY"
-? "BULLISH SETUP"
-: direction === "SELL"
-? "BEARISH SETUP"
-: "WAIT / NO TRADE"
-);
-
-setText(
-"analysisNifty",
-formatPrice(
-primaryMarket.lastPrice
-)
-);
-
-setText(
-"analysisGift",
-formatPrice(
-gift.lastPrice
-)
-);
-
-setText(
-"analysisVix",
-formatPrice(
-vix.lastPrice
-)
-);
-
-
-/* SIGNAL */
-
-setText(
-"directionBig",
-direction
-);
-
-setDirectionStyle(
-document.getElementById(
-"directionBig"
-),
-direction
-);
-
-setText(
-"confidenceBig",
-"Confidence: " +
-(
-Number.isFinite(confidence)
-? confidence
-: 0
-) +
-"%"
-);
-
-setText(
-"direction",
-direction
-);
-
-setDirectionStyle(
-document.getElementById(
-"direction"
-),
-direction
-);
-
-
-/* TECHNICAL */
-
-setText(
-"analysisTrend",
-technical.trend || "--"
-);
-
-setText(
-"rsiValue",
-technical.rsi !== null &&
-technical.rsi !== undefined
-? Number(technical.rsi).toFixed(2)
-: "--"
-);
-
-setText(
-"vwapValue",
-formatPrice(
-technical.vwap
-)
-);
-
-setText(
-"ema9Value",
-formatPrice(
-technical.ema9
-)
-);
-
-setText(
-"ema20Value",
-formatPrice(
-technical.ema20
-)
-);
-
-setText(
-"ema50Value",
-formatPrice(
-technical.ema50
-)
-);
-
-setText(
-"momentumValue",
-technical.momentum || "--"
-);
-
-
-/* OPTIONS */
-
-setText(
-"pcrValue",
-options.pcr !== null &&
-options.pcr !== undefined
-? Number(options.pcr).toFixed(2)
-: "--"
-);
-
-setText(
-"maxPainValue",
-formatPrice(
-options.maxPain
-)
-);
-
-setText(
-"optionBiasValue",
-options.bias || "--"
-);
-
-setText(
-"expiryValue",
-options.expiry || "--"
-);
-
-
-/* TRADE */
-
-setText(
-"entry",
-formatPrice(
-signal.entry
-)
-);
-
-setText(
-"sl",
-formatPrice(
-signal.stopLoss
-)
-);
-
-setText(
-"target1",
-formatPrice(
-signal.target1
-)
-);
-
-setText(
-"target2",
-formatPrice(
-signal.target2
-)
-);
-
-setText(
-"target3",
-formatPrice(
-signal.target3
-)
-);
-
-setText(
-"rr",
-signal.riskReward !== null &&
-signal.riskReward !== undefined
-? Number(signal.riskReward).toFixed(2)
-: "--"
-);
-
-setText(
-"tradeConfidence",
-Number.isFinite(confidence)
-? confidence + "%"
-: "--"
-);
-
-
-/* TRADE STATUS */
-
-const tradeStatus =
-document.getElementById(
-"tradeStatus"
-);
-
-if(direction === "BUY"){
-
-tradeStatus.textContent =
-"BUY SETUP";
-
-tradeStatus.className =
-"green";
-
-}else if(direction === "SELL"){
-
-tradeStatus.textContent =
-"SELL SETUP";
-
-tradeStatus.className =
-"red";
-
-}else{
-
-tradeStatus.textContent =
-"NO TRADE";
-
-tradeStatus.className =
-"yellow";
-
-}
-
-
-/* REASONS */
-
-const reasonsList =
-document.getElementById(
-"reasonsList"
-);
-
-const reasons =
-Array.isArray(data.reasons)
-? data.reasons
-: [];
-
-if(!reasons.length){
-
-reasonsList.innerHTML =
-`
-<div class="reason">
-No strong confirmation yet.
-</div>
-`;
-
-}else{
-
-reasonsList.innerHTML =
-"";
-
-reasons.forEach(reason=>{
-
-const div =
-document.createElement("div");
-
-div.className =
-"reason";
-
-div.textContent =
-"• " + String(reason);
-
-reasonsList.appendChild(div);
-
-});
-
-}
-
-
-/* INVALIDATION */
-
-setText(
-"invalidation",
-"Invalidation: " +
-(
-data.invalidation ||
-"--"
-)
-);
-
-
-/* SAVE LAST SIGNAL */
-
-localStorage.setItem(
-"era_last_signal",
-JSON.stringify({
-index:selectedIndex,
-direction,
-confidence,
-time:new Date().toISOString()
-})
-);
+  const signal =
+    data.signal ||
+    data.analysis?.signal ||
+    {};
+
+  const market =
+    data.market ||
+    data.data?.market ||
+    {};
+
+  const technical =
+    data.technical ||
+    data.data?.technical ||
+    data.analysis?.technical ||
+    {};
+
+  const options =
+    data.options ||
+    data.data?.options ||
+    data.analysis?.options ||
+    {};
+
+  const direction =
+    String(
+      signal.direction ||
+      signal.action ||
+      "WAIT"
+    ).toUpperCase();
+
+  const confidence =
+    numberValue(
+      signal.confidence
+    );
+
+  const selectedIndex =
+    String(
+      data.selectedIndex ||
+      getSelectedIndex()
+    ).toUpperCase();
+
+  const selectedMarket =
+    getIndexMarketFromResponse(
+      market,
+      selectedIndex
+    );
+
+  const gift =
+    findSpecialMarket(
+      market,
+      "GIFT"
+    ) || {};
+
+  const vix =
+    findSpecialMarket(
+      market,
+      "VIX"
+    ) || {};
+
+
+  /* ================= MARKET ================= */
+
+  setText(
+    "niftyValue",
+    formatPrice(
+      selectedMarket?.price
+    )
+  );
+
+  const primaryChange =
+    selectedMarket?.change;
+
+  const primaryChangeElement =
+    document.getElementById(
+      "niftyChange"
+    );
+
+  setText(
+    "niftyChange",
+    primaryChange !== null &&
+    primaryChange !== undefined
+      ? `${formatChange(primaryChange)} (${formatChange(selectedMarket.changePercent,true)})`
+      : "--"
+  );
+
+  if(primaryChangeElement){
+
+    primaryChangeElement.className =
+      "small-value " +
+      (
+        primaryChange === null ||
+        primaryChange === undefined
+          ? ""
+          : primaryChange >= 0
+            ? "green"
+            : "red"
+      );
+
+  }
+
+
+  /* ================= GIFT ================= */
+
+  setText(
+    "giftValue",
+    formatPrice(
+      gift.price
+    )
+  );
+
+  const giftChange =
+    gift.change;
+
+  const giftChangeElement =
+    document.getElementById(
+      "giftChange"
+    );
+
+  setText(
+    "giftChange",
+    giftChange !== null &&
+    giftChange !== undefined
+      ? `${formatChange(giftChange)} (${formatChange(gift.changePercent,true)})`
+      : "--"
+  );
+
+  if(giftChangeElement){
+
+    giftChangeElement.className =
+      "small-value " +
+      (
+        giftChange === null ||
+        giftChange === undefined
+          ? ""
+          : giftChange >= 0
+            ? "green"
+            : "red"
+      );
+
+  }
+
+
+  /* ================= VIX ================= */
+
+  setText(
+    "vixValue",
+    formatPrice(
+      vix.price
+    )
+  );
+
+  const vixChange =
+    vix.change;
+
+  const vixChangeElement =
+    document.getElementById(
+      "vixChange"
+    );
+
+  setText(
+    "vixChange",
+    vixChange !== null &&
+    vixChange !== undefined
+      ? `${formatChange(vixChange)} (${formatChange(vix.changePercent,true)})`
+      : "--"
+  );
+
+  if(vixChangeElement){
+
+    vixChangeElement.className =
+      "small-value " +
+      (
+        vixChange === null ||
+        vixChange === undefined
+          ? ""
+          : vixChange >= 0
+            ? "red"
+            : "green"
+      );
+
+  }
+
+
+  /* ================= STATUS ================= */
+
+  if(direction === "BUY"){
+
+    setText(
+      "marketStatus",
+      "BULLISH SETUP"
+    );
+
+  }else if(direction === "SELL"){
+
+    setText(
+      "marketStatus",
+      "BEARISH SETUP"
+    );
+
+  }else{
+
+    setText(
+      "marketStatus",
+      "WAIT / NO TRADE"
+    );
+
+  }
+
+
+  setText(
+    "analysisNifty",
+    formatPrice(
+      selectedMarket?.price
+    )
+  );
+
+  setText(
+    "analysisGift",
+    formatPrice(
+      gift.price
+    )
+  );
+
+  setText(
+    "analysisVix",
+    formatPrice(
+      vix.price
+    )
+  );
+
+
+  /* ================= SIGNAL ================= */
+
+  setText(
+    "directionBig",
+    direction
+  );
+
+  setDirectionStyle(
+    document.getElementById(
+      "directionBig"
+    ),
+    direction
+  );
+
+  setText(
+    "confidenceBig",
+    confidence !== null
+      ? `Confidence: ${confidence}%`
+      : "Confidence: --"
+  );
+
+  setText(
+    "direction",
+    direction
+  );
+
+  setDirectionStyle(
+    document.getElementById(
+      "direction"
+    ),
+    direction
+  );
+
+
+  /* ================= TECHNICAL ================= */
+
+  setText(
+    "analysisTrend",
+    technical.trend ||
+    technical.direction ||
+    "--"
+  );
+
+  setText(
+    "rsiValue",
+    technical.rsi !== null &&
+    technical.rsi !== undefined
+      ? Number(technical.rsi).toFixed(2)
+      : "--"
+  );
+
+  setText(
+    "vwapValue",
+    formatPrice(
+      technical.vwap
+    )
+  );
+
+  setText(
+    "ema9Value",
+    formatPrice(
+      technical.ema9
+    )
+  );
+
+  setText(
+    "ema20Value",
+    formatPrice(
+      technical.ema20
+    )
+  );
+
+  setText(
+    "ema50Value",
+    formatPrice(
+      technical.ema50
+    )
+  );
+
+  setText(
+    "momentumValue",
+    technical.momentum ||
+    "--"
+  );
+
+
+  /* ================= OPTIONS ================= */
+
+  setText(
+    "pcrValue",
+    options.pcr !== null &&
+    options.pcr !== undefined
+      ? Number(options.pcr).toFixed(2)
+      : "--"
+  );
+
+  setText(
+    "maxPainValue",
+    formatPrice(
+      options.maxPain
+    )
+  );
+
+  setText(
+    "optionBiasValue",
+    options.bias ||
+    options.optionBias ||
+    "--"
+  );
+
+  setText(
+    "expiryValue",
+    options.expiry ||
+    options.expiryDate ||
+    "--"
+  );
+
+
+  /* ================= TRADE ================= */
+
+  setText(
+    "entry",
+    formatPrice(
+      signal.entry
+    )
+  );
+
+  setText(
+    "sl",
+    formatPrice(
+      signal.stopLoss ??
+      signal.sl
+    )
+  );
+
+  setText(
+    "target1",
+    formatPrice(
+      signal.target1 ??
+      signal.target_1
+    )
+  );
+
+  setText(
+    "target2",
+    formatPrice(
+      signal.target2 ??
+      signal.target_2
+    )
+  );
+
+  setText(
+    "target3",
+    formatPrice(
+      signal.target3 ??
+      signal.target_3
+    )
+  );
+
+  setText(
+    "rr",
+    signal.riskReward !== null &&
+    signal.riskReward !== undefined
+      ? Number(signal.riskReward).toFixed(2)
+      : "--"
+  );
+
+  setText(
+    "tradeConfidence",
+    confidence !== null
+      ? `${confidence}%`
+      : "--"
+  );
+
+
+  /* ================= TRADE STATUS ================= */
+
+  const tradeStatus =
+    document.getElementById(
+      "tradeStatus"
+    );
+
+  if(direction === "BUY"){
+
+    tradeStatus.textContent =
+      "BUY SETUP";
+
+    tradeStatus.className =
+      "green";
+
+  }else if(direction === "SELL"){
+
+    tradeStatus.textContent =
+      "SELL SETUP";
+
+    tradeStatus.className =
+      "red";
+
+  }else{
+
+    tradeStatus.textContent =
+      "NO TRADE";
+
+    tradeStatus.className =
+      "yellow";
+
+  }
+
+
+  /* ================= REASONS ================= */
+
+  const reasonsList =
+    document.getElementById(
+      "reasonsList"
+    );
+
+  let reasons =
+    Array.isArray(data.reasons)
+      ? data.reasons
+      : Array.isArray(signal.reasons)
+        ? signal.reasons
+        : [];
+
+  if(!reasons.length){
+
+    reasonsList.innerHTML = `
+      <div class="reason">
+        No strong confirmation yet.
+      </div>
+    `;
+
+  }else{
+
+    reasonsList.innerHTML = "";
+
+    reasons.forEach(reason=>{
+
+      const div =
+        document.createElement("div");
+
+      div.className = "reason";
+
+      div.textContent =
+        "• " + String(reason);
+
+      reasonsList.appendChild(div);
+
+    });
+
+  }
+
+
+  /* ================= INVALIDATION ================= */
+
+  setText(
+    "invalidation",
+    "Invalidation: " +
+    (
+      data.invalidation ||
+      signal.invalidation ||
+      "--"
+    )
+  );
+
+
+  /* ================= SAVE SIGNAL ================= */
+
+  localStorage.setItem(
+    "era_last_signal",
+    JSON.stringify({
+      index:selectedIndex,
+      direction,
+      confidence,
+      entry:signal.entry ?? null,
+      stopLoss:signal.stopLoss ?? null,
+      target1:signal.target1 ?? null,
+      target2:signal.target2 ?? null,
+      target3:signal.target3 ?? null,
+      time:new Date().toISOString()
+    })
+  );
 
 }
 
@@ -3290,32 +2945,30 @@ time:new Date().toISOString()
 ========================================= */
 
 document
-.getElementById(
-"refreshAnalysisBtn"
-)
-.addEventListener(
-"click",
-async()=>{
+  .getElementById(
+    "refreshAnalysisBtn"
+  )
+  .addEventListener(
+    "click",
+    async()=>{
 
-const button =
-document.getElementById(
-"refreshAnalysisBtn"
-);
+      const button =
+        document.getElementById(
+          "refreshAnalysisBtn"
+        );
 
-button.disabled = true;
+      button.disabled = true;
+      button.textContent =
+        "⟳ Updating...";
 
-button.textContent =
-"⟳ Updating...";
+      await loadEraAnalysis();
 
-await loadEraAnalysis();
+      button.disabled = false;
+      button.textContent =
+        "↻ Refresh Era Analysis";
 
-button.disabled = false;
-
-button.textContent =
-"↻ Refresh Era Analysis";
-
-}
-);
+    }
+  );
 
 
 /* =========================================
@@ -3323,24 +2976,22 @@ button.textContent =
 ========================================= */
 
 setInterval(
-()=>{
+  ()=>{
 
-const home =
-document.getElementById(
-"home"
-);
+    const home =
+      document.getElementById("home");
 
-if(
-home &&
-home.classList.contains("active")
-){
+    if(
+      home &&
+      home.classList.contains("active")
+    ){
 
-loadEraAnalysis();
+      loadEraAnalysis();
 
-}
+    }
 
-},
-60000
+  },
+  60000
 );
 
 
@@ -3349,43 +3000,31 @@ loadEraAnalysis();
 ========================================= */
 
 function getSelectedLanguage(){
-
-return languageSelect.value;
-
+  return languageSelect.value;
 }
-
 
 languageSelect.addEventListener(
-"change",
-()=>{
+  "change",
+  ()=>{
 
-const names = {
+    const names = {
 
-"hi-IN":
-"Hindi selected",
+      "hi-IN":"Hindi selected",
+      "gu-IN":"Gujarati selected",
+      "en-IN":"English selected"
 
-"gu-IN":
-"Gujarati selected",
+    };
 
-"en-IN":
-"English selected"
+    if(recognition){
+      recognition.lang =
+        getSelectedLanguage();
+    }
 
-};
+    state.textContent =
+      names[getSelectedLanguage()] ||
+      "Language selected";
 
-if(recognition){
-
-recognition.lang =
-getSelectedLanguage();
-
-}
-
-state.textContent =
-names[
-getSelectedLanguage()
-] ||
-"Language selected";
-
-}
+  }
 );
 
 
@@ -3394,691 +3033,299 @@ getSelectedLanguage()
 ========================================= */
 
 let chatConversation = [];
+let isThinking = false;
+
 
 function addChatMessage(
-sender,
-text
+  sender,
+  text
 ){
 
-if(chatEmpty){
+  if(chatEmpty){
+    chatEmpty.style.display =
+      "none";
+  }
 
-chatEmpty.style.display =
-"none";
+  const wrapper =
+    document.createElement("div");
 
-}
+  wrapper.className =
+    "chat-message " + sender;
 
-const wrapper =
-document.createElement("div");
+  const content =
+    document.createElement("div");
 
-wrapper.className =
-"chat-message " +
-sender;
+  content.className =
+    "chat-content";
 
-const content =
-document.createElement("div");
+  const label =
+    document.createElement("div");
 
-content.className =
-"chat-content";
+  label.className =
+    "chat-label";
 
-const label =
-document.createElement("div");
+  label.textContent =
+    sender === "user"
+      ? "You"
+      : "Era";
 
-label.className =
-"chat-label";
+  const bubble =
+    document.createElement("div");
 
-label.textContent =
-sender === "user"
-? "You"
-: "Era";
+  bubble.className =
+    "chat-bubble";
 
-const bubble =
-document.createElement("div");
+  bubble.textContent =
+    text;
 
-bubble.className =
-"chat-bubble";
+  content.appendChild(label);
+  content.appendChild(bubble);
+  wrapper.appendChild(content);
+  chatBoard.appendChild(wrapper);
 
-bubble.textContent =
-text;
-
-content.appendChild(label);
-
-content.appendChild(bubble);
-
-wrapper.appendChild(content);
-
-chatBoard.appendChild(wrapper);
-
-chatBoard.scrollTop =
-chatBoard.scrollHeight;
+  chatBoard.scrollTop =
+    chatBoard.scrollHeight;
 
 }
 
 
 function addThinking(){
 
-if(chatEmpty){
+  if(chatEmpty){
+    chatEmpty.style.display =
+      "none";
+  }
 
-chatEmpty.style.display =
-"none";
+  removeThinking();
 
-}
+  const wrapper =
+    document.createElement("div");
 
-removeThinking();
+  wrapper.id =
+    "thinkingMessage";
 
-const wrapper =
-document.createElement("div");
+  wrapper.className =
+    "chat-message era";
 
-wrapper.id =
-"thinkingMessage";
+  const content =
+    document.createElement("div");
 
-wrapper.className =
-"chat-message era";
+  content.className =
+    "chat-content";
 
-const content =
-document.createElement("div");
+  const label =
+    document.createElement("div");
 
-content.className =
-"chat-content";
+  label.className =
+    "chat-label";
 
-const label =
-document.createElement("div");
+  label.textContent = "Era";
 
-label.className =
-"chat-label";
+  const bubble =
+    document.createElement("div");
 
-label.textContent =
-"Era";
+  bubble.className =
+    "chat-bubble";
 
-const bubble =
-document.createElement("div");
+  const thinking =
+    document.createElement("span");
 
-bubble.className =
-"chat-bubble";
+  thinking.className =
+    "chat-thinking";
 
-const thinking =
-document.createElement("span");
+  thinking.textContent =
+    "Thinking...";
 
-thinking.className =
-"chat-thinking";
+  bubble.appendChild(thinking);
+  content.appendChild(label);
+  content.appendChild(bubble);
+  wrapper.appendChild(content);
+  chatBoard.appendChild(wrapper);
 
-thinking.textContent =
-"Thinking...";
-
-bubble.appendChild(thinking);
-
-content.appendChild(label);
-
-content.appendChild(bubble);
-
-wrapper.appendChild(content);
-
-chatBoard.appendChild(wrapper);
-
-chatBoard.scrollTop =
-chatBoard.scrollHeight;
+  chatBoard.scrollTop =
+    chatBoard.scrollHeight;
 
 }
 
 
 function removeThinking(){
 
-const thinking =
-document.getElementById(
-"thinkingMessage"
-);
+  const thinking =
+    document.getElementById(
+      "thinkingMessage"
+    );
 
-if(thinking){
-
-thinking.remove();
-
-}
+  if(thinking){
+    thinking.remove();
+  }
 
 }
 
 
-function getAnswerFromResponse(
-result
-){
+function getAnswerFromResponse(result){
 
-if(!result){
-return "";
-}
+  if(!result){
+    return "";
+  }
 
-if(typeof result === "string"){
-return result;
-}
+  if(typeof result === "string"){
+    return result;
+  }
 
-return (
-result.reply ||
-result.response ||
-result.answer ||
-result.message ||
-result.text ||
-result.content ||
-result.data?.reply ||
-result.data?.response ||
-result.data?.answer ||
-result.data?.message ||
-result.data?.text ||
-result.data?.content ||
-""
-);
+  return (
+    result.reply ||
+    result.response ||
+    result.answer ||
+    result.message ||
+    result.text ||
+    result.content ||
+    result.data?.reply ||
+    result.data?.response ||
+    result.data?.answer ||
+    result.data?.message ||
+    result.data?.text ||
+    result.data?.content ||
+    ""
+  );
 
 }
-
-
-/* =========================================
-   NATURAL VOICE
-========================================= */
-
-let currentAudio = null;
-
-let isSpeaking = false;
-let isThinking = false;
-
-let audioRequestId = 0;
-
-
-function stopEraVoice(){
-
-audioRequestId++;
-
-if(currentAudio){
-
-try{
-
-currentAudio.pause();
-currentAudio.currentTime = 0;
-
-}catch(error){}
-
-currentAudio = null;
-
-}
-
-isSpeaking = false;
-
-orb.classList.remove(
-"speaking"
-);
-
-micBtn.classList.remove(
-"speaking"
-);
-
-if(
-!isListening &&
-!isThinking
-){
-
-state.textContent =
-"Ready";
-
-status.textContent =
-"● Live";
-
-}
-
-}
-
-
-async function speak(text){
-
-const cleanText =
-String(text || "").trim();
-
-if(!cleanText){
-return false;
-}
-
-stopEraVoice();
-
-const requestId =
-audioRequestId;
-
-try{
-
-isSpeaking = true;
-
-orb.classList.remove(
-"listening",
-"thinking"
-);
-
-orb.classList.add(
-"speaking"
-);
-
-micBtn.classList.remove(
-"listening"
-);
-
-micBtn.classList.add(
-"speaking"
-);
-
-state.textContent =
-"Speaking...";
-
-status.textContent =
-"● Speaking";
-
-const response =
-await fetch(
-`${BACKEND_URL}/api/tts`,
-{
-method:"POST",
-headers:{
-"Content-Type":
-"application/json"
-},
-body:JSON.stringify({
-
-text:cleanText,
-
-language:
-getSelectedLanguage()
-
-})
-}
-);
-
-if(
-requestId !== audioRequestId
-){
-
-return false;
-
-}
-
-if(!response.ok){
-
-const result =
-await readJSON(response);
-
-throw new Error(
-result?.error ||
-result?.message ||
-"Natural voice unavailable"
-);
-
-}
-
-const blob =
-await response.blob();
-
-if(
-requestId !== audioRequestId
-){
-
-return false;
-
-}
-
-if(
-!blob ||
-blob.size === 0
-){
-
-throw new Error(
-"Empty voice audio received"
-);
-
-}
-
-const audioUrl =
-URL.createObjectURL(blob);
-
-const audio =
-new Audio(audioUrl);
-
-currentAudio =
-audio;
-
-audio.preload =
-"auto";
-
-audio.onended = ()=>{
-
-if(
-requestId !== audioRequestId
-){
-
-return;
-
-}
-
-URL.revokeObjectURL(
-audioUrl
-);
-
-currentAudio = null;
-
-isSpeaking = false;
-
-orb.classList.remove(
-"speaking"
-);
-
-micBtn.classList.remove(
-"speaking"
-);
-
-if(
-!isListening &&
-!isThinking
-){
-
-state.textContent =
-"Ready";
-
-status.textContent =
-"● Live";
-
-}
-
-};
-
-audio.onerror = ()=>{
-
-if(
-requestId !== audioRequestId
-){
-
-return;
-
-}
-
-URL.revokeObjectURL(
-audioUrl
-);
-
-currentAudio = null;
-
-isSpeaking = false;
-
-orb.classList.remove(
-"speaking"
-);
-
-micBtn.classList.remove(
-"speaking"
-);
-
-state.textContent =
-"Voice playback error";
-
-status.textContent =
-"● Ready";
-
-};
-
-await audio.play();
-
-return true;
-
-}catch(error){
-
-console.error(
-"Natural voice error:",
-error
-);
-
-if(
-requestId !== audioRequestId
-){
-
-return false;
-
-}
-
-isSpeaking = false;
-
-orb.classList.remove(
-"speaking"
-);
-
-micBtn.classList.remove(
-"speaking"
-);
-
-state.textContent =
-"Voice unavailable";
-
-status.textContent =
-"● Ready";
-
-return false;
-
-}
-
-}
-
-
-/* =========================================
-   VOICE TEST
-========================================= */
-
-document
-.getElementById(
-"voiceTestBtn"
-)
-.addEventListener(
-"click",
-async()=>{
-
-const testMessages = {
-
-"hi-IN":
-"Namaste, main Era AI hoon. Main aapki market analysis mein madad karne ke liye ready hoon.",
-
-"gu-IN":
-"Namaste, hu Era AI chu. Hu tamari market analysis ma madad karva mate ready chu.",
-
-"en-IN":
-"Hello, I am Era AI. I am ready to help you with your market analysis."
-
-};
-
-await speak(
-testMessages[
-getSelectedLanguage()
-]
-);
-
-}
-);
 
 
 /* =========================================
    CHAT REQUEST
+   V6 = TEXT ONLY
 ========================================= */
 
 async function handleUserMessage(text){
 
-const cleanText =
-String(text || "").trim();
+  const cleanText =
+    String(text || "").trim();
 
-if(!cleanText){
-return;
-}
+  if(!cleanText){
+    return;
+  }
 
-if(isSpeaking){
-stopEraVoice();
-}
+  addChatMessage(
+    "user",
+    cleanText
+  );
 
-addChatMessage(
-"user",
-cleanText
-);
+  saveChat(cleanText);
 
-saveChat(
-cleanText
-);
+  chatConversation.push({
+    role:"user",
+    content:cleanText
+  });
 
-chatConversation.push({
-role:"user",
-content:cleanText
-});
+  addThinking();
 
-addThinking();
+  isThinking = true;
 
-isThinking = true;
+  orb.classList.remove(
+    "listening"
+  );
 
-orb.classList.remove(
-"listening",
-"speaking"
-);
+  orb.classList.add(
+    "thinking"
+  );
 
-orb.classList.add(
-"thinking"
-);
+  state.textContent =
+    "Thinking...";
 
-state.textContent =
-"Thinking...";
+  status.textContent =
+    "● Thinking";
 
-status.textContent =
-"● Thinking";
+  try{
 
-try{
+    const result =
+      await apiFetch(
+        "/api/chat",
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+          body:JSON.stringify({
 
-const response =
-await fetch(
-`${BACKEND_URL}/api/chat`,
-{
-method:"POST",
-headers:{
-"Content-Type":
-"application/json"
-},
-body:JSON.stringify({
+            message:cleanText,
 
-message:
-cleanText,
+            language:
+              getSelectedLanguage(),
 
-language:
-getSelectedLanguage(),
+            history:
+              chatConversation.slice(-10),
 
-history:
-chatConversation.slice(-10),
+            index:
+              getSelectedIndex()
 
-index:
-getSelectedIndex()
+          })
+        }
+      );
 
-})
-}
-);
+    const answer =
+      getAnswerFromResponse(result);
 
-const result =
-await readJSON(response);
+    if(!answer){
 
-if(!response.ok){
+      throw new Error(
+        "Empty response from Era"
+      );
 
-throw new Error(
-result?.error ||
-result?.message ||
-"Chat server error"
-);
+    }
 
-}
+    removeThinking();
 
-const answer =
-getAnswerFromResponse(
-result
-);
+    isThinking = false;
 
-if(!answer){
+    orb.classList.remove(
+      "thinking"
+    );
 
-throw new Error(
-"Empty response from Era"
-);
+    addChatMessage(
+      "era",
+      answer
+    );
 
-}
+    chatConversation.push({
+      role:"assistant",
+      content:answer
+    });
 
-removeThinking();
+    state.textContent = "Ready";
+    status.textContent = "● Live";
 
-isThinking = false;
+  }catch(error){
 
-orb.classList.remove(
-"thinking"
-);
+    console.error(
+      "Era chat error:",
+      error
+    );
 
-addChatMessage(
-"era",
-answer
-);
+    removeThinking();
 
-chatConversation.push({
-role:"assistant",
-content:answer
-});
+    isThinking = false;
 
-if(chatOutput){
+    orb.classList.remove(
+      "thinking"
+    );
 
-chatOutput.textContent =
-answer;
+    const errorMessage =
+      "Era se connection nahi ho pa raha: " +
+      (
+        error.message ||
+        "Unknown error"
+      );
 
-chatOutput.style.display =
-"block";
+    addChatMessage(
+      "era",
+      errorMessage
+    );
 
-}
+    state.textContent = "Ready";
+    status.textContent = "● Ready";
 
-await speak(answer);
-
-if(!isSpeaking){
-
-state.textContent =
-"Ready";
-
-status.textContent =
-"● Live";
-
-}
-
-}catch(error){
-
-console.error(
-"Era chat error:",
-error
-);
-
-removeThinking();
-
-isThinking = false;
-
-orb.classList.remove(
-"thinking"
-);
-
-const errorMessage =
-"Era se connection nahi ho pa raha: " +
-(
-error.message ||
-"Unknown error"
-);
-
-addChatMessage(
-"era",
-errorMessage
-);
-
-if(chatOutput){
-
-chatOutput.textContent =
-errorMessage;
-
-chatOutput.style.display =
-"block";
-
-}
-
-state.textContent =
-"Ready";
-
-status.textContent =
-"● Ready";
-
-}
+  }
 
 }
 
@@ -4088,268 +3335,241 @@ status.textContent =
 ========================================= */
 
 sendBtn.addEventListener(
-"click",
-()=>{
+  "click",
+  ()=>{
 
-const text =
-textInput.value.trim();
+    const text =
+      textInput.value.trim();
 
-if(!text){
-return;
-}
+    if(!text){
+      return;
+    }
 
-textInput.value = "";
+    textInput.value = "";
 
-handleUserMessage(text);
+    handleUserMessage(text);
 
-}
+  }
 );
 
 
 textInput.addEventListener(
-"keydown",
-event=>{
+  "keydown",
+  event=>{
 
-if(event.key !== "Enter"){
-return;
-}
+    if(event.key !== "Enter"){
+      return;
+    }
 
-event.preventDefault();
+    event.preventDefault();
 
-const text =
-textInput.value.trim();
+    const text =
+      textInput.value.trim();
 
-if(!text){
-return;
-}
+    if(!text){
+      return;
+    }
 
-textInput.value = "";
+    textInput.value = "";
 
-handleUserMessage(text);
+    handleUserMessage(text);
 
-}
+  }
 );
 
 
 /* =========================================
    SPEECH RECOGNITION
+   MIC INPUT ONLY
 ========================================= */
 
 const SpeechRecognition =
-window.SpeechRecognition ||
-window.webkitSpeechRecognition;
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
 
 let recognition = null;
-
 let listening = false;
 let isListening = false;
 
 
 if(SpeechRecognition){
 
-recognition =
-new SpeechRecognition();
+  recognition =
+    new SpeechRecognition();
 
-recognition.continuous =
-false;
-
-recognition.interimResults =
-false;
-
-recognition.maxAlternatives =
-1;
-
-recognition.lang =
-getSelectedLanguage();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  recognition.lang =
+    getSelectedLanguage();
 
 
-recognition.onstart = ()=>{
+  recognition.onstart = ()=>{
 
-listening = true;
-isListening = true;
+    listening = true;
+    isListening = true;
 
-if(isSpeaking){
-stopEraVoice();
-}
+    orb.classList.remove(
+      "thinking"
+    );
 
-orb.classList.remove(
-"speaking",
-"thinking"
-);
+    orb.classList.add(
+      "listening"
+    );
 
-orb.classList.add(
-"listening"
-);
+    micBtn.classList.add(
+      "listening"
+    );
 
-micBtn.classList.add(
-"listening"
-);
+    state.textContent =
+      "Listening...";
 
-state.textContent =
-"Listening...";
+    status.textContent =
+      "● Listening";
 
-status.textContent =
-"● Listening";
-
-};
+  };
 
 
-recognition.onresult =
-event=>{
+  recognition.onresult =
+    event=>{
 
-const text =
-event.results[0][0].transcript;
+      const text =
+        event.results[0][0].transcript;
 
-if(!text){
-return;
-}
+      if(!text){
+        return;
+      }
 
-textInput.value =
-text;
+      textInput.value = text;
 
-isListening = false;
-listening = false;
+      isListening = false;
+      listening = false;
 
-micBtn.classList.remove(
-"listening"
-);
+      micBtn.classList.remove(
+        "listening"
+      );
 
-orb.classList.remove(
-"listening"
-);
+      orb.classList.remove(
+        "listening"
+      );
 
-handleUserMessage(text);
+      handleUserMessage(text);
 
-};
+    };
 
 
-recognition.onerror =
-event=>{
+  recognition.onerror =
+    event=>{
 
-console.log(
-"Speech recognition error:",
-event.error
-);
+      console.log(
+        "Speech recognition error:",
+        event.error
+      );
 
-listening = false;
-isListening = false;
+      listening = false;
+      isListening = false;
 
-micBtn.classList.remove(
-"listening"
-);
+      micBtn.classList.remove(
+        "listening"
+      );
 
-orb.classList.remove(
-"listening"
-);
+      orb.classList.remove(
+        "listening"
+      );
 
-if(
-event.error === "not-allowed"
-){
+      if(event.error === "not-allowed"){
 
-state.textContent =
-"Microphone permission required";
+        state.textContent =
+          "Microphone permission required";
 
-status.textContent =
-"● Mic blocked";
+        status.textContent =
+          "● Mic blocked";
 
-}else if(
-event.error === "no-speech"
-){
+      }else if(
+        event.error === "no-speech"
+      ){
 
-state.textContent =
-"No speech detected";
+        state.textContent =
+          "No speech detected";
 
-status.textContent =
-"● Ready";
+        status.textContent =
+          "● Ready";
+
+      }else{
+
+        state.textContent =
+          "Voice input error";
+
+        status.textContent =
+          "● Ready";
+
+      }
+
+    };
+
+
+  recognition.onend = ()=>{
+
+    listening = false;
+    isListening = false;
+
+    micBtn.classList.remove(
+      "listening"
+    );
+
+    orb.classList.remove(
+      "listening"
+    );
+
+    if(!isThinking){
+
+      state.textContent =
+        "Ready";
+
+      status.textContent =
+        "● Live";
+
+    }
+
+  };
+
+
+  micBtn.addEventListener(
+    "click",
+    ()=>{
+
+      if(listening){
+
+        recognition.stop();
+        return;
+
+      }
+
+      recognition.lang =
+        getSelectedLanguage();
+
+      try{
+
+        recognition.start();
+
+      }catch(error){
+
+        console.log(
+          "Recognition start:",
+          error
+        );
+
+      }
+
+    }
+  );
 
 }else{
 
-state.textContent =
-"Voice input error";
+  micBtn.disabled = true;
 
-status.textContent =
-"● Ready";
-
-}
-
-};
-
-
-recognition.onend = ()=>{
-
-listening = false;
-isListening = false;
-
-micBtn.classList.remove(
-"listening"
-);
-
-orb.classList.remove(
-"listening"
-);
-
-if(
-!isThinking &&
-!isSpeaking
-){
-
-state.textContent =
-"Ready";
-
-status.textContent =
-"● Live";
-
-}
-
-};
-
-
-micBtn.addEventListener(
-"click",
-()=>{
-
-if(isSpeaking){
-
-stopEraVoice();
-
-return;
-
-}
-
-if(listening){
-
-recognition.stop();
-
-return;
-
-}
-
-recognition.lang =
-getSelectedLanguage();
-
-try{
-
-recognition.start();
-
-}catch(error){
-
-console.log(
-"Recognition start:",
-error
-);
-
-}
-
-}
-);
-
-}else{
-
-micBtn.disabled =
-true;
-
-state.textContent =
-"Voice recognition not supported";
+  state.textContent =
+    "Mic input not supported";
 
 }
 
@@ -4360,332 +3580,811 @@ state.textContent =
 
 let newsLoaded = false;
 
-async function loadNews(){
+async function loadNews(force=false){
 
-const container =
-document.getElementById(
-"newsContainer"
-);
+  const container =
+    document.getElementById(
+      "newsContainer"
+    );
 
-if(newsLoaded){
+  if(newsLoaded && !force){
+    return;
+  }
 
-return;
+  container.innerHTML =
+    '<div class="empty">Loading market news...</div>';
 
-}
+  try{
 
-container.innerHTML =
-'<div class="empty">Loading market news...</div>';
+    const result =
+      await apiFetch(
+        "/api/news"
+      );
 
-try{
+    const articles =
+      Array.isArray(result?.data)
+        ? result.data
+        : Array.isArray(result?.articles)
+          ? result.articles
+          : Array.isArray(result?.news)
+            ? result.news
+            : [];
 
-const response =
-await fetch(
-`${BACKEND_URL}/api/news`,
-{
-cache:"no-store"
-}
-);
+    if(!articles.length){
 
-const result =
-await readJSON(response);
+      container.innerHTML = `
+        <div class="card">
 
-if(!response.ok){
+          <h3>📰 MARKET NEWS</h3>
 
-throw new Error(
-result?.error ||
-"Unable to load news"
-);
+          <p style="
+            color:var(--muted);
+            margin-top:8px;
+            font-size:12px;
+          ">
+            No live news available right now.
+          </p>
 
-}
+        </div>
+      `;
 
-const articles =
-Array.isArray(result?.data)
-? result.data
-: [];
+      newsLoaded = true;
+      return;
 
-if(!articles.length){
+    }
 
-container.innerHTML =
-`
-<div class="card">
+    container.innerHTML = "";
 
-<h3>📰 MARKET NEWS</h3>
+    articles.forEach(article=>{
 
-<p style="
-color:var(--muted);
-margin-top:8px;
-">
-No live news available right now.
-</p>
+      const item =
+        document.createElement("div");
 
-</div>
-`;
+      item.className =
+        "news-item";
 
-newsLoaded = true;
 
-return;
+      const title =
+        document.createElement("div");
 
-}
+      title.className =
+        "news-title";
 
-container.innerHTML =
-"";
+      title.textContent =
+        article.title ||
+        article.name ||
+        "Untitled";
 
-articles.forEach(article=>{
+      item.appendChild(title);
 
-const item =
-document.createElement("div");
 
-item.className =
-"news-item";
+      const description =
+        article.description ||
+        article.summary ||
+        "";
 
-const title =
-document.createElement("div");
+      if(description){
 
-title.style.fontWeight =
-"bold";
+        const desc =
+          document.createElement("div");
 
-title.textContent =
-article.title ||
-"Untitled";
+        desc.className =
+          "news-description";
 
-item.appendChild(title);
+        desc.textContent =
+          description;
 
-if(article.description){
+        item.appendChild(desc);
 
-const description =
-document.createElement("div");
+      }
 
-description.style.cssText =
-"color:var(--muted);font-size:11px;margin-top:7px;";
 
-description.textContent =
-article.description;
+      if(
+        article.source ||
+        article.publisher ||
+        article.publishedAt ||
+        article.pubDate
+      ){
 
-item.appendChild(
-description
-);
+        const meta =
+          document.createElement("div");
 
-}
+        meta.className =
+          "news-meta";
 
-if(
-article.source ||
-article.publishedAt
-){
+        const source =
+          article.source ||
+          article.publisher ||
+          "";
 
-const meta =
-document.createElement("div");
+        const dateValue =
+          article.publishedAt ||
+          article.pubDate ||
+          "";
 
-meta.className =
-"news-meta";
+        let dateText = "";
 
-meta.textContent =
-`${article.source || ""}${
-article.source &&
-article.publishedAt
-? " • "
-: ""
-}${
-article.publishedAt
-? new Date(
-article.publishedAt
-).toLocaleString("en-IN")
-: ""
-}`;
+        if(dateValue){
 
-item.appendChild(meta);
+          const parsed =
+            new Date(dateValue);
 
-}
+          dateText =
+            Number.isNaN(
+              parsed.getTime()
+            )
+              ? String(dateValue)
+              : parsed.toLocaleString(
+                  "en-IN"
+                );
 
-if(article.url){
+        }
 
-const link =
-document.createElement("a");
+        meta.textContent =
+          source +
+          (
+            source && dateText
+              ? " • "
+              : ""
+          ) +
+          dateText;
 
-link.href =
-article.url;
+        item.appendChild(meta);
 
-link.target =
-"_blank";
+      }
 
-link.rel =
-"noopener noreferrer";
 
-link.textContent =
-"Read full news →";
+      const url =
+        article.url ||
+        article.link ||
+        article.guid ||
+        "";
 
-link.style.display =
-"block";
+      if(url){
 
-link.style.marginTop =
-"9px";
+        const link =
+          document.createElement("a");
 
-item.appendChild(link);
+        link.href = url;
+        link.target = "_blank";
+        link.rel =
+          "noopener noreferrer";
 
-}
+        link.textContent =
+          "Read full news →";
 
-container.appendChild(item);
+        link.style.display =
+          "block";
 
-});
+        link.style.marginTop =
+          "9px";
 
-newsLoaded = true;
+        item.appendChild(link);
 
-}catch(error){
+      }
 
-console.error(
-"News error:",
-error
-);
+      container.appendChild(item);
 
-container.innerHTML =
-`
-<div class="card">
+    });
 
-<h3>📰 NEWS</h3>
+    newsLoaded = true;
 
-<p style="
-color:var(--red);
-margin-top:8px;
-">
-News load nahi ho pa rahi.
-</p>
+  }catch(error){
 
-<p style="
-color:var(--muted);
-margin-top:6px;
-font-size:11px;
-">
-${escapeHTML(
-error.message ||
-"Unknown error"
-)}
-</p>
+    console.error(
+      "News error:",
+      error
+    );
 
-</div>
-`;
+    container.innerHTML = `
+      <div class="card">
 
-}
+        <h3>📰 NEWS</h3>
+
+        <p style="
+          color:var(--red);
+          margin-top:8px;
+        ">
+          News load nahi ho pa rahi.
+        </p>
+
+        <p style="
+          color:var(--muted);
+          margin-top:6px;
+          font-size:11px;
+        ">
+          ${escapeHTML(
+            error.message ||
+            "Unknown error"
+          )}
+        </p>
+
+        <button
+          id="retryNewsBtn"
+          class="refresh-btn"
+          type="button"
+        >
+          ↻ Retry News
+        </button>
+
+      </div>
+    `;
+
+    const retry =
+      document.getElementById(
+        "retryNewsBtn"
+      );
+
+    if(retry){
+
+      retry.addEventListener(
+        "click",
+        ()=>loadNews(true)
+      );
+
+    }
+
+  }
 
 }
 
 
 /* =========================================
-   LOCAL CHAT HISTORY
+   OPTIONS
+========================================= */
+
+const indexSelect =
+  document.getElementById(
+    "indexSelect"
+  );
+
+const expirySelect =
+  document.getElementById(
+    "expirySelect"
+  );
+
+const optionBody =
+  document.getElementById(
+    "optionBody"
+  );
+
+const optionStatus =
+  document.getElementById(
+    "optionStatus"
+  );
+
+
+async function loadExpiries(){
+
+  const instrumentKey =
+    indexSelect.value;
+
+  optionStatus.textContent =
+    "Loading expiry dates...";
+
+  expirySelect.innerHTML =
+    '<option value="">Loading...</option>';
+
+  try{
+
+    const result =
+      await apiFetch(
+        `/api/options/contracts?instrument_key=${encodeURIComponent(instrumentKey)}`
+      );
+
+    const contracts =
+      Array.isArray(result?.data)
+        ? result.data
+        : Array.isArray(result?.contracts)
+          ? result.contracts
+          : Array.isArray(result?.data?.contracts)
+            ? result.data.contracts
+            : [];
+
+    const expiries = [
+      ...new Set(
+        contracts
+          .map(item=>
+            item.expiry ||
+            item.expiry_date ||
+            item.expiryDate
+          )
+          .filter(Boolean)
+      )
+    ].sort();
+
+    expirySelect.innerHTML =
+      '<option value="">Select Expiry</option>';
+
+    expiries.forEach(expiry=>{
+
+      const option =
+        document.createElement("option");
+
+      option.value = expiry;
+      option.textContent = expiry;
+
+      expirySelect.appendChild(option);
+
+    });
+
+    optionStatus.textContent =
+      expiries.length
+        ? "Expiry loaded. Select expiry and load option chain."
+        : "No expiry data returned.";
+
+  }catch(error){
+
+    console.error(
+      "Expiry error:",
+      error
+    );
+
+    expirySelect.innerHTML =
+      '<option value="">Unable to load</option>';
+
+    optionStatus.textContent =
+      "Option expiry error: " +
+      error.message;
+
+  }
+
+}
+
+
+async function loadOptionChain(){
+
+  const instrumentKey =
+    indexSelect.value;
+
+  const expiry =
+    expirySelect.value;
+
+  if(!expiry){
+
+    optionStatus.textContent =
+      "Pehle expiry select kijiye.";
+
+    return;
+
+  }
+
+  optionStatus.textContent =
+    "Loading live option chain...";
+
+  optionBody.innerHTML = `
+    <tr>
+      <td colspan="11" class="loading">
+        Loading live option chain...
+      </td>
+    </tr>
+  `;
+
+  try{
+
+    const result =
+      await apiFetch(
+        `/api/options/chain?instrument_key=${encodeURIComponent(instrumentKey)}&expiry_date=${encodeURIComponent(expiry)}`
+      );
+
+    renderOptionChain(
+      result?.data ??
+      result?.chain ??
+      result?.option_chain ??
+      result
+    );
+
+    optionStatus.textContent =
+      "Live option-chain data loaded.";
+
+  }catch(error){
+
+    console.error(
+      "Option chain error:",
+      error
+    );
+
+    optionBody.innerHTML = `
+      <tr>
+        <td colspan="11" class="loading">
+          Live option-chain data unavailable.
+        </td>
+      </tr>
+    `;
+
+    optionStatus.textContent =
+      "Option chain error: " +
+      error.message;
+
+  }
+
+}
+
+
+function renderOptionChain(data){
+
+  optionBody.innerHTML = "";
+
+  let rows = [];
+
+  if(Array.isArray(data)){
+
+    rows = data;
+
+  }else if(
+    data &&
+    Array.isArray(data.option_chain)
+  ){
+
+    rows =
+      data.option_chain;
+
+  }else if(
+    data &&
+    Array.isArray(data.data)
+  ){
+
+    rows =
+      data.data;
+
+  }else if(
+    data &&
+    Array.isArray(data.rows)
+  ){
+
+    rows =
+      data.rows;
+
+  }
+
+  if(!rows.length){
+
+    optionBody.innerHTML = `
+      <tr>
+        <td colspan="11" class="loading">
+          API ne option-chain rows return nahi kiye.
+        </td>
+      </tr>
+    `;
+
+    return;
+
+  }
+
+  rows.forEach(row=>{
+
+    const strike =
+      row.strike_price ??
+      row.strike ??
+      row.strikePrice ??
+      "--";
+
+    const call =
+      row.call_options ||
+      row.callOptions ||
+      row.CE ||
+      row.ce ||
+      {};
+
+    const put =
+      row.put_options ||
+      row.putOptions ||
+      row.PE ||
+      row.pe ||
+      {};
+
+    const callMarket =
+      call.market_data ||
+      call.marketData ||
+      call ||
+      {};
+
+    const putMarket =
+      put.market_data ||
+      put.marketData ||
+      put ||
+      {};
+
+    const callGreeks =
+      call.option_greeks ||
+      call.greeks ||
+      {};
+
+    const putGreeks =
+      put.option_greeks ||
+      put.greeks ||
+      {};
+
+    const tr =
+      document.createElement("tr");
+
+
+    appendCell(
+      tr,
+      callMarket.oi,
+      "ce"
+    );
+
+    appendCell(
+      tr,
+      callMarket.oi_change ??
+      callMarket.change_in_oi ??
+      callMarket.oiChange,
+      "ce"
+    );
+
+    appendCell(
+      tr,
+      callMarket.volume,
+      "ce"
+    );
+
+    appendCell(
+      tr,
+      callGreeks.iv ??
+      callMarket.iv,
+      "ce"
+    );
+
+    appendCell(
+      tr,
+      callMarket.ltp ??
+      callMarket.last_price ??
+      callMarket.lastPrice,
+      "ce"
+    );
+
+
+    appendCell(
+      tr,
+      strike,
+      "",
+      true
+    );
+
+
+    appendCell(
+      tr,
+      putMarket.ltp ??
+      putMarket.last_price ??
+      putMarket.lastPrice,
+      "pe"
+    );
+
+    appendCell(
+      tr,
+      putGreeks.iv ??
+      putMarket.iv,
+      "pe"
+    );
+
+    appendCell(
+      tr,
+      putMarket.volume,
+      "pe"
+    );
+
+    appendCell(
+      tr,
+      putMarket.oi_change ??
+      putMarket.change_in_oi ??
+      putMarket.oiChange,
+      "pe"
+    );
+
+    appendCell(
+      tr,
+      putMarket.oi,
+      "pe"
+    );
+
+    optionBody.appendChild(tr);
+
+  });
+
+}
+
+
+function appendCell(
+  row,
+  value,
+  className="",
+  strong=false
+){
+
+  const td =
+    document.createElement("td");
+
+  if(className){
+    td.className =
+      className;
+  }
+
+  const text =
+    formatNumber(value);
+
+  if(strong){
+
+    const element =
+      document.createElement("strong");
+
+    element.textContent =
+      text;
+
+    td.appendChild(element);
+
+  }else{
+
+    td.textContent =
+      text;
+
+  }
+
+  row.appendChild(td);
+
+}
+
+
+function formatNumber(value){
+
+  if(
+    value === null ||
+    value === undefined ||
+    value === ""
+  ){
+
+    return "--";
+
+  }
+
+  const number =
+    Number(value);
+
+  if(Number.isFinite(number)){
+
+    return Number.isInteger(number)
+      ? number.toLocaleString("en-IN")
+      : number.toFixed(2);
+
+  }
+
+  return String(value);
+
+}
+
+
+indexSelect.addEventListener(
+  "change",
+  loadExpiries
+);
+
+document
+  .getElementById(
+    "loadOptionsBtn"
+  )
+  .addEventListener(
+    "click",
+    loadOptionChain
+  );
+
+
+/* =========================================
+   CHAT HISTORY
 ========================================= */
 
 function saveChat(message){
 
-let history = [];
+  let history = [];
 
-try{
+  try{
 
-history =
-JSON.parse(
-localStorage.getItem(
-"era_chat_history"
-) || "[]"
-);
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          "era_chat_history"
+        ) || "[]"
+      );
 
-}catch(error){
+  }catch(error){
 
-history = [];
+    history = [];
 
-}
+  }
 
-history.push({
+  history.push({
 
-time:
-new Date().toLocaleString(
-"en-IN"
-),
+    time:
+      new Date().toLocaleString(
+        "en-IN"
+      ),
 
-message
+    message
 
-});
+  });
 
-history =
-history.slice(-100);
+  history =
+    history.slice(-100);
 
-localStorage.setItem(
-"era_chat_history",
-JSON.stringify(history)
-);
+  localStorage.setItem(
+    "era_chat_history",
+    JSON.stringify(history)
+  );
 
-renderChatHistory();
+  renderChatHistory();
 
 }
 
 
 function renderChatHistory(){
 
-const container =
-document.getElementById(
-"chatHistory"
-);
+  const container =
+    document.getElementById(
+      "chatHistory"
+    );
 
-let history = [];
+  let history = [];
 
-try{
+  try{
 
-history =
-JSON.parse(
-localStorage.getItem(
-"era_chat_history"
-) || "[]"
-);
+    history =
+      JSON.parse(
+        localStorage.getItem(
+          "era_chat_history"
+        ) || "[]"
+      );
 
-}catch(error){
+  }catch(error){
 
-history = [];
+    history = [];
 
-}
+  }
 
-if(!history.length){
+  if(!history.length){
 
-container.innerHTML =
-'<div class="empty">No chat history yet.</div>';
+    container.innerHTML =
+      '<div class="empty">No chat history yet.</div>';
 
-return;
+    return;
 
-}
+  }
 
-container.innerHTML =
-"";
+  container.innerHTML = "";
 
-history
-.slice()
-.reverse()
-.forEach(item=>{
+  history
+    .slice()
+    .reverse()
+    .forEach(item=>{
 
-const wrapper =
-document.createElement("div");
+      const wrapper =
+        document.createElement("div");
 
-wrapper.style.cssText =
-"padding:10px 0;border-bottom:1px solid var(--border);";
+      wrapper.style.cssText =
+        "padding:10px 0;border-bottom:1px solid var(--border);";
 
-const time =
-document.createElement("small");
+      const time =
+        document.createElement("small");
 
-time.style.color =
-"var(--muted)";
+      time.style.color =
+        "var(--muted)";
 
-time.textContent =
-item.time || "";
+      time.textContent =
+        item.time || "";
 
-const message =
-document.createElement("div");
+      const message =
+        document.createElement("div");
 
-message.style.marginTop =
-"5px";
+      message.style.marginTop =
+        "5px";
 
-message.textContent =
-item.message || "";
+      message.textContent =
+        item.message || "";
 
-wrapper.appendChild(time);
-wrapper.appendChild(message);
+      wrapper.appendChild(time);
+      wrapper.appendChild(message);
 
-container.appendChild(wrapper);
+      container.appendChild(wrapper);
 
-});
+    });
 
 }
 
@@ -4696,32 +4395,13 @@ container.appendChild(wrapper);
 
 function escapeHTML(text){
 
-return String(text)
+  return String(text)
 
-.replaceAll(
-"&",
-"&amp;"
-)
-
-.replaceAll(
-"<",
-"&lt;"
-)
-
-.replaceAll(
-">",
-"&gt;"
-)
-
-.replaceAll(
-'"',
-"&quot;"
-)
-
-.replaceAll(
-"'",
-"&#039;"
-);
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 
 }
 
@@ -4731,295 +4411,306 @@ return String(text)
 ========================================= */
 
 let serviceWorkerRegistration =
-null;
+  null;
 
 
 async function registerServiceWorker(){
 
-if(
-!("serviceWorker" in navigator)
-){
+  if(!("serviceWorker" in navigator)){
 
-console.log(
-"Service Worker not supported."
-);
+    console.log(
+      "Service Worker not supported."
+    );
 
-return null;
+    return null;
 
-}
+  }
 
-try{
+  try{
 
-serviceWorkerRegistration =
-await navigator.serviceWorker.register(
-"/sw.js",
-{
-scope:"/"
-}
-);
+    serviceWorkerRegistration =
+      await navigator.serviceWorker.register(
+        "/sw.js",
+        {
+          scope:"/"
+        }
+      );
 
-console.log(
-"Era AI Service Worker registered:",
-serviceWorkerRegistration.scope
-);
+    console.log(
+      "Era AI Service Worker registered:",
+      serviceWorkerRegistration.scope
+    );
 
-return serviceWorkerRegistration;
+    return serviceWorkerRegistration;
 
-}catch(error){
+  }catch(error){
 
-console.error(
-"Service Worker registration error:",
-error
-);
+    console.error(
+      "Service Worker registration error:",
+      error
+    );
 
-return null;
+    return null;
 
-}
+  }
 
 }
 
 
 /* =========================================
-   PUSH SUBSCRIPTION
+   PUSH
 ========================================= */
 
 function urlBase64ToUint8Array(
-base64String
+  base64String
 ){
 
-const padding =
-"=".repeat(
-(4 - base64String.length % 4) % 4
-);
+  const padding =
+    "=".repeat(
+      (4 - base64String.length % 4) % 4
+    );
 
-const base64 =
-(
-base64String +
-padding
-)
-.replace(/-/g,"+")
-.replace(/_/g,"/");
+  const base64 =
+    (
+      base64String +
+      padding
+    )
+    .replace(/-/g,"+")
+    .replace(/_/g,"/");
 
-const rawData =
-window.atob(base64);
+  const rawData =
+    window.atob(base64);
 
-const outputArray =
-new Uint8Array(
-rawData.length
-);
+  const outputArray =
+    new Uint8Array(
+      rawData.length
+    );
 
-for(
-let i = 0;
-i < rawData.length;
-++i
-){
+  for(
+    let i=0;
+    i<rawData.length;
+    ++i
+  ){
 
-outputArray[i] =
-rawData.charCodeAt(i);
+    outputArray[i] =
+      rawData.charCodeAt(i);
 
-}
+  }
 
-return outputArray;
+  return outputArray;
 
 }
 
 
 async function enableNotifications(){
 
-if(
-!("Notification" in window)
-){
+  if(!("Notification" in window)){
 
-alert(
-"Is browser/device par notifications supported nahi hain."
-);
+    alert(
+      "Is browser/device par notifications supported nahi hain."
+    );
 
-return;
+    return;
 
-}
+  }
 
-if(
-!("serviceWorker" in navigator) ||
-!("PushManager" in window)
-){
+  if(
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window)
+  ){
 
-alert(
-"Push notifications supported nahi hain."
-);
+    alert(
+      "Push notifications supported nahi hain."
+    );
 
-return;
+    return;
 
-}
+  }
 
-try{
+  try{
 
-const permission =
-await Notification.requestPermission();
+    const permission =
+      await Notification.requestPermission();
 
-if(permission !== "granted"){
+    if(permission !== "granted"){
 
-notificationBtn.textContent =
-"Notifications Blocked";
+      notificationBtn.textContent =
+        "Notifications Blocked";
 
-return;
+      return;
 
-}
+    }
 
-const registration =
-serviceWorkerRegistration ||
-await registerServiceWorker();
+    const registration =
+      serviceWorkerRegistration ||
+      await registerServiceWorker();
 
-if(!registration){
+    if(!registration){
 
-throw new Error(
-"Service Worker unavailable"
-);
+      throw new Error(
+        "Service Worker unavailable"
+      );
 
-}
+    }
 
-const publicKeyResponse =
-await fetch(
-`${BACKEND_URL}/api/push/public-key`,
-{
-cache:"no-store"
-}
-);
+    const publicKeyResult =
+      await apiFetch(
+        "/api/push/public-key"
+      );
 
-const publicKeyResult =
-await readJSON(
-publicKeyResponse
-);
+    if(
+      !publicKeyResult?.success ||
+      !publicKeyResult?.publicKey
+    ){
 
-if(
-!publicKeyResponse.ok ||
-!publicKeyResult?.success ||
-!publicKeyResult?.publicKey
-){
+      throw new Error(
+        publicKeyResult?.error ||
+        "Push public key unavailable"
+      );
 
-throw new Error(
-publicKeyResult?.error ||
-"Push public key unavailable"
-);
+    }
 
-}
+    let subscription =
+      await registration.pushManager
+        .getSubscription();
 
-let subscription =
-await registration.pushManager.getSubscription();
+    if(!subscription){
 
-if(!subscription){
+      subscription =
+        await registration.pushManager.subscribe({
 
-subscription =
-await registration.pushManager.subscribe({
+          userVisibleOnly:true,
 
-userVisibleOnly:true,
+          applicationServerKey:
+            urlBase64ToUint8Array(
+              publicKeyResult.publicKey
+            )
 
-applicationServerKey:
-urlBase64ToUint8Array(
-publicKeyResult.publicKey
-)
+        });
 
-});
+    }
 
-}
+    const subscribeResult =
+      await apiFetch(
+        "/api/subscribe",
+        {
+          method:"POST",
+          headers:{
+            "Content-Type":
+              "application/json"
+          },
+          body:JSON.stringify({
+            subscription
+          })
+        }
+      );
 
-const subscribeResponse =
-await fetch(
-`${BACKEND_URL}/api/subscribe`,
-{
-method:"POST",
-headers:{
-"Content-Type":
-"application/json"
-},
-body:JSON.stringify({
-subscription
-})
-}
-);
+    if(
+      !subscribeResult?.success
+    ){
 
-const subscribeResult =
-await readJSON(
-subscribeResponse
-);
+      throw new Error(
+        subscribeResult?.error ||
+        "Subscription failed"
+      );
 
-if(
-!subscribeResponse.ok ||
-!subscribeResult?.success
-){
+    }
 
-throw new Error(
-subscribeResult?.error ||
-"Subscription registration failed"
-);
+    notificationBtn.textContent =
+      "✓ Notifications Enabled";
 
-}
+    notificationBtn.disabled =
+      true;
 
-notificationBtn.textContent =
-"✓ Notifications Enabled";
+  }catch(error){
 
-notificationBtn.disabled =
-true;
+    console.error(
+      "Notification setup error:",
+      error
+    );
 
-}catch(error){
+    notificationBtn.textContent =
+      "Enable Notifications";
 
-console.error(
-"Notification setup error:",
-error
-);
+    alert(
+      "Notifications enable nahi ho paayi: " +
+      error.message
+    );
 
-notificationBtn.textContent =
-"Enable Notifications";
-
-alert(
-"Notifications enable nahi ho paayi: " +
-error.message
-);
-
-}
+  }
 
 }
 
 
 notificationBtn.addEventListener(
-"click",
-enableNotifications
+  "click",
+  enableNotifications
 );
 
 
+function checkNotificationButtonState(){
+
+  if(!("Notification" in window)){
+
+    notificationBtn.style.display =
+      "none";
+
+    return;
+
+  }
+
+  if(
+    Notification.permission ===
+    "granted"
+  ){
+
+    notificationBtn.textContent =
+      "✓ Notifications Enabled";
+
+    notificationBtn.disabled =
+      true;
+
+  }
+
+}
+
+
 /* =========================================
-   MODAL
+   SIGNAL MODAL
 ========================================= */
 
 function closeSignalModal(){
 
-eraSignalModal.style.display =
-"none";
+  eraSignalModal.style.display =
+    "none";
 
 }
+
 
 document
-.getElementById(
-"closeModalBtn"
-)
-.addEventListener(
-"click",
-closeSignalModal
-);
+  .getElementById(
+    "closeModalBtn"
+  )
+  .addEventListener(
+    "click",
+    closeSignalModal
+  );
+
 
 eraSignalModal.addEventListener(
-"click",
-event=>{
+  "click",
+  event=>{
 
-if(
-event.target ===
-eraSignalModal
-){
+    if(
+      event.target ===
+      eraSignalModal
+    ){
 
-closeSignalModal();
+      closeSignalModal();
 
-}
+    }
 
-}
+  }
 );
 
 
@@ -5029,106 +4720,77 @@ closeSignalModal();
 
 function checkNotificationLanding(){
 
-const params =
-new URLSearchParams(
-window.location.search
-);
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
 
-if(
-params.get("from") !==
-"notification"
-){
+  if(
+    params.get("from") !==
+    "notification"
+  ){
 
-return;
+    return;
 
-}
+  }
 
-modalSignalsList.innerHTML =
-`
-<div class="trade-card">
+  modalSignalsList.innerHTML = `
 
-<div style="
-font-weight:bold;
-">
-🎯 Era AI Signal
-</div>
+    <div class="trade-card">
 
-<div style="
-margin-top:7px;
-color:var(--muted);
-font-size:11px;
-">
-Era AI notification se app open hua hai.
-Live analysis neeche available hai.
-</div>
+      <div style="font-weight:bold;">
+        🎯 Era AI Signal
+      </div>
 
-<button
-id="modalRefreshBtn"
-class="notification-btn"
-type="button"
->
-Open Live Analysis
-</button>
+      <div style="
+        margin-top:7px;
+        color:var(--muted);
+        font-size:11px;
+        line-height:1.5;
+      ">
+        Era AI notification se app open hua hai.
+        Live analysis neeche available hai.
+      </div>
 
-</div>
-`;
+      <button
+        id="modalRefreshBtn"
+        class="notification-btn"
+        type="button"
+      >
+        Open Live Analysis
+      </button>
 
-eraSignalModal.style.display =
-"flex";
+    </div>
 
-const modalRefreshBtn =
-document.getElementById(
-"modalRefreshBtn"
-);
+  `;
 
-if(modalRefreshBtn){
+  eraSignalModal.style.display =
+    "flex";
 
-modalRefreshBtn.addEventListener(
-"click",
-async()=>{
+  const modalRefreshBtn =
+    document.getElementById(
+      "modalRefreshBtn"
+    );
 
-closeSignalModal();
+  if(modalRefreshBtn){
 
-await loadEraAnalysis();
+    modalRefreshBtn.addEventListener(
+      "click",
+      async()=>{
 
-window.scrollTo({
-top:0,
-behavior:"smooth"
-});
+        closeSignalModal();
 
-}
-);
+        await loadEraAnalysis();
 
-}
+        window.scrollTo({
+          top:0,
+          behavior:"smooth"
+        });
 
-}
+      }
+    );
 
-
-function checkNotificationButtonState(){
-
-if(
-!("Notification" in window)
-){
-
-notificationBtn.style.display =
-"none";
-
-return;
-
-}
-
-if(
-Notification.permission ===
-"granted"
-){
-
-notificationBtn.textContent =
-"✓ Notifications Enabled";
-
-notificationBtn.disabled =
-true;
-
-}
+  }
 
 }
 
@@ -5139,23 +4801,24 @@ true;
 
 async function initEra(){
 
-renderChatHistory();
+  renderChatHistory();
 
-updateHomeIndexUI();
+  updateHomeIndexUI();
 
-checkNotificationButtonState();
+  checkNotificationButtonState();
 
-await registerServiceWorker();
+  await registerServiceWorker();
 
-checkNotificationLanding();
+  checkNotificationLanding();
 
-await loadEraAnalysis();
+  await loadEraAnalysis();
 
-console.log(
-`Era AI ${APP_VERSION} frontend loaded successfully.`
-);
+  console.log(
+    `Era AI ${APP_VERSION} frontend loaded successfully.`
+  );
 
 }
+
 
 initEra();
 
