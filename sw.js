@@ -1,9 +1,8 @@
-// Era AI Service Worker
+const CACHE_NAME = "era-ai-v6-cache-v1";
 
-const CACHE_NAME = "era-ai-v2";
-
-const STATIC_ASSETS = [
+const APP_SHELL = [
   "/",
+  "/index.html",
   "/sw.js"
 ];
 
@@ -13,7 +12,7 @@ const STATIC_ASSETS = [
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => cache.addAll(APP_SHELL))
       .catch(() => {})
   );
 
@@ -41,24 +40,39 @@ self.addEventListener("activate", (event) => {
 // FETCH
 // ================================
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+  const request = event.request;
+
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+
+  // API requests should always use network
+  if (
+    url.pathname.startsWith("/api/") ||
+    url.pathname.includes("upstox") ||
+    url.pathname.includes("openrouter")
+  ) {
+    return;
+  }
 
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        if (response && response.status === 200) {
-          const responseClone = response.clone();
+        if (
+          response &&
+          response.status === 200 &&
+          response.type === "basic"
+        ) {
+          const copy = response.clone();
 
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone).catch(() => {});
+            cache.put(request, copy);
           });
         }
 
         return response;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(request))
   );
 });
 
@@ -71,24 +85,40 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch (error) {
-    data = {
-      title: "Era AI",
-      body: event.data ? event.data.text() : "New market update."
-    };
+    try {
+      data = {
+        title: "Era AI",
+        body: event.data ? event.data.text() : "New market update"
+      };
+    } catch (e) {
+      data = {};
+    }
   }
 
-  const title = data.title || "Era AI Signal Alert";
+  const title = data.title || "Era AI";
 
   const options = {
-    body: data.body || "New market opportunity detected.",
-    icon: data.icon || "/icon.png",
-    badge: data.badge || "/icon.png",
-    tag: data.tag || "era-ai-alert",
-    renotify: true,
-    requireInteraction: data.requireInteraction === true,
+    body: data.body || "New market update available.",
+    icon: data.icon || "/icon-192.png",
+    badge: data.badge || "/icon-192.png",
+
+    tag: data.tag || "era-ai-market",
+
+    renotify: data.renotify !== false,
+
+    requireInteraction:
+      data.requireInteraction === true,
+
     data: {
-      url: data.url || "/?from=notification"
-    }
+      url: data.url || "/",
+      type: data.type || "market"
+    },
+
+    vibrate: [200, 100, 200],
+
+    actions: Array.isArray(data.actions)
+      ? data.actions
+      : []
   };
 
   event.waitUntil(
@@ -102,8 +132,11 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
+  const notificationData =
+    event.notification.data || {};
+
   const targetUrl =
-    event.notification?.data?.url || "/";
+    notificationData.url || "/";
 
   event.waitUntil(
     clients.matchAll({
@@ -111,6 +144,7 @@ self.addEventListener("notificationclick", (event) => {
       includeUncontrolled: true
     }).then((clientList) => {
 
+      // Existing Era AI tab
       for (const client of clientList) {
         if ("focus" in client) {
           client.navigate(targetUrl);
@@ -118,6 +152,7 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
 
+      // Open new Era AI tab
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
@@ -131,5 +166,19 @@ self.addEventListener("notificationclick", (event) => {
 // NOTIFICATION CLOSE
 // ================================
 self.addEventListener("notificationclose", (event) => {
-  // Reserved for future Era AI notification analytics.
+  // Reserved for future notification analytics.
+});
+
+// ================================
+// MESSAGE HANDLER
+// ================================
+self.addEventListener("message", (event) => {
+
+  if (!event.data) return;
+
+  // Force service worker update
+  if (event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+
 });
