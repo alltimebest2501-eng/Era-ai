@@ -7,6 +7,8 @@ const UpstoxClient = require("upstox-js-sdk");
 const webpush = require("web-push");
 
 const app = express();
+// Render Sleep & Speed Lag Fix
+app.get('/ping', (req, res) => res.send('Era Active'));
 
 app.use(cors());
 app.use(express.json({ limit: "5mb" }));
