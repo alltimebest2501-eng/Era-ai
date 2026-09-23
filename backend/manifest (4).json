@@ -1,0 +1,17 @@
+{
+  "background_color": "#050914",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "ERA AI — Market Intelligence",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "ERA AI",
+  "start_url": "/",
+  "theme_color": "#050914",
+  "id": "ERA AI",
+  "description": "ERA AI — Autonomous Indian Market Intelligence and Options Analysis Platform.",
+  "lang": "en",
+  "categories": [
+    "finance"
+  ]
+}
