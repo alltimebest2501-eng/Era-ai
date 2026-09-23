@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ai.era.test",
+      "sha256_cert_fingerprints": [
+        "CA:8B:08:F6:52:ED:F2:3F:0C:36:3C:06:C1:2F:0D:9A:FA:00:F1:02:31:AC:A7:31:0D:0A:2F:45:96:AE:94:DC"
+      ]
+    }
+  }
+]
