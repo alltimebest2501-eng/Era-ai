@@ -12,10 +12,31 @@ const path = require("path");
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "7.2.1";
+const VERSION = "8.2.5";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+
+// Serve the test UI from the root index.html shipped with this package.
+// This avoids accidentally serving an older public/index.html from a previous deploy.
+app.get("/", (req, res) => {
+  const rootIndex = path.join(__dirname, "index.html");
+  if (fs.existsSync(rootIndex)) return res.sendFile(rootIndex);
+  const publicIndex = path.join(__dirname, "public", "index.html");
+  if (fs.existsSync(publicIndex)) return res.sendFile(publicIndex);
+  res.status(404).send("Era AI UI not found");
+});
+
+// Root-level PWA assets are explicitly served because the ERA UI is deployed from index.html at the project root.
+for (const asset of ["service-worker.js", "manifest.json", "icon-192.png", "icon-512.png"]) {
+  app.get(`/${asset}`, (req, res) => {
+    const file = path.join(__dirname, asset);
+    if (fs.existsSync(file)) return res.sendFile(file);
+    res.status(404).end();
+  });
+}
+
+app.use(express.static(path.join(__dirname, "public")));
 
 // ============================================================
 // ENV
@@ -44,6 +65,116 @@ const VAPID_PRIVATE_KEY =
 const VAPID_SUBJECT =
   process.env.VAPID_SUBJECT ||
   "mailto:admin@era-ai.app";
+
+// ============================================================
+// TEST AUTH / EMAIL OTP
+// ============================================================
+const authOtps = new Map();
+const AUTH_OTP_TTL_MS = 5 * 60 * 1000;
+const AUTH_RESEND_MS = 10 * 1000;
+
+function normalizeAuthEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeAuthEmail(value));
+}
+
+function isValidMobile(value) {
+  return /^[+]?[0-9\s-]{10,16}$/.test(String(value || "").trim());
+}
+
+function maskEmail(email) {
+  const [name, domain] = email.split("@");
+  if (!name) return email;
+  return `${name.length <= 2 ? name[0] + "*" : name[0] + "***" + name.slice(-1)}@${domain}`;
+}
+
+async function sendEmailOtp(email, otp) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error("Resend is not configured. Add RESEND_API_KEY in Render Environment.");
+  }
+
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+  const fromName = process.env.RESEND_FROM_NAME || "ERA AI";
+
+  const response = await axios.post(
+    "https://api.resend.com/emails",
+    {
+      from: `${fromName} <${fromEmail}>`,
+      to: [email],
+      subject: `${otp} is your ERA AI login OTP`,
+      text: `Your ERA AI login OTP is ${otp}. It expires in 5 minutes. If you did not request this, ignore this email.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px"><h2>ERA AI Login</h2><p>Your 6-digit OTP is:</p><div style="font-size:34px;font-weight:700;letter-spacing:8px;padding:16px 0">${otp}</div><p>This OTP expires in 5 minutes.</p><p style="color:#777">If you did not request this code, you can ignore this email.</p></div>`
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      timeout: 15000
+    }
+  );
+
+  if (!response.data?.id) {
+    throw new Error("Resend did not accept the email request.");
+  }
+  return response.data;
+}
+
+app.post("/api/auth/send-otp", async (req, res) => {
+  try {
+    const mode = req.body?.mode === "mobile" ? "mobile" : "email";
+    const value = String(req.body?.value || "").trim();
+
+    if (mode === "email" && !isValidEmail(value)) {
+      return res.status(400).json({ ok: false, error: "Enter a valid Gmail or email address." });
+    }
+    if (mode === "mobile" && !isValidMobile(value)) {
+      return res.status(400).json({ ok: false, error: "Enter a valid mobile number." });
+    }
+
+    const key = `${mode}:${mode === "email" ? normalizeAuthEmail(value) : value.replace(/\D/g, "")}`;
+    const previous = authOtps.get(key);
+    if (previous && Date.now() - previous.sentAt < AUTH_RESEND_MS) {
+      return res.status(429).json({ ok: false, error: "Please wait a few seconds before requesting another OTP." });
+    }
+
+    const otp = String(Math.floor(100000 + Math.random() * 900000));
+    authOtps.set(key, { otp, sentAt: Date.now(), expiresAt: Date.now() + AUTH_OTP_TTL_MS });
+
+    if (mode === "email") {
+      await sendEmailOtp(normalizeAuthEmail(value), otp);
+      return res.json({ ok: true, destination: normalizeAuthEmail(value), message: `OTP sent to ${maskEmail(normalizeAuthEmail(value))}.` });
+    }
+
+    authOtps.delete(key);
+    return res.status(503).json({ ok: false, error: "Mobile OTP is not configured yet. Add an SMS provider in Render Environment Variables." });
+  } catch (error) {
+    console.error("[ERA] OTP send error:", error.message);
+    return res.status(500).json({ ok: false, error: error.message || "Could not send OTP." });
+  }
+});
+
+app.post("/api/auth/verify-otp", (req, res) => {
+  const mode = req.body?.mode === "mobile" ? "mobile" : "email";
+  const value = String(req.body?.value || "").trim();
+  const otp = String(req.body?.otp || "").trim();
+  const normalized = mode === "email" ? normalizeAuthEmail(value) : value.replace(/\D/g, "");
+  const key = `${mode}:${normalized}`;
+  const record = authOtps.get(key);
+
+  if (!/^\d{6}$/.test(otp)) return res.status(400).json({ ok: false, error: "Enter the 6-digit OTP." });
+  if (!record) return res.status(400).json({ ok: false, error: "OTP not found. Please request a new OTP." });
+  if (Date.now() > record.expiresAt) { authOtps.delete(key); return res.status(400).json({ ok: false, error: "OTP expired. Please request a new OTP." }); }
+  if (record.otp !== otp) return res.status(400).json({ ok: false, error: "Incorrect OTP. Please try again." });
+
+  authOtps.delete(key);
+  const user = mode === "email" ? { email: normalized, verified: true, loginMethod: "email" } : { mobile: normalized, verified: true, loginMethod: "mobile" };
+  return res.json({ ok: true, user });
+});
 
 if (
   VAPID_PUBLIC_KEY &&
@@ -81,6 +212,7 @@ const INDICES = {
     exchange: "NSE",
     lotSize: 60
   },
+
   SENSEX: {
     symbol: "BSE_INDEX|SENSEX",
     name: "SENSEX",
@@ -122,6 +254,7 @@ const state = {
   alerts: [],
 
   news: [],
+
   history: [],
 
   pushSubscriptions: [],
@@ -130,11 +263,41 @@ const state = {
 
   previousSignals: {},
 
+  notificationHistory: {},
+
   settings: {
     movementThreshold: 20,
-    minConfidence: 55,
+    minConfidence: 60,
     scanIntervalMs: 60000,
-    newsIntervalMs: 300000
+    newsIntervalMs: 300000,
+    notificationCooldownMs: 15 * 60 * 1000,
+    notifications: {
+      marketOpen: true,
+      movement: true,
+      tradeSetup: true,
+      news: true,
+      marketClose: true
+    }
+  },
+
+  paper: {
+    startingCapital: 100000,
+    cash: 100000,
+    positions: [],
+    orders: [],
+    realizedPnl: 0
+  },
+
+  journal: [],
+
+  risk: {
+    riskPerTrade: 1,
+    maxDailyLoss: 2,
+    maxTradeLoss: 1,
+    maxPositions: 3,
+    maxTradesPerDay: 5,
+    maxExposure: 50,
+    killSwitch: false
   }
 };
 
@@ -191,6 +354,28 @@ function loadState() {
         saved.alerts;
     }
 
+    if (saved.settings && typeof saved.settings === "object") {
+      state.settings = {
+        ...state.settings,
+        ...saved.settings,
+        notifications: {
+          ...state.settings.notifications,
+          ...(saved.settings.notifications || {})
+        }
+      };
+    }
+
+    if (saved.notificationHistory && typeof saved.notificationHistory === "object") {
+      state.notificationHistory = saved.notificationHistory;
+    }
+
+    if (saved.paper && typeof saved.paper === "object") {
+      state.paper = { ...state.paper, ...saved.paper, positions: Array.isArray(saved.paper.positions) ? saved.paper.positions : [], orders: Array.isArray(saved.paper.orders) ? saved.paper.orders : [] };
+    }
+
+    if (Array.isArray(saved.journal)) state.journal = saved.journal;
+    if (saved.risk && typeof saved.risk === "object") state.risk = { ...state.risk, ...saved.risk };
+
   } catch (error) {
     console.error(
       "[ERA] State load error:",
@@ -212,7 +397,22 @@ function saveState() {
             state.history,
 
           alerts:
-            state.alerts
+            state.alerts,
+
+          settings:
+            state.settings,
+
+          notificationHistory:
+            state.notificationHistory,
+
+          paper:
+            state.paper,
+
+          journal:
+            state.journal,
+
+          risk:
+            state.risk
         },
         null,
         2
@@ -352,6 +552,7 @@ function isMarketHours() {
   ) {
     return false;
   }
+
   const totalMinutes =
     hour * 60 + minute;
 
@@ -393,6 +594,7 @@ async function upstoxRequest(
         }
       }
     );
+
   return response.data;
 }
 
@@ -560,6 +762,7 @@ function normalizeFullQuote(
     raw.close_price ??
     ohlc.close ??
     ltp;
+
   /*
    * Most reliable case:
    * previous close exists.
@@ -601,6 +804,7 @@ function normalizeFullQuote(
         calculated;
     }
   }
+
   if (
     !Number.isFinite(
       Number(previousClose)
@@ -705,6 +909,7 @@ function normalizeFullQuote(
         raw.averagePrice ??
         0
       ),
+
     oi:
       safeNumber(
         raw.oi ??
@@ -746,6 +951,7 @@ async function fetchQuotes() {
     await fetchFullMarketQuotes();
 
   const result = {};
+
   for (
     const index of Object.keys(
       INDICES
@@ -766,6 +972,7 @@ async function fetchQuotes() {
 
   return result;
 }
+
 // ============================================================
 // EXTRA MARKET
 // ============================================================
@@ -786,6 +993,7 @@ async function fetchExtraMarketData() {
       Object.values(
         EXTRA_SYMBOLS
       ).join(",");
+
     const data =
       (
         await upstoxRequest(
@@ -953,6 +1161,7 @@ async function refreshMarketData() {
 
   state.lastError =
     null;
+
   return state.market;
 }
 
@@ -1015,6 +1224,7 @@ async function fetchIntradayCandles(
     return [];
   }
 }
+
 // ============================================================
 // HISTORICAL CANDLES
 // Used for technical fallback when intraday is unavailable.
@@ -1119,6 +1329,7 @@ function syncLatestCandle(
     result[
       result.length - 1
     ];
+
   if (
     !last ||
     last.length < 5
@@ -1244,6 +1455,7 @@ function rsi(
   if (avgLoss === 0) {
     return 100;
   }
+
   const rs =
     avgGain / avgLoss;
 
@@ -1348,6 +1560,7 @@ function calculateVWAP(
 
     totalPV +=
       typical * volume;
+
     totalVolume +=
       volume;
   }
@@ -1368,122 +1581,68 @@ function calculateVWAP(
 // MARKET STRUCTURE
 // ============================================================
 
-function detectStructure(
-  candles
-) {
-  if (
-    !Array.isArray(candles) ||
-    candles.length < 10
-  ) {
-    return {
-      label: "RANGE",
-      bos: false,
-      choch: false,
-      details: null
-    };
+function detectStructure(candles) {
+  // Confirmed swing-based structure. A swing needs candles on both sides,
+  // so the newest unconfirmed candle is never used as a structural pivot.
+  if (!Array.isArray(candles) || candles.length < 12) {
+    return { label: "RANGE", bos: false, choch: false, details: null };
   }
 
-  const recent =
-    candles.slice(-10);
+  const lookback = Math.min(candles.length, 80);
+  const data = candles.slice(-lookback);
+  const pivot = 2;
+  const swingHighs = [];
+  const swingLows = [];
 
-  const previous =
-    candles.slice(-20, -10);
+  for (let i = pivot; i < data.length - pivot; i++) {
+    const high = Number(data[i]?.[2]);
+    const low = Number(data[i]?.[3]);
+    if (!Number.isFinite(high) || !Number.isFinite(low)) continue;
 
-  const recentHigh =
-    Math.max(
-      ...recent.map(
-        c => Number(c[2])
-      )
-    );
-
-  const recentLow =
-    Math.min(
-      ...recent.map(
-        c => Number(c[3])
-      )
-    );
-
-  const previousHigh =
-    previous.length
-      ? Math.max(
-          ...previous.map(
-            c => Number(c[2])
-          )
-        )
-      : recentHigh;
-
-  const previousLow =
-    previous.length
-      ? Math.min(
-          ...previous.map(
-            c => Number(c[3])
-          )
-        )
-      : recentLow;
-
-  let label =
-    "RANGE";
-
-  if (
-    recentHigh >
-      previousHigh &&
-    recentLow >
-      previousLow
-  ) {
-    label =
-      "HH_HL";
-  } else if (
-    recentHigh <
-      previousHigh &&
-    recentLow <
-      previousLow
-  ) {
-    label =
-      "LH_LL";
+    let isHigh = true;
+    let isLow = true;
+    for (let j = 1; j <= pivot; j++) {
+      if (high <= Number(data[i - j]?.[2]) || high <= Number(data[i + j]?.[2])) isHigh = false;
+      if (low >= Number(data[i - j]?.[3]) || low >= Number(data[i + j]?.[3])) isLow = false;
+    }
+    if (isHigh) swingHighs.push({ index: i, price: high });
+    if (isLow) swingLows.push({ index: i, price: low });
   }
 
-  const lastClose =
-    Number(
-      candles[
-        candles.length - 1
-      ][4]
-    );
+  const lastHighs = swingHighs.slice(-2);
+  const lastLows = swingLows.slice(-2);
+  if (lastHighs.length < 2 || lastLows.length < 2) {
+    return { label: "RANGE", bos: false, choch: false, details: null };
+  }
 
-  const bosUp =
-    lastClose >
-    previousHigh;
-  const bosDown =
-    lastClose <
-    previousLow;
+  const prevHigh = lastHighs[0].price;
+  const lastHigh = lastHighs[1].price;
+  const prevLow = lastLows[0].price;
+  const lastLow = lastLows[1].price;
+  const lastClose = Number(data[data.length - 1]?.[4]);
+
+  const bullishStructure = lastHigh > prevHigh && lastLow > prevLow;
+  const bearishStructure = lastHigh < prevHigh && lastLow < prevLow;
+  const label = bullishStructure ? "BULLISH" : bearishStructure ? "BEARISH" : "RANGE";
+
+  // BOS is a close through the latest confirmed swing in the current direction.
+  const bosUp = bullishStructure && lastClose > lastHigh;
+  const bosDown = bearishStructure && lastClose < lastLow;
+  // CHOCH is a close through the swing protecting the previous structure.
+  const chochDown = bullishStructure && lastClose < lastLow;
+  const chochUp = bearishStructure && lastClose > lastHigh;
 
   return {
     label,
-
-    bos:
-      bosUp ||
-      bosDown,
-
-    choch:
-      (
-        label === "HH_HL" &&
-        bosDown
-      ) ||
-      (
-        label === "LH_LL" &&
-        bosUp
-      ),
+    bos: bosUp || bosDown,
+    choch: chochDown || chochUp,
     details: {
-      recentHigh:
-        round(recentHigh),
-
-      recentLow:
-        round(recentLow),
-
-      previousHigh:
-        round(previousHigh),
-
-      previousLow:
-        round(previousLow)
+      previousSwingHigh: round(prevHigh),
+      lastSwingHigh: round(lastHigh),
+      previousSwingLow: round(prevLow),
+      lastSwingLow: round(lastLow),
+      bosDirection: bosUp ? "UP" : bosDown ? "DOWN" : null,
+      chochDirection: chochUp ? "UP" : chochDown ? "DOWN" : null
     }
   };
 }
@@ -1494,7 +1653,8 @@ function detectStructure(
 
 function technicalAnalysis(
   candles,
-  price
+  price,
+  market = null
 ) {
   if (
     !Array.isArray(candles) ||
@@ -1534,6 +1694,7 @@ function technicalAnalysis(
 
   let trend =
     "SIDEWAYS";
+
   if (
     ema9 !== null &&
     ema20 !== null &&
@@ -1575,6 +1736,7 @@ function technicalAnalysis(
 
   const recent =
     candles.slice(-20);
+
   const support =
     Math.min(
       ...recent.map(
@@ -1593,6 +1755,60 @@ function technicalAnalysis(
     detectStructure(
       candles
     );
+
+  const latestCandle =
+    candles[candles.length - 1] || null;
+
+  const latestCandleVolume =
+    latestCandle ? Number(latestCandle[5]) : 0;
+
+  const marketVolume =
+    market ? Number(market.volume) : 0;
+
+  // Prefer the latest candle volume. If that candle reports zero/missing
+  // volume, use the sum of all available intraday candle volumes so the
+  // dashboard does not incorrectly show 0 when earlier candles contain
+  // valid exchange volume. Never invent volume when the source provides none.
+  const sessionCandleVolume = candles.reduce((sum, c) => {
+    const v = Number(c?.[5]);
+    return sum + (Number.isFinite(v) && v > 0 ? v : 0);
+  }, 0);
+
+  const volume =
+    Number.isFinite(latestCandleVolume) && latestCandleVolume > 0
+      ? latestCandleVolume
+      : sessionCandleVolume > 0
+        ? sessionCandleVolume
+        : Number.isFinite(marketVolume) && marketVolume > 0
+          ? marketVolume
+          : null;
+
+  let vwap =
+    calculateVWAP(candles);
+
+  let vwapSource =
+    vwap !== null ? "volume-weighted" : "";
+
+  // Index candles can report zero volume. In that case use the quote's
+  // average price, then a session typical-price average as a clearly
+  // identified fallback so the indicator never silently shows blank.
+  if (vwap === null && market) {
+    const averagePrice = Number(market.averagePrice);
+    if (Number.isFinite(averagePrice) && averagePrice > 0) {
+      vwap = averagePrice;
+      vwapSource = "quote-average-price";
+    }
+  }
+
+  if (vwap === null && candles.length) {
+    const typicals = candles
+      .map(c => (Number(c[2]) + Number(c[3]) + Number(c[4])) / 3)
+      .filter(Number.isFinite);
+    if (typicals.length) {
+      vwap = typicals.reduce((a, b) => a + b, 0) / typicals.length;
+      vwapSource = "typical-price-proxy";
+    }
+  }
 
   return {
     candleCount:
@@ -1619,9 +1835,12 @@ function technicalAnalysis(
       ),
 
     vwap:
-      calculateVWAP(
-        candles
-      ),
+      vwap !== null ? round(vwap) : null,
+
+    vwapSource,
+
+    volume:
+      volume !== null ? round(volume, 0) : null,
 
     support:
       round(support),
@@ -1658,6 +1877,7 @@ function rsiValue(
     ? round(value, 2)
     : null;
 }
+
 // ============================================================
 // OPTION CONTRACTS
 // KEEPING EXISTING WORKING FLOW
@@ -1684,7 +1904,11 @@ async function fetchOptionContracts(
       }
     );
 
-  return response.data || [];
+  const payload = response && response.data;
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.contracts)) return payload.contracts;
+  return [];
 }
 
 // ============================================================
@@ -1710,7 +1934,7 @@ async function findNearestExpiry(
         contracts
           .map(
             item =>
-              item.expiry
+              item.expiry || item.expiry_date || item.expiryDate
           )
           .filter(Boolean)
       )
@@ -1720,11 +1944,32 @@ async function findNearestExpiry(
           expiry >= today
       )
       .sort();
+
   return (
     expiries[0] ||
     null
   );
 }
+
+// ============================================================
+// OPTION EXPIRIES
+// ============================================================
+
+app.get('/api/options/expiries', async (req, res) => {
+  try {
+    const index = normalizeIndex(req.query.index || 'NIFTY');
+    if (!INDICES[index]) return res.status(400).json({ ok:false, error:'Invalid index' });
+    const contracts = await fetchOptionContracts(index);
+    const today = new Date().toISOString().slice(0,10);
+    const expiries = [...new Set((contracts || []).map(x => x.expiry || x.expiry_date || x.expiryDate).filter(Boolean))]
+      .map(x => String(x).slice(0,10))
+      .filter(x => x >= today).sort();
+    res.json({ ok:true, index, expiries, nearest: expiries[0] || null, count: expiries.length, updatedAt: nowISO() });
+  } catch (error) {
+    console.error('[ERA] Option expiries endpoint:', error.response?.data || error.message);
+    res.status(500).json({ ok:false, error: apiError(error) });
+  }
+});
 
 // ============================================================
 // OPTION CHAIN
@@ -1824,6 +2069,7 @@ async function fetchOptionGreeks(
     return {};
   }
 }
+
 // ============================================================
 // NORMALIZE OPTION SIDE
 // ============================================================
@@ -2054,6 +2300,7 @@ function mergeGreeks(
         greeks[
           side.instrumentKey
         ];
+
       if (!data) {
         continue;
       }
@@ -2200,6 +2447,7 @@ function calculateOptionSummary(
     sentiment =
       "BEARISH";
   }
+
   return {
     callOI,
     putOI,
@@ -2220,70 +2468,43 @@ function calculateOptionSummary(
 // ============================================================
 // MOVEMENT ENGINE
 // ============================================================
-function movementFromPrevious(
-  index,
-  currentPrice
-) {
-  const previous =
-    state.previousPrices[index];
 
-  if (
-    !Number.isFinite(
-      Number(previous)
-    )
-  ) {
-    state.previousPrices[index] =
-      currentPrice;
+function movementFromPrevious(index, currentPrice, candles = []) {
+  const current = Number(currentPrice);
+  const previousPoll = Number(state.previousPrices[index]);
+  state.previousPrices[index] = current;
 
-    return {
-      points: 0,
-      percent: 0,
-      significant: false,
-      direction: "NONE"
-    };
+  if (!Number.isFinite(current)) {
+    return { points: 0, percent: 0, significant: false, direction: "NONE", source: "unavailable" };
   }
 
-  const points =
-    currentPrice -
-    previous;
+  // Use completed candle movement rather than the last API refresh. This keeps
+  // movement stable and prevents UP/DOWN flicker when the quote refreshes.
+  const closes = Array.isArray(candles)
+    ? candles.map(c => Number(c?.[4])).filter(Number.isFinite)
+    : [];
+  const lookback = 3;
+  const base = closes.length > lookback ? closes[closes.length - 1 - lookback] : null;
+  const candleMove = Number.isFinite(base) ? current - base : 0;
+  const candlePercent = Number.isFinite(base) && base !== 0 ? (candleMove / base) * 100 : 0;
 
-  const percent =
-    previous !== 0
-      ? (
-          points /
-          previous
-        ) * 100
-      : 0;
-
-  state.previousPrices[index] =
-    currentPrice;
-
-  const threshold =
-    Number(
-      state.settings
-        .movementThreshold
-    );
+  const ranges = Array.isArray(candles)
+    ? candles.slice(-14).map(c => Number(c?.[2]) - Number(c?.[3])).filter(v => Number.isFinite(v) && v > 0)
+    : [];
+  const avgRange = ranges.length ? ranges.reduce((a, b) => a + b, 0) / ranges.length : 0;
+  const threshold = Number(state.settings.movementThreshold) || 20;
+  const effectiveThreshold = Math.max(threshold, avgRange * 0.75);
+  const direction = candleMove > avgRange * 0.15 ? "UP" : candleMove < -avgRange * 0.15 ? "DOWN" : "FLAT";
+  const significant = Math.abs(candleMove) >= effectiveThreshold;
 
   return {
-    points:
-      round(points),
-
-    percent:
-      round(
-        percent,
-        3
-      ),
-
-    significant:
-      Math.abs(points) >=
-      threshold,
-
-    direction:
-      points > 0
-        ? "UP"
-        : points < 0
-          ? "DOWN"
-          : "FLAT"
+    points: round(candleMove),
+    percent: round(candlePercent, 3),
+    significant,
+    direction,
+    source: "3-candle-momentum",
+    avgRange: round(avgRange),
+    pollingPoints: Number.isFinite(previousPoll) ? round(current - previousPoll) : 0
   };
 }
 
@@ -2340,7 +2561,7 @@ function calculateConfidence(
 
     if (
       technical.structure ===
-      "HH_HL"
+      "BULLISH"
     ) {
       confidence += 8;
       reasons.push(
@@ -2395,7 +2616,7 @@ function calculateConfidence(
 
     if (
       technical.structure ===
-      "LH_LL"
+      "BEARISH"
     ) {
       confidence += 8;
       reasons.push(
@@ -2429,6 +2650,7 @@ function calculateConfidence(
   ) {
     confidence += 3;
   }
+
   if (
     technical.rsi !== null
   ) {
@@ -2496,16 +2718,17 @@ function calculateConfidence(
       95
     );
 
+  const tradeMinConfidence = 61;
   let suggestion;
 
   if (
-    confidence >= 75 &&
+    confidence >= tradeMinConfidence &&
     movement.significant
   ) {
     suggestion =
       "TRADE CONSIDER";
   } else if (
-    confidence >= 60
+    confidence >= tradeMinConfidence
   ) {
     suggestion =
       "WAIT FOR CONFIRMATION";
@@ -2554,10 +2777,7 @@ function createOptionTrades(
 
   if (
     confidenceData.confidence <
-    Number(
-      state.settings
-        .minConfidence
-    )
+    61
   ) {
     return [];
   }
@@ -2575,6 +2795,7 @@ function createOptionTrades(
   if (!optionType) {
     return [];
   }
+
   const spot =
     Number(
       market.price
@@ -2616,6 +2837,7 @@ function createOptionTrades(
       Number(
         side.ltp
       );
+
     if (
       !Number.isFinite(
         entry
@@ -2699,12 +2921,15 @@ function createOptionTrades(
         `Option price below ${round(
           stopLoss
         )}`,
+
       generatedAt:
         nowISO()
     });
   }
 
-  return trades.slice(0, 3);
+  return trades
+    .filter(t => Number(t?.confidence || 0) > 60)
+    .slice(0, 3);
 }
 
 // ============================================================
@@ -2784,6 +3009,20 @@ async function analyzeIndex(
         chain.data
       );
 
+    // Volume fallback only: when index/candle volume is unavailable, use
+    // actual CE+PE traded volume from the option chain. No other logic is changed.
+    if (
+      (!Number.isFinite(Number(technical.volume)) || Number(technical.volume) <= 0) &&
+      optionRows.length
+    ) {
+      const optionVolume = optionRows.reduce((sum, row) => {
+        const ce = Number(row?.call?.volume || 0);
+        const pe = Number(row?.put?.volume || 0);
+        return sum + (Number.isFinite(ce) && ce > 0 ? ce : 0) + (Number.isFinite(pe) && pe > 0 ? pe : 0);
+      }, 0);
+      if (optionVolume > 0) technical.volume = optionVolume;
+    }
+
     if (
       optionRows.length
     ) {
@@ -2824,6 +3063,7 @@ async function analyzeIndex(
           );
         }
       }
+
       const greeks =
         await fetchOptionGreeks(
           instrumentKeys
@@ -2855,7 +3095,8 @@ async function analyzeIndex(
   const movement =
     movementFromPrevious(
       index,
-      market.price
+      market.price,
+      candles
     );
 
   let signal =
@@ -2886,6 +3127,7 @@ async function analyzeIndex(
       movement,
       optionSummary
     );
+
   const trades =
     createOptionTrades(
       index,
@@ -2894,6 +3136,8 @@ async function analyzeIndex(
       confidenceData,
       optionRows
     );
+
+  recordGeneratedTrades(trades);
 
   return {
     index,
@@ -2927,6 +3171,7 @@ async function analyzeIndex(
 
     options: {
       expiry,
+
       summary:
         optionSummary,
 
@@ -2947,11 +3192,58 @@ async function analyzeIndex(
 
     suggestion:
       confidenceData.suggestion,
+
     trades,
 
     generatedAt:
       nowISO()
   };
+}
+
+// ============================================================
+// GENERATED TRADE HISTORY
+// ============================================================
+
+function recordGeneratedTrades(trades) {
+  if (!Array.isArray(trades) || !trades.length) {
+    return;
+  }
+
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  let changed = false;
+
+  for (const trade of trades) {
+    const key = [
+      trade.index,
+      trade.optionType,
+      trade.strike,
+      trade.signal,
+      trade.entry
+    ].join("|");
+
+    const exists = state.history.some(item =>
+      item.type === "trade" &&
+      item.historyKey === key &&
+      new Date(item.createdAt || 0).getTime() >= cutoff
+    );
+
+    if (exists) {
+      continue;
+    }
+
+    state.history.unshift({
+      type: "trade",
+      historyKey: key,
+      ...trade,
+      createdAt: trade.generatedAt || nowISO()
+    });
+    changed = true;
+  }
+
+  if (changed) {
+    state.history = state.history.slice(0, 500);
+    saveState();
+  }
 }
 
 // ============================================================
@@ -3029,6 +3321,10 @@ async function sendPush(
 async function notifyTrade(
   trade
 ) {
+  if (!state.settings.notifications?.tradeSetup) {
+    return;
+  }
+
   const fingerprint =
     tradeFingerprint(
       trade
@@ -3041,13 +3337,17 @@ async function notifyTrade(
         fingerprint
     );
 
-  if (
-    existing &&
-    existing.confidence ===
-      trade.confidence
-  ) {
+  const cooldownMs = Number(state.settings.notificationCooldownMs || 900000);
+  const lastSent = Number(state.notificationHistory[`trade:${fingerprint}`] || 0);
+  if (lastSent && Date.now() - lastSent < cooldownMs) {
     return;
   }
+
+  if (existing && existing.confidence === trade.confidence && lastSent) {
+    return;
+  }
+
+  state.notificationHistory[`trade:${fingerprint}`] = Date.now();
 
   const alert = {
     id:
@@ -3072,6 +3372,7 @@ async function notifyTrade(
   state.alerts.unshift(
     alert
   );
+
   state.alerts =
     state.alerts.slice(
       0,
@@ -3121,17 +3422,23 @@ async function notifyMarketMove(
   const key =
     `${index}|${movement.direction}|${bucket}`;
 
-  if (
-    state.previousSignals[
-      `${index}:move`
-    ] === key
-  ) {
+  if (!state.settings.notifications?.movement) {
     return;
   }
 
-  state.previousSignals[
-    `${index}:move`
-  ] = key;
+  const moveCooldownKey = `${index}:move:${movement.direction}`;
+  const lastMoveAlert = Number(state.notificationHistory[moveCooldownKey] || 0);
+  if (Date.now() - lastMoveAlert < Number(state.settings.notificationCooldownMs || 900000)) {
+    return;
+  }
+
+  if (state.previousSignals[`${index}:move`] === key && lastMoveAlert) {
+    return;
+  }
+
+  state.previousSignals[`${index}:move`] = key;
+  state.notificationHistory[moveCooldownKey] = Date.now();
+  saveState();
 
   await sendPush({
     title:
@@ -3155,6 +3462,7 @@ async function notifyMarketMove(
 // ============================================================
 // MONITOR MARKET
 // ============================================================
+
 let scannerBusy = false;
 
 async function monitorMarketState() {
@@ -3343,6 +3651,7 @@ async function fetchNews() {
                 link
                   ? link.trim()
                   : "",
+
               pubDate:
                 pubDate
                   ? pubDate.trim()
@@ -3447,6 +3756,7 @@ async function preMarketCheck() {
     }
   });
 }
+
 // ============================================================
 // ROOT
 // ============================================================
@@ -3530,7 +3840,11 @@ app.get(
 
         version:
           VERSION,
+
         market:
+          state.market,
+
+        markets:
           state.market,
 
         marketOpen:
@@ -3571,6 +3885,7 @@ app.get(
       await refreshMarketData();
 
       const results = {};
+
       for (
         const index of Object.keys(
           INDICES
@@ -3606,8 +3921,20 @@ app.get(
         market:
           state.market,
 
+        markets:
+          state.market,
+
         analysis:
           results,
+
+        indexes:
+          results,
+
+        selectedIndex:
+          normalizeIndex(req.query.index) || "NIFTY",
+
+        selected:
+          results[normalizeIndex(req.query.index) || "NIFTY"] || null,
 
         activeTrades:
           state.activeTrades,
@@ -3633,6 +3960,7 @@ app.get(
 
         error:
           error.message,
+
         market:
           state.market,
 
@@ -3695,6 +4023,7 @@ app.get(
               expiry >= today
           )
           .sort();
+
       res.json({
         ok: true,
 
@@ -3757,6 +4086,7 @@ app.get(
         normalizeOptionChain(
           chain.data
         );
+
       let spot =
         state.market[index]
           ?.price || 0;
@@ -3777,6 +4107,7 @@ app.get(
 
         } catch (_) {}
       }
+
       /*
        * Fetch Greeks only for
        * relevant strikes.
@@ -3818,6 +4149,7 @@ app.get(
           );
         }
       }
+
       const greeks =
         await fetchOptionGreeks(
           instrumentKeys
@@ -3901,6 +4233,7 @@ app.get(
 
       res.json({
         ok: true,
+
         data,
 
         updatedAt:
@@ -3921,6 +4254,7 @@ app.get(
 // ============================================================
 // NEWS
 // ============================================================
+
 app.get(
   "/api/news",
   async (req, res) => {
@@ -3988,43 +4322,67 @@ app.post(
       }
 
       const systemPrompt = `
-You are Era AI, a premium Indian stock-market assistant.
+You are Era AI, a friendly human-like Indian market assistant.
 
-Use the supplied market and analysis data.
+Reply naturally and conversationally. Use simple Roman Hindi / Hinglish unless the user asks for another language. Do not sound like a code generator or a machine report.
 
-Never invent live prices.
+Important style rules:
+- Answer the user's actual question first. Do not dump the full market report unless the user asks for a detailed market overview.
+- Never return JSON, JavaScript, XML, or code blocks unless the user explicitly asks for code or structured data.
+- Do not use a giant markdown report for a simple question. Keep normal answers concise and easy to read.
+- If the user asks for a trade/setup, clearly state option type (CE/PE), strike, entry, stop loss, targets, confidence and status when those values are available.
+- Always explain WHY Era is giving the setup and WHY it is waiting/no-trade when relevant.
+- Never invent live prices, option prices, signals or confirmations.
+- If live data is missing or insufficient, say so clearly and prefer WAIT / DATA UNAVAILABLE.
+- Do not claim certainty or guaranteed profit.
 
-If data is unavailable or insufficient,
-say WAIT / DATA UNAVAILABLE.
+Use the supplied market and analysis data as the source of truth.`;
 
-For trade setups use:
-
-Direction
-Entry
-Stop Loss
-Targets
-Risk Reward
-Status
-Confirmations
-Reasons
-Invalidation
-
-Do not claim certainty.
-`;
-
-      const userContext = {
-        market:
-          state.market,
-
-        analysis:
-          state.analysis,
-
+      // Keep the OpenRouter prompt small. The full state.analysis object can contain
+      // large option/technical arrays; sending it repeatedly caused 44k+ token failures.
+      const requestedIndex = String(req.body?.index || "NIFTY").toUpperCase();
+      const index = INDICES[requestedIndex] ? requestedIndex : "NIFTY";
+      const m = state.market?.[index] || {};
+      const a = state.analysis?.[index] || {};
+      const t = a.technical || {};
+      const o = a.options || {};
+      const compactTrades = Array.isArray(a.trades) ? a.trades.slice(0, 3).map(x => ({
+        optionType: x.optionType, strike: x.strike, entry: x.entry,
+        stopLoss: x.stopLoss, targets: Array.isArray(x.targets) ? x.targets.slice(0, 3) : [],
+        confidence: x.confidence, status: x.status
+      })) : [];
+      const compactContext = {
+        index,
+        market: {
+          name: m.name, price: m.price, previousClose: m.previousClose,
+          change: m.change, changePercent: m.changePercent, open: m.open,
+          high: m.high, low: m.low, volume: m.volume, timestamp: m.timestamp,
+          source: m.source, stale: m.stale
+        },
+        analysis: {
+          direction: a.direction, movement: a.movement, confidence: a.confidence,
+          suggestion: a.suggestion, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
+          risks: Array.isArray(a.risks) ? a.risks.slice(0, 5) : [],
+          technical: {
+            emaTrend: t.emaTrend, rsi: t.rsi, vwap: t.vwap,
+            structure: t.structure?.label || t.structure,
+            bos: t.bos, choch: t.choch
+          },
+          options: {
+            pcr: o.pcr, sentiment: o.sentiment,
+            callOI: o.callOI, putOI: o.putOI
+          },
+          trades: compactTrades
+        },
         message
       };
+
+      const userContext = compactContext;
 
       const response =
         await axios.post(
           "https://openrouter.ai/api/v1/chat/completions",
+
           {
             model:
               OPENROUTER_MODEL,
@@ -4050,7 +4408,10 @@ Do not claim certainty.
             ],
 
             temperature:
-              0.2
+              0.2,
+
+            max_tokens:
+              4096
           },
 
           {
@@ -4066,18 +4427,32 @@ Do not claim certainty.
 
               "HTTP-Referer":
                 BACKEND_URL,
+
               "X-Title":
                 "Era AI"
             }
           }
         );
 
-      const answer =
-        response.data
-          ?.choices?.[0]
-          ?.message
-          ?.content ||
-        "No response.";
+      const rawAnswer = response.data?.choices?.[0]?.message?.content;
+      const answer = typeof rawAnswer === "string"
+        ? rawAnswer
+        : Array.isArray(rawAnswer)
+          ? rawAnswer.map(x => typeof x === "string" ? x : (x?.text || x?.content || "")).filter(Boolean).join("\n")
+          : (rawAnswer?.text || rawAnswer?.content || rawAnswer?.answer || "No response.");
+
+      state.history.unshift({
+        type: "chat",
+        userMessage: message,
+        answer,
+        index: req.body?.index || null,
+        createdAt: nowISO()
+      });
+
+      state.history =
+        state.history.slice(0, 500);
+
+      saveState();
 
       res.json({
         ok: true,
@@ -4095,9 +4470,7 @@ Do not claim certainty.
       res.status(500).json({
         ok: false,
 
-        error:
-          error.response?.data ||
-          error.message
+        error: apiError(error.response?.data || error.message)
       });
     }
   }
@@ -4128,6 +4501,7 @@ app.get(
   (req, res) => {
     res.json({
       ok: true,
+
       settings:
         state.settings
     });
@@ -4161,6 +4535,21 @@ app.post(
           state.settings
             .movementThreshold =
             value;
+        }
+      }
+
+      if (body.notificationCooldownMs !== undefined) {
+        const value = Number(body.notificationCooldownMs);
+        if (Number.isFinite(value) && value >= 60000 && value <= 86400000) {
+          state.settings.notificationCooldownMs = value;
+        }
+      }
+
+      if (body.notifications && typeof body.notifications === "object") {
+        for (const key of Object.keys(state.settings.notifications)) {
+          if (body.notifications[key] !== undefined) {
+            state.settings.notifications[key] = Boolean(body.notifications[key]);
+          }
         }
       }
 
@@ -4274,6 +4663,7 @@ app.post(
     }
   }
 );
+
 // ============================================================
 // PUSH PUBLIC KEY
 // ============================================================
@@ -4294,11 +4684,13 @@ app.get(
 // ============================================================
 // PUSH SUBSCRIBE
 // ============================================================
+
 app.post(
   "/api/subscribe",
   (req, res) => {
     try {
       const subscription =
+        req.body?.subscription ||
         req.body;
 
       if (
@@ -4331,10 +4723,10 @@ app.post(
 
       res.json({
         ok: true,
-
-        subscribed:
-          true
+        subscribed: true,
+        subscriptions: state.pushSubscriptions.length
       });
+
     } catch (error) {
       res.status(400).json({
         ok: false,
@@ -4354,6 +4746,27 @@ app.post(
   "/api/push/test",
   async (req, res) => {
     try {
+      if (
+        !VAPID_PUBLIC_KEY ||
+        !VAPID_PRIVATE_KEY
+      ) {
+        return res.status(503).json({
+          ok: false,
+          error:
+            "VAPID keys are not configured"
+        });
+      }
+
+      if (
+        !state.pushSubscriptions.length
+      ) {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "No push subscriptions are registered"
+        });
+      }
+
       await sendPush({
         title:
           "Era AI Test",
@@ -4368,7 +4781,9 @@ app.post(
       });
 
       res.json({
-        ok: true
+        ok: true,
+        subscriptions:
+          state.pushSubscriptions.length
       });
 
     } catch (error) {
@@ -4397,6 +4812,7 @@ app.get(
 
       lastScan:
         state.lastScan,
+
       lastSuccess:
         state.lastSuccess,
 
@@ -4438,6 +4854,7 @@ app.post(
   (req, res) => {
     state.engineRunning =
       false;
+
     res.json({
       ok: true,
 
@@ -4458,6 +4875,7 @@ setInterval(
     ) {
       return;
     }
+
     try {
       await monitorMarketState();
     } catch (error) {
@@ -4486,6 +4904,196 @@ setInterval(
   state.settings
     .newsIntervalMs
 );
+
+// ============================================================
+// ERA V8.2 FEATURE APIs
+// ============================================================
+
+function apiError(error) {
+  if (!error) return "Unknown error";
+  if (typeof error === "string") return error;
+  if (error.message) return String(error.message);
+  if (error.error?.message) return String(error.error.message);
+  try { return JSON.stringify(error); } catch (_) { return String(error); }
+}
+
+function currentUserKey(req) {
+  const raw = String(req.headers["x-era-user"] || "guest").trim().toLowerCase();
+  return raw.slice(0, 180) || "guest";
+}
+
+function riskCheck(trade) {
+  const r = state.risk;
+  if (r.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
+  if ((state.paper.positions || []).length >= Number(r.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
+  const entry = Number(trade.entry || 0), stop = Number(trade.stopLoss || 0);
+  if (!entry || !stop || entry <= stop) return { ok: false, reason: "Invalid entry/stop values." };
+  const lossPct = ((entry - stop) / entry) * 100;
+  if (lossPct > Number(r.maxTradeLoss || 1) * 2) return { ok: false, reason: "Trade risk exceeds configured limit." };
+  return { ok: true, reason: "Risk checks passed." };
+}
+
+app.get("/api/candles", async (req, res) => {
+  try {
+    const index = normalizeIndex(req.query.index || "NIFTY");
+    const interval = Math.max(1, Math.min(60, Number(req.query.interval || 5)));
+    if (!INDICES[index]) return res.status(400).json({ ok:false, error:"Invalid index" });
+    let candles = await fetchIntradayCandles(index, interval);
+    if (!candles.length) candles = await fetchHistoricalCandles(index, interval);
+    const market = state.market[index];
+    candles = syncLatestCandle(candles, market?.price);
+    res.json({ ok:true, index, interval, candles, updatedAt:nowISO() });
+  } catch (error) {
+    res.status(500).json({ ok:false, error:apiError(error) });
+  }
+});
+
+app.get("/api/opportunities", async (req, res) => {
+  try {
+    if (!Object.keys(state.market).some(k => state.market[k]?.available)) await refreshMarketData();
+    const list = [];
+    for (const index of Object.keys(INDICES)) {
+      const a = state.analysis[index];
+      if (!a?.available) continue;
+      for (const trade of (a.trades || [])) list.push({ ...trade, reasons:a.reasons || [], risks:a.risks || [] });
+      if (!a.trades?.length) list.push({ index, signal:"NO TRADE", status:"WATCH", confidence:a.confidence || 0, reason:a.suggestion || "No validated setup" });
+    }
+    list.sort((a,b)=>Number(b.confidence||0)-Number(a.confidence||0));
+    res.json({ ok:true, opportunities:list.slice(0,20), updatedAt:nowISO() });
+  } catch (error) { res.status(500).json({ok:false,error:apiError(error)}); }
+});
+
+app.get("/api/risk", (req,res)=>res.json({ok:true,risk:state.risk,killSwitch:Boolean(state.risk.killSwitch),updatedAt:nowISO()}));
+app.post("/api/risk", (req,res)=>{
+  try {
+    const b=req.body||{};
+    for (const k of ["riskPerTrade","maxDailyLoss","maxTradeLoss","maxPositions","maxTradesPerDay","maxExposure"]) {
+      if (b[k] !== undefined && Number.isFinite(Number(b[k])) && Number(b[k]) > 0) state.risk[k]=Number(b[k]);
+    }
+    if (b.killSwitch !== undefined) state.risk.killSwitch=Boolean(b.killSwitch);
+    saveState(); res.json({ok:true,risk:state.risk});
+  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
+
+app.get("/api/paper", (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
+app.post("/api/paper/refresh", async (req,res)=>{
+  try {
+    const positions=Array.isArray(state.paper.positions)?state.paper.positions:[];
+    const keys=[...new Set(positions.map(p=>p.instrumentKey).filter(Boolean))];
+    let quotes={};
+    if(keys.length){
+      const data=(await upstoxRequest("https://api.upstox.com/v3/market-quote/quotes",{instrument_key:keys.join(",")})).data||{};
+      quotes=data;
+    }
+    let unrealized=0;
+    for(const p of positions){
+      let current=Number(p.currentPrice||p.entry||0);
+      const raw=quotes[p.instrumentKey];
+      const ltp=Number(raw?.ltpc?.ltp ?? raw?.last_price ?? raw?.ltp ?? 0);
+      if(ltp>0) current=ltp;
+      p.currentPrice=current;
+      p.unrealizedPnl=(current-Number(p.entry||0))*Number(p.quantity||0);
+      unrealized+=p.unrealizedPnl;
+      if(p.stopLoss && current<=Number(p.stopLoss)) p.status="STOP_RISK";
+      else if(p.target && current>=Number(p.target)) p.status="TARGET_REACHED";
+      else p.status="OPEN";
+    }
+    state.paper.unrealizedPnl=unrealized;
+    saveState();
+    res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()});
+  } catch(error){
+    console.error("[ERA] Paper refresh:",error.response?.data||error.message);
+    res.status(500).json({ok:false,error:apiError(error)});
+  }
+});
+
+app.get('/api/paper-trading', (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
+
+app.post("/api/paper/reset", (req,res)=>{
+  state.paper={startingCapital:100000,cash:100000,positions:[],orders:[],realizedPnl:0};
+  saveState(); res.json({ok:true,paper:state.paper});
+});
+app.post("/api/paper/order", (req,res)=>{
+  try {
+    const b=req.body||{};
+    const side=String(b.side||"BUY").toUpperCase()==="SELL"?"SELL":"BUY";
+    const qty=Math.max(1,Math.floor(Number(b.quantity||1)));
+    const price=Number(b.price||b.entry||0);
+    if (!price || price<=0) return res.status(400).json({ok:false,error:"Valid order price is required."});
+    if (state.risk.killSwitch) return res.status(403).json({ok:false,error:"ERA risk kill switch is ON."});
+    const value=price*qty;
+    if (side==="BUY" && value>state.paper.cash) return res.status(400).json({ok:false,error:"Insufficient paper cash."});
+    const positionKey=[b.index,b.optionType,b.strike,b.instrumentKey].join("|");
+    if (side==="BUY") {
+      state.paper.cash-=value;
+      state.paper.positions.push({id:`P${Date.now()}`,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),instrumentKey:b.instrumentKey||null,quantity:qty,entry:price,currentPrice:price,stopLoss:Number(b.stopLoss||0),target:Number(b.target||0),openedAt:nowISO()});
+    } else {
+      const pos=state.paper.positions.find(p=>[p.index,p.optionType,p.strike,p.instrumentKey].join("|")===positionKey);
+      if (!pos) return res.status(400).json({ok:false,error:"Matching paper position not found."});
+      const closeQty=Math.min(qty,pos.quantity); const pnl=(price-pos.entry)*closeQty; state.paper.cash+=price*closeQty; state.paper.realizedPnl+=pnl; pos.quantity-=closeQty; if(pos.quantity<=0) state.paper.positions=state.paper.positions.filter(x=>x.id!==pos.id);
+    }
+    const order={id:`O${Date.now()}`,side,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),quantity:qty,price,createdAt:nowISO()};
+    state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,200); saveState();
+    res.json({ok:true,order,paper:state.paper});
+  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
+
+app.post("/api/paper/mark", (req,res)=>{
+  try {
+    for (const p of state.paper.positions) {
+      const m=state.market[p.index];
+      if (p.instrumentKey && Number.isFinite(Number(req.body?.prices?.[p.instrumentKey]))) p.currentPrice=Number(req.body.prices[p.instrumentKey]);
+      else if (p.optionLtp !== undefined) p.currentPrice=Number(p.optionLtp);
+      if (p.stopLoss && p.currentPrice<=p.stopLoss) p.status="STOP_RISK";
+      else if (p.target && p.currentPrice>=p.target) p.status="TARGET_REACHED";
+      else p.status="OPEN";
+    }
+    saveState(); res.json({ok:true,paper:state.paper});
+  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
+
+app.get("/api/journal", (req,res)=>res.json({ok:true,journal:state.journal.slice(0,500)}));
+app.post("/api/journal", (req,res)=>{
+  try {
+    const b=req.body||{}; const record={id:b.id||`J${Date.now()}`,createdAt:b.createdAt||nowISO(),...b};
+    state.journal.unshift(record); state.journal=state.journal.slice(0,500); saveState(); res.json({ok:true,record,journal:state.journal});
+  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
+
+app.get("/api/events", (req,res)=>res.json({ok:true,events:[],message:"No external economic-calendar provider is configured. ERA will not invent event data.",updatedAt:nowISO()}));
+
+app.post("/api/calculator", (req,res)=>{
+  try {
+    const b=req.body||{}; const entry=Number(b.entry||0), stop=Number(b.stop||0), target=Number(b.target||0), capital=Number(b.capital||100000), riskPct=Number(b.riskPct||1), qty=Math.max(1,Math.floor(Number(b.qty||1)));
+    const riskPerUnit=Math.abs(entry-stop), capitalRisk=capital*(riskPct/100), suggestedQty=riskPerUnit>0?Math.max(1,Math.floor(capitalRisk/riskPerUnit)):0;
+    const rr=riskPerUnit>0?Math.abs(target-entry)/riskPerUnit:0;
+    const pnl=Number.isFinite(target-entry)?(target-entry)*qty:0;
+    res.json({ok:true,entry,stop,target,capital,riskPct,riskPerUnit,capitalRisk,suggestedQty,rr,pnl,updatedAt:nowISO()});
+  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
+
+app.post("/api/backtest", async (req,res)=>{
+  try {
+    const index=normalizeIndex(req.body?.index||"NIFTY"); const interval=Math.max(1,Math.min(60,Number(req.body?.interval||5)));
+    if(!INDICES[index]) return res.status(400).json({ok:false,error:"Invalid index"});
+    let candles=await fetchHistoricalCandles(index,interval); if(candles.length<30) candles=await fetchIntradayCandles(index,interval);
+    if(candles.length<30) return res.status(400).json({ok:false,error:"Not enough candle data for backtest."});
+    const closes=candles.map(c=>Number(c[4])); const trades=[]; let equity=Number(req.body?.capital||100000), peak=equity, maxDD=0;
+    for(let i=25;i<candles.length-1;i++){
+      const ema9=ema(closes.slice(0,i+1),9), ema20=ema(closes.slice(0,i+1),20), r=rsi(closes.slice(0,i+1),14); if(ema9===null||ema20===null||r===null) continue;
+      const up=ema9>ema20 && r>=52, down=ema9<ema20 && r<=48; if(!up&&!down) continue;
+      const entry=closes[i], exit=closes[i+1], pnl=up?exit-entry:entry-exit; equity+=pnl; peak=Math.max(peak,equity); maxDD=Math.max(maxDD,peak-equity); trades.push({time:candles[i][0],side:up?"BUY":"SELL",entry,exit,pnl});
+    }
+    const wins=trades.filter(t=>t.pnl>0), losses=trades.filter(t=>t.pnl<=0); const grossWin=wins.reduce((s,t)=>s+t.pnl,0), grossLoss=Math.abs(losses.reduce((s,t)=>s+t.pnl,0));
+    res.json({ok:true,index,interval,capital:Number(req.body?.capital||100000),endingCapital:round(equity),netPnl:round(equity-Number(req.body?.capital||100000)),trades:trades.length,winRate:trades.length?round(wins.length/trades.length*100):0,maxDrawdown:round(maxDD),profitFactor:grossLoss?round(grossWin/grossLoss):null,history:trades.slice(-100),dataWindow:trades.length?{from:trades[0].time,to:trades[trades.length-1].time}:null,updatedAt:nowISO()});
+  } catch(error){res.status(500).json({ok:false,error:apiError(error)});}
+});
+
+app.get("/api/alerts", (req,res)=>res.json({ok:true,alerts:state.alerts.slice(0,200),updatedAt:nowISO()}));
+app.post("/api/alerts", (req,res)=>{
+  try { const b=req.body||{}; const alert={id:b.id||`A${Date.now()}`,createdAt:nowISO(),active:true,...b}; state.alerts.unshift(alert); state.alerts=state.alerts.slice(0,200); saveState(); res.json({ok:true,alert}); }
+  catch(error){res.status(400).json({ok:false,error:apiError(error)});}
+});
 
 // ============================================================
 // PRE-MARKET CHECK
