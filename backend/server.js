@@ -35,6 +35,26 @@ for (const asset of ["service-worker.js", "manifest.json", "icon-192.png", "icon
     res.status(404).end();
   });
 }
+// ============================================================
+// ANDROID APP LINKS / TWA VERIFICATION
+// ============================================================
+
+app.get("/.well-known/assetlinks.json", (req, res) => {
+  const assetLinksFile = path.join(
+    __dirname,
+    "..",
+    "public",
+    ".well-known",
+    "assetlinks.json"
+  );
+
+  if (!fs.existsSync(assetLinksFile)) {
+    return res.status(404).send("assetlinks.json not found");
+  }
+
+  res.type("application/json");
+  return res.sendFile(assetLinksFile);
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 
