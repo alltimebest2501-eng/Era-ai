@@ -1,16 +1,29 @@
 {
-  "name": "era-ai",
-  "version": "8.2.6",
-  "description": "Era AI - Autonomous Indian Market Intelligence and Options Analysis Platform",
-  "main": "server.js",
-  "scripts": {"start": "node server.js"},
-  "engines": {"node": ">=18"},
-  "dependencies": {
-    "axios": "^1.8.4",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "nodemailer": "^7.0.6",
-    "web-push": "^3.0.0"
-  }
+  "name": "ERA AI — Market Intelligence",
+  "short_name": "ERA AI",
+  "id": "/",
+  "description": "ERA AI autonomous Indian market intelligence and options analysis platform.",
+  "start_url": "https://era-ai-test.onrender.com/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050914",
+  "theme_color": "#050914",
+  "categories": [
+    "finance"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
