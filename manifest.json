@@ -1,29 +1,17 @@
 {
-  "name": "ERA AI — Market Intelligence",
-  "short_name": "ERA AI",
-  "id": "/",
-  "description": "ERA AI autonomous Indian market intelligence and options analysis platform.",
-  "start_url": "https://era-ai-test.onrender.com/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#050914",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "ERA AI — Market Intelligence",
+  "orientation": "portrait",
+  "scope": "/",
+  "short_name": "ERA AI",
+  "start_url": "/",
   "theme_color": "#050914",
+  "id": "ERA AI",
+  "description": "ERA AI — Autonomous Indian Market Intelligence and Options Analysis Platform.",
+  "lang": "en",
   "categories": [
     "finance"
-  ],
-  "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
   ]
 }
