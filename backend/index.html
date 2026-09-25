@@ -396,6 +396,337 @@ main{
   *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition:none!important}
 }
 
+
+/* ============================================================
+   ERA 2.0 LIQUID GLASS REDESIGN
+   Visual layer only. Existing IDs, navigation and app logic stay intact.
+============================================================ */
+:root{
+  --era-bg:#020a16;
+  --era-bg2:#061426;
+  --era-surface:rgba(7,22,42,.62);
+  --era-surface-2:rgba(9,31,55,.54);
+  --era-glass:rgba(8,29,50,.54);
+  --era-line:rgba(77,171,255,.25);
+  --era-line-soft:rgba(255,255,255,.10);
+  --era-text:#e9f4ff;
+  --era-muted:#7f96ad;
+  --era-blue:#2b8cff;
+  --era-cyan:#19d8ff;
+  --era-green:#00e6a8;
+  --era-violet:#7268ff;
+  --era-pink:#a56cff;
+  --era-red:#ff4d68;
+  --era-yellow:#ffca58;
+  --era-shadow:0 20px 55px rgba(0,0,0,.34);
+}
+html[data-theme="light"]{
+  --era-bg:#e6edf3;
+  --era-bg2:#d8e4ed;
+  --era-surface:rgba(255,255,255,.46);
+  --era-surface-2:rgba(255,255,255,.32);
+  --era-glass:rgba(255,255,255,.34);
+  --era-line:rgba(70,133,185,.22);
+  --era-line-soft:rgba(40,60,80,.10);
+  --era-text:#17212d;
+  --era-muted:#687a8c;
+  --era-shadow:0 20px 55px rgba(46,70,91,.16);
+}
+html,body{
+  background:
+    radial-gradient(circle at 8% 8%,rgba(25,143,255,.16),transparent 26%),
+    radial-gradient(circle at 92% 12%,rgba(0,229,195,.12),transparent 28%),
+    radial-gradient(circle at 72% 88%,rgba(111,91,255,.14),transparent 26%),
+    linear-gradient(145deg,var(--era-bg),var(--era-bg2));
+  color:var(--era-text);
+}
+body:before{
+  background:
+    radial-gradient(circle at 25% 25%,rgba(24,144,255,.10),transparent 24%),
+    radial-gradient(circle at 80% 55%,rgba(0,224,202,.07),transparent 22%),
+    radial-gradient(circle at 52% 90%,rgba(119,101,255,.09),transparent 25%);
+  filter:blur(45px);
+}
+.app{background:transparent}
+.sidebar{
+  background:rgba(2,13,26,.66);
+  border-right:1px solid var(--era-line-soft);
+  box-shadow:12px 0 50px rgba(0,0,0,.20);
+}
+html[data-theme="light"] .sidebar{background:rgba(237,244,249,.55)}
+.logo{border-bottom-color:var(--era-line-soft)}
+.logo-name,.topbar h1,.section-title h3,.feature-card h4,.market-name,.panel-head b,.panel-head h3,
+.ai-card h2,.price,.auth-card h2,.notify-modal-card h2,.welcome-card h1{
+  color:var(--era-text)!important;
+}
+.logo-tag,.section-title span,.feature-card p,.tech-card small,.index-card small,.stat small,
+.ai-card p,.auth-card p,.muted,.label,.signal-name,.trade-meta,.history-item small,
+.appearance-note,.footer{color:var(--era-muted)!important}
+.nav button{
+  color:var(--era-muted);
+  background:rgba(8,28,49,.32);
+  border:1px solid transparent;
+  box-shadow:inset 0 1px rgba(255,255,255,.04);
+}
+html[data-theme="light"] .nav button{background:rgba(255,255,255,.20)}
+.nav button:hover,.nav button.active{
+  color:var(--era-text);
+  border-color:rgba(38,160,255,.34);
+  background:linear-gradient(100deg,rgba(35,121,255,.22),rgba(0,213,192,.13));
+  box-shadow:0 10px 25px rgba(0,91,190,.14),inset 1px 1px 6px rgba(255,255,255,.08);
+}
+.card{
+  background:
+    linear-gradient(145deg,rgba(15,43,70,.68),rgba(4,17,31,.58));
+  border:1px solid var(--era-line);
+  box-shadow:var(--era-shadow),inset 1px 1px 9px rgba(255,255,255,.035);
+  backdrop-filter:blur(26px) saturate(145%);
+  -webkit-backdrop-filter:blur(26px) saturate(145%);
+}
+html[data-theme="light"] .card{
+  background:linear-gradient(145deg,rgba(255,255,255,.52),rgba(236,246,252,.25));
+}
+.ai-card{
+  background:
+    radial-gradient(circle at 80% 10%,rgba(28,140,255,.18),transparent 30%),
+    radial-gradient(circle at 94% 88%,rgba(0,228,195,.12),transparent 26%),
+    linear-gradient(145deg,rgba(12,40,67,.76),rgba(4,18,32,.58));
+}
+html[data-theme="light"] .ai-card{
+  background:
+    radial-gradient(circle at 80% 10%,rgba(95,151,255,.20),transparent 30%),
+    radial-gradient(circle at 94% 88%,rgba(0,205,184,.15),transparent 26%),
+    linear-gradient(145deg,rgba(255,255,255,.56),rgba(231,244,250,.30));
+}
+.eyebrow{color:var(--era-cyan)!important}
+.online{color:var(--era-green);background:rgba(0,230,168,.08);border-color:rgba(0,230,168,.20)}
+.icon-btn{
+  color:var(--era-text);
+  background:rgba(10,32,54,.48);
+  border:1px solid rgba(91,181,255,.22);
+  box-shadow:0 10px 25px rgba(0,0,0,.22),inset 1px 1px 6px rgba(255,255,255,.05);
+}
+html[data-theme="light"] .icon-btn{background:rgba(255,255,255,.30);color:#233342}
+.premium-box{
+  background:linear-gradient(135deg,rgba(57,118,255,.16),rgba(0,218,198,.10));
+  border-color:rgba(69,171,255,.24);
+}
+.index-tabs button,.subtabs button,.feature-tabs button,.history-tab,.select,.mini-input,.chat input,.text-input{
+  color:var(--era-muted);
+  border-color:var(--era-line-soft);
+  background:rgba(8,27,47,.50);
+  box-shadow:inset 1px 1px 5px rgba(255,255,255,.025);
+}
+html[data-theme="light"] .index-tabs button,html[data-theme="light"] .subtabs button,
+html[data-theme="light"] .feature-tabs button,html[data-theme="light"] .history-tab,
+html[data-theme="light"] .select,html[data-theme="light"] .mini-input,
+html[data-theme="light"] .chat input,html[data-theme="light"] .text-input{
+  background:rgba(255,255,255,.32);color:#516273;
+}
+.index-tabs button.active,.subtabs button.active,.feature-tabs button.active,.history-tab.active{
+  color:#eaf7ff;
+  border-color:rgba(35,153,255,.45);
+  background:linear-gradient(100deg,rgba(33,121,255,.28),rgba(0,213,197,.12));
+  box-shadow:0 7px 18px rgba(0,101,214,.13),inset 1px 1px 5px rgba(255,255,255,.06);
+}
+html[data-theme="light"] .index-tabs button.active,html[data-theme="light"] .subtabs button.active,
+html[data-theme="light"] .feature-tabs button.active,html[data-theme="light"] .history-tab.active{color:#174e80}
+.primary,.chat-send{
+  background:linear-gradient(110deg,#1b79ff,#2e98ff 45%,#00cfae);
+  color:#fff!important;
+  border:1px solid rgba(112,207,255,.32);
+  box-shadow:0 12px 28px rgba(18,107,232,.28),inset 1px 1px 5px rgba(255,255,255,.22);
+}
+.welcome-skip,.logout-btn{
+  color:var(--era-text)!important;
+  background:rgba(8,28,48,.40);
+  border-color:var(--era-line-soft);
+}
+html[data-theme="light"] .welcome-skip,html[data-theme="light"] .logout-btn{color:#334452!important;background:rgba(255,255,255,.30)}
+.bubble.era{
+  color:var(--era-text);
+  background:rgba(9,31,51,.62);
+  border-color:var(--era-line-soft);
+}
+html[data-theme="light"] .bubble.era{color:#263744;background:rgba(255,255,255,.36)}
+.bubble.user{background:linear-gradient(135deg,#196fff,#00bca8)}
+.chat-board-wrap,.chat-compose{
+  background:rgba(7,25,44,.42);
+  border-color:var(--era-line-soft);
+}
+html[data-theme="light"] .chat-board-wrap,html[data-theme="light"] .chat-compose{background:rgba(255,255,255,.30)}
+.chat-compose input{color:var(--era-text)}
+.chat-compose input::placeholder{color:var(--era-muted)}
+.chat-photo,.chat-mic{
+  background:rgba(13,38,62,.56)!important;
+  border-color:var(--era-line-soft)!important;
+  color:var(--era-text)!important;
+}
+html[data-theme="light"] .chat-photo,html[data-theme="light"] .chat-mic{background:rgba(255,255,255,.35)!important;color:#314251!important}
+.feature-icon{
+  background:linear-gradient(145deg,rgba(40,128,255,.28),rgba(0,211,194,.16));
+  border-color:rgba(80,183,255,.22);
+  box-shadow:0 10px 22px rgba(0,0,0,.22),inset 2px 2px 6px rgba(255,255,255,.08);
+}
+.robot{
+  background:linear-gradient(145deg,rgba(31,104,182,.35),rgba(0,204,190,.14));
+  border-color:rgba(87,189,255,.32);
+  box-shadow:0 24px 45px rgba(0,0,0,.32),inset 3px 3px 10px rgba(255,255,255,.08);
+}
+.robot-glow{background:radial-gradient(circle,rgba(29,128,255,.30),rgba(0,214,194,.14),transparent 68%)}
+.eye,.ant-light{background:#1bd6ff;box-shadow:0 0 16px rgba(27,214,255,.62)}
+.antenna{background:#2c8dff;box-shadow:0 0 12px rgba(44,141,255,.50)}
+.ear{border-color:#2c8dff}
+.robot-mouth{background:linear-gradient(90deg,#2b8cff,#00d8b6)}
+.robot-body{background:linear-gradient(145deg,#347fff,#00cdb7)}
+.signal,.movement-card{
+  background:linear-gradient(135deg,rgba(0,218,173,.08),rgba(35,121,255,.13));
+  border-color:var(--era-line);
+}
+.signal-type{color:var(--era-green)}
+.confidence-bar{background:rgba(255,255,255,.08)}
+.confidence-bar span{background:linear-gradient(90deg,#2587ff,#00d9b2)}
+.badge,.pill{
+  color:#66cfff;
+  background:rgba(38,141,255,.10);
+  border-color:rgba(74,175,255,.22);
+}
+.table th,.table td{border-bottom-color:var(--era-line-soft)}
+.result-box,.notification-item,.news-item,.trade-card,.tech-card,.index-card,.stat,.setting{
+  background:linear-gradient(145deg,rgba(11,36,59,.54),rgba(5,20,35,.38));
+  border-color:var(--era-line-soft);
+}
+html[data-theme="light"] .result-box,html[data-theme="light"] .notification-item,
+html[data-theme="light"] .news-item,html[data-theme="light"] .trade-card,
+html[data-theme="light"] .tech-card,html[data-theme="light"] .index-card,
+html[data-theme="light"] .stat,html[data-theme="light"] .setting{
+  background:linear-gradient(145deg,rgba(255,255,255,.40),rgba(237,246,251,.24));
+}
+.chart,.chart-canvas{
+  background:linear-gradient(180deg,rgba(25,142,255,.13),rgba(0,216,183,.04));
+}
+.price-up,.positive,.green{color:var(--era-green)!important}
+.price-down,.negative,.red{color:var(--era-red)!important}
+.warning,.yellow{color:var(--era-yellow)!important}
+.menu-panel{
+  background:rgba(5,20,35,.78)!important;
+  border-color:var(--era-line)!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.45),inset 1px 1px 10px rgba(255,255,255,.04)!important;
+  backdrop-filter:blur(32px) saturate(150%)!important;
+  -webkit-backdrop-filter:blur(32px) saturate(150%)!important;
+}
+html[data-theme="light"] .menu-panel{background:rgba(242,248,251,.78)!important}
+.menu-item{
+  background:rgba(10,33,55,.50)!important;
+  border-color:var(--era-line-soft)!important;
+  color:var(--era-text)!important;
+}
+html[data-theme="light"] .menu-item{background:rgba(255,255,255,.28)!important;color:#273744!important}
+.menu-item:hover{
+  background:linear-gradient(100deg,rgba(34,122,255,.20),rgba(0,214,194,.10))!important;
+  border-color:rgba(62,170,255,.28)!important;
+}
+.notification-panel .card,.auth-card,.notify-modal-card,.welcome-card{
+  background:rgba(5,20,35,.80)!important;
+  border-color:var(--era-line)!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.45),inset 1px 1px 10px rgba(255,255,255,.04)!important;
+}
+html[data-theme="light"] .notification-panel .card,html[data-theme="light"] .auth-card,
+html[data-theme="light"] .notify-modal-card,html[data-theme="light"] .welcome-card{
+  background:rgba(244,249,252,.82)!important;
+}
+.auth-screen{
+  background:
+    radial-gradient(circle at 12% 8%,rgba(31,139,255,.20),transparent 30%),
+    radial-gradient(circle at 90% 18%,rgba(0,224,196,.13),transparent 28%),
+    linear-gradient(145deg,#020a16,#061729)!important;
+}
+html[data-theme="light"] .auth-screen{
+  background:
+    radial-gradient(circle at 12% 8%,rgba(126,181,255,.28),transparent 30%),
+    radial-gradient(circle at 90% 18%,rgba(0,224,196,.15),transparent 28%),
+    linear-gradient(145deg,#e8eef3,#dbe7ef)!important;
+}
+.auth-input{
+  color:var(--era-text)!important;
+  background:rgba(7,28,48,.58)!important;
+  border-color:var(--era-line-soft)!important;
+}
+html[data-theme="light"] .auth-input{color:#263744!important;background:rgba(255,255,255,.38)!important}
+.auth-input::placeholder{color:var(--era-muted)!important}
+.auth-tab{
+  background:rgba(8,28,48,.40)!important;
+  border-color:var(--era-line-soft)!important;
+  color:var(--era-muted)!important;
+}
+.auth-tab.active{
+  color:#7fdcff!important;
+  border-color:rgba(54,163,255,.34)!important;
+  background:rgba(35,125,255,.16)!important;
+}
+.mobile-nav{
+  background:rgba(4,17,30,.82)!important;
+  border-top:1px solid var(--era-line)!important;
+  box-shadow:0 -15px 38px rgba(0,0,0,.32);
+  backdrop-filter:blur(25px) saturate(150%);
+  -webkit-backdrop-filter:blur(25px) saturate(150%);
+}
+html[data-theme="light"] .mobile-nav{background:rgba(241,248,251,.76)!important}
+.mobile-nav button{color:#718aa0!important}
+.mobile-nav button.active{color:#35baff!important}
+.notification-badge{background:var(--era-red)!important}
+.liquid-preview{
+  background:linear-gradient(135deg,rgba(58,125,255,.22),rgba(0,214,194,.14),rgba(165,108,255,.18));
+  border-color:var(--era-line);
+}
+.liquid-preview-label{color:var(--era-text)}
+.theme-switcher{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:13px;
+  padding:5px;
+  border:1px solid var(--era-line-soft);
+  border-radius:16px;
+  background:rgba(0,0,0,.16);
+}
+html[data-theme="light"] .theme-switcher{background:rgba(255,255,255,.20)}
+.theme-choice{
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border-radius:12px;
+  border:1px solid transparent;
+  color:var(--era-muted);
+  background:transparent;
+  font-weight:800;
+  cursor:pointer;
+}
+.theme-choice.active{
+  color:var(--era-text);
+  border-color:rgba(49,157,255,.34);
+  background:linear-gradient(100deg,rgba(35,126,255,.22),rgba(0,214,194,.10));
+  box-shadow:0 8px 18px rgba(0,0,0,.18),inset 1px 1px 5px rgba(255,255,255,.05);
+}
+.theme-swatch{width:17px;height:17px;border-radius:50%;border:1px solid rgba(255,255,255,.35);display:inline-block}
+.dark-swatch{background:linear-gradient(135deg,#06101e,#2c8cff,#00d6b5)}
+.light-swatch{background:linear-gradient(135deg,#fff,#cfe5f3,#8bded7)}
+html[data-theme="light"] .theme-choice.active{color:#195a88}
+@media(max-width:950px){
+  body{font-size:13px}
+  main{padding:10px 10px 84px!important}
+  .topbar{padding:8px 3px 12px!important}
+  .topbar h1{font-size:18px!important}
+  .section{margin-bottom:12px!important}
+  .card{border-radius:18px!important}
+  .hero{gap:10px!important}
+  .ai-card{min-height:0!important}
+  .feature-grid,.stats-grid,.market-grid,.mini-grid{gap:8px!important}
+  .mobile-nav{padding-bottom:max(7px,env(safe-area-inset-bottom))!important}
+}
+
 </style>
 </head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="auth-logo"><div class="logo-icon">E</div><div><div class="logo-name">ERA AI</div><div class="logo-tag">MARKET INTELLIGENCE</div></div></div><h2 id="authTitle">Welcome to ERA</h2><p id="authSubtitle">Login to keep your conversations and trade history connected.</p><div class="auth-tabs"><button class="auth-tab active" data-auth="email">Gmail OTP</button></div><input id="authInput" class="auth-input" placeholder="Enter Gmail address" autocomplete="email"><div class="auth-actions"><button class="primary" id="authContinue">Send OTP</button><button class="logout-btn" id="guestContinue" style="display:none">Continue as Guest</button></div><div id="otpBox" style="display:none;margin-top:12px"><input id="otpInput" class="auth-input" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" autocomplete="one-time-code"><button class="primary" id="verifyOtp" style="width:100%;margin-top:8px">Verify & Login</button><button class="logout-btn" id="changeAuth" style="margin-top:8px">Change Gmail</button></div><div id="authMessage" class="auth-note"></div></div></div>
@@ -474,10 +805,18 @@ main{
         <div class="liquid-orb orb-pink"></div>
         <div class="liquid-preview-label">ERA Liquid Glass</div>
       </div>
-      <div class="appearance-note">Transparent glass interface with the ERA pastel cyan, violet, blue and pink palette.</div>
+      <div class="appearance-note">Transparent glass interface inspired by the ERA 2.0 reference design.</div>
+      <div class="theme-switcher" aria-label="Theme">
+        <button type="button" class="theme-choice active" id="themeDark" data-theme-choice="dark">
+          <span class="theme-swatch dark-swatch"></span><span>Dark</span>
+        </button>
+        <button type="button" class="theme-choice" id="themeLight" data-theme-choice="light">
+          <span class="theme-swatch light-swatch"></span><span>Light</span>
+        </button>
+      </div>
     </div><div class="card setting"><div class="panel-head"><b>Notifications</b><span class="pill">12 ALERT TYPES</span></div><div class="toolbar" style="margin:8px 0 12px"><button class="welcome-skip" id="enableSettingsNotifications">🔔 Enable Browser Notifications</button></div><div class="notification-list"><label class="setting-row">AI Signal <input class="toggle notify" data-key="tradeSetup" type="checkbox"></label><label class="setting-row">Price alert <input class="toggle notify" data-key="priceAlert" type="checkbox"></label><label class="setting-row">Breakout <input class="toggle notify" data-key="breakout" type="checkbox"></label><label class="setting-row">Breakdown <input class="toggle notify" data-key="breakdown" type="checkbox"></label><label class="setting-row">Volume spike <input class="toggle notify" data-key="volumeSpike" type="checkbox"></label><label class="setting-row">OI change <input class="toggle notify" data-key="oiChange" type="checkbox"></label><label class="setting-row">News <input class="toggle notify" data-key="news" type="checkbox"></label><label class="setting-row">SL hit <input class="toggle notify" data-key="slHit" type="checkbox"></label><label class="setting-row">Target hit <input class="toggle notify" data-key="targetHit" type="checkbox"></label><label class="setting-row">Market open <input class="toggle notify" data-key="marketOpen" type="checkbox"></label><label class="setting-row">Market close <input class="toggle notify" data-key="marketClose" type="checkbox"></label><label class="setting-row">API error <input class="toggle notify" data-key="apiError" type="checkbox"></label><label class="setting-row">Risk warning <input class="toggle notify" data-key="riskWarning" type="checkbox"></label><label class="setting-row">Market movement <input class="toggle notify" data-key="movement" type="checkbox"></label></div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>History</b><button class="pill" id="refreshHistory">Refresh</button></div><div class="history-tabs"><button class="history-tab active" data-history="all">All</button><button class="history-tab" data-history="chat">Chat</button><button class="history-tab" data-history="trade">Trades</button></div><div id="historyList" class="history-item">Loading history…</div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>Account</b><span class="pill" id="accountStatus">GUEST</span></div><div id="accountInfo" style="color:var(--muted);font-size:11px;margin-top:8px">Guest session</div><button class="logout-btn" id="logoutBtn">Log out</button></div></section></div>
 
-  <footer class="footer">Era AI V8.2.5 · Autonomous Market Intelligence · Data and signals are informational and require independent verification.</footer>
+  <footer class="footer">ERA 2.0 · Autonomous Market Intelligence · Data and signals are informational and require independent verification.</footer>
 </main></div>
 <nav class="mobile-nav"><button class="active" data-view="home"><span>⌂</span>Home</button><button data-view="signal"><span>⚡</span>AI</button><button data-view="options"><span>▦</span>Options</button><button data-view="paper"><span>🧪</span>Paper</button><button data-view="era"><span>✦</span>More</button></nav>
 <div class="toast-container" id="toastContainer"></div>
@@ -551,6 +890,25 @@ if(localStorage.getItem('eraUser'))showApp();else showAuth();
 // Push registration is requested only from an explicit user gesture (welcome screen / notification panel).
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/service-worker.js').catch(e=>console.warn('Service worker:',e.message));}
 (async()=>{await loadAnalysis();await loadPaper();setInterval(loadAnalysis,15000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
+
+/* ERA 2.0 theme switcher */
+(function(){
+  const root=document.documentElement;
+  const darkBtn=document.getElementById('themeDark');
+  const lightBtn=document.getElementById('themeLight');
+  function applyTheme(mode){
+    const theme=mode==='light'?'light':'dark';
+    root.setAttribute('data-theme',theme);
+    localStorage.setItem('eraThemeMode',theme);
+    if(darkBtn)darkBtn.classList.toggle('active',theme==='dark');
+    if(lightBtn)lightBtn.classList.toggle('active',theme==='light');
+  }
+  const saved=localStorage.getItem('eraThemeMode')||'dark';
+  applyTheme(saved);
+  if(darkBtn)darkBtn.addEventListener('click',()=>applyTheme('dark'));
+  if(lightBtn)lightBtn.addEventListener('click',()=>applyTheme('light'));
+})();
+
 </script>
 </body>
 </html>
