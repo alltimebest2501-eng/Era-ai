@@ -45,6 +45,23 @@
 .welcome-screen{position:fixed;inset:0;z-index:500;background:radial-gradient(circle at 50% 25%,rgba(118,87,255,.28),transparent 35%),#050914;display:none;place-items:center;padding:24px}.welcome-card{width:min(520px,100%);padding:32px 24px;text-align:center;border:1px solid rgba(25,230,255,.25);border-radius:28px;background:linear-gradient(145deg,rgba(13,25,45,.98),rgba(6,13,26,.98));box-shadow:0 30px 90px #0009}.welcome-icon{width:76px;height:76px;margin:0 auto 18px;border-radius:24px;display:grid;place-items:center;font-size:38px;font-weight:1000;background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 0 40px var(--glow)}.welcome-card h1{margin:0 0 8px;font-size:30px}.welcome-card p{color:var(--muted);font-size:12px;line-height:1.7;margin:0 auto 20px;max-width:420px}.welcome-actions{display:grid;gap:9px}.welcome-skip{border:1px solid var(--line);background:#091321;padding:11px;border-radius:12px}.welcome-status{font-size:10px;color:var(--muted);margin-top:12px;min-height:16px}.menu-btn{display:block}.menu-drawer{position:fixed;inset:0;z-index:300;display:none}.menu-drawer.open{display:block}.menu-backdrop{position:absolute;inset:0;background:#0008;backdrop-filter:blur(4px)}.menu-panel{position:absolute;right:12px;top:64px;width:min(360px,calc(100% - 24px));max-height:calc(100vh - 80px);overflow:auto;padding:14px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#0d1930,#06101f);box-shadow:0 25px 70px #000b}.menu-head{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 12px}.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-item{border:1px solid var(--line);background:#081321;border-radius:13px;padding:12px;text-align:left}.menu-item b{display:block;font-size:12px}.menu-item small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.permission-card{border:1px solid rgba(25,230,255,.18);background:rgba(25,230,255,.05);border-radius:14px;padding:12px;margin:8px 0 12px}.permission-card b{font-size:11px}.permission-card small{display:block;color:var(--muted);font-size:9px;line-height:1.5;margin:4px 0 8px}.paper-mode{display:flex;gap:8px;margin:8px 0}.paper-mode button{flex:1;border:1px solid var(--line);background:#081321;border-radius:10px;padding:9px;font-size:10px}.paper-mode button.active{border-color:var(--accent);color:var(--accent);background:rgba(25,230,255,.08)}.paper-live{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.paper-live .card{padding:10px}.paper-live small{display:block;color:var(--muted);font-size:8px}.paper-live b{display:block;margin-top:4px;font-size:13px}.paper-pnl{font-size:15px!important}.paper-close{border:1px solid var(--red);background:rgba(255,82,124,.08);color:#ff8ba7;border-radius:9px;padding:6px 8px;font-size:9px}.notification-panel{position:fixed;right:14px;top:68px;width:min(380px,calc(100% - 28px));z-index:280;display:none}.notification-panel.open{display:block}.notification-panel .card{padding:15px}.notification-panel h3{margin:0}.notification-panel p{color:var(--muted);font-size:10px;line-height:1.5}.notification-actions{display:flex;gap:8px}.notification-actions button{flex:1}.mobile-nav{display:flex!important}.era-guide{padding:14px}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.guide-item{border:1px solid var(--line);background:#081321;border-radius:12px;padding:11px}.guide-item b{display:block;font-size:11px}.guide-item small{display:block;color:var(--muted);font-size:9px;line-height:1.55;margin-top:4px}@media(max-width:650px){.guide-grid{grid-template-columns:1fr}}.topbar .top-actions .menu-btn{display:grid!important;place-items:center;min-width:42px;width:42px;height:42px;font-size:22px;line-height:1;flex:0 0 42px}.topbar .top-actions{display:flex;align-items:center;gap:8px}.topbar{position:relative;z-index:120}
 @media(max-width:950px){.menu-btn{display:block}.top-actions .menu-btn{display:block}.sidebar{display:none}main{margin-left:0;width:100%;padding:16px 14px 88px}.menu-grid{grid-template-columns:1fr 1fr}.welcome-card{padding:28px 20px}}
 </style>
+
+<style>
+/* Step 13 — Trade Alert Popup */
+.trade-alert-popup{position:fixed;right:14px;bottom:82px;width:min(430px,calc(100% - 28px));z-index:700;display:none}
+.trade-alert-popup.open{display:block;animation:eraAlertIn .22s ease-out}
+.trade-alert-card{background:linear-gradient(145deg,#101d34,#07101f);border:1px solid rgba(25,230,255,.30);border-radius:18px;padding:15px;box-shadow:0 24px 70px #000b}
+.trade-alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trade-alert-head b{font-size:14px}.trade-alert-badge{font-size:9px;font-weight:900;color:#07101f;background:var(--accent);padding:5px 8px;border-radius:999px}
+.trade-alert-sub{color:var(--muted);font-size:10px;margin:6px 0 12px}
+.trade-alert-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.trade-alert-metric{border:1px solid var(--line);background:#081321;border-radius:10px;padding:8px}.trade-alert-metric small{display:block;color:var(--muted);font-size:8px}.trade-alert-metric b{display:block;margin-top:3px;font-size:12px}
+.trade-alert-reason{margin-top:10px;border:1px solid var(--line);border-radius:11px;padding:9px;font-size:10px;line-height:1.5;color:#c7d5e7}
+.trade-alert-actions{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:7px;margin-top:11px}.trade-alert-actions button{border:1px solid var(--line);border-radius:10px;padding:9px;font-size:10px;font-weight:800}.trade-alert-consider{background:rgba(25,230,255,.08);color:var(--accent)}.trade-alert-reject{background:rgba(255,82,124,.08);color:#ff8ba7}.trade-alert-paper{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff;border:0!important}
+.trade-alert-close{border:0;background:transparent;color:#91a5bd;font-size:18px}
+@keyframes eraAlertIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:600px){.trade-alert-popup{right:10px;left:10px;bottom:76px;width:auto}.trade-alert-grid{grid-template-columns:repeat(2,1fr)}.trade-alert-actions{grid-template-columns:1fr 1fr}.trade-alert-paper{grid-column:1/-1}}
+</style>
 </head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="auth-logo"><div class="logo-icon">E</div><div><div class="logo-name">ERA AI</div><div class="logo-tag">MARKET INTELLIGENCE</div></div></div><h2 id="authTitle">Welcome to ERA</h2><p id="authSubtitle">Login to keep your conversations and trade history connected.</p><div class="auth-tabs"><button class="auth-tab active" data-auth="email">Gmail OTP</button></div><input id="authInput" class="auth-input" placeholder="Enter Gmail address" autocomplete="email"><div class="auth-actions"><button class="primary" id="authContinue">Send OTP</button><button class="logout-btn" id="guestContinue" style="display:none">Continue as Guest</button></div><div id="otpBox" style="display:none;margin-top:12px"><input id="otpInput" class="auth-input" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" autocomplete="one-time-code"><button class="primary" id="verifyOtp" style="width:100%;margin-top:8px">Verify & Login</button><button class="logout-btn" id="changeAuth" style="margin-top:8px">Change Gmail</button></div><div id="authMessage" class="auth-note"></div></div></div>
 <div id="welcomeScreen" class="welcome-screen"><div class="welcome-card"><div class="welcome-icon">E</div><div class="eyebrow">ERA AI • MARKET INTELLIGENCE</div><h1 aria-label="Welcome to ERA AI"><span class="welcome-word">Welcome</span> <span class="welcome-word">to</span> <span class="welcome-word">ERA</span> <span class="welcome-word">AI</span></h1><p id="welcomeText" class="welcome-sub">Your AI trading workspace is getting ready…</p><div class="welcome-progress"></div><div class="welcome-status" id="welcomeStatus"></div></div></div>
@@ -120,6 +137,30 @@
 </main></div>
 <nav class="mobile-nav"><button class="active" data-view="home"><span>⌂</span>Home</button><button data-view="signal"><span>⚡</span>AI</button><button data-view="options"><span>▦</span>Options</button><button data-view="paper"><span>🧪</span>Paper</button><button data-view="era"><span>✦</span>More</button></nav>
 <div class="toast-container" id="toastContainer"></div>
+<div id="tradeAlertPopup" class="trade-alert-popup" aria-live="polite">
+  <div class="trade-alert-card">
+    <div class="trade-alert-head">
+      <div><span class="trade-alert-badge">ERA TRADE ALERT</span><b id="tradeAlertTitle" style="display:block;margin-top:7px">New Trade Setup</b></div>
+      <button class="trade-alert-close" id="tradeAlertClose" aria-label="Close trade alert">×</button>
+    </div>
+    <div class="trade-alert-sub" id="tradeAlertSub">Waiting for setup details…</div>
+    <div class="trade-alert-grid">
+      <div class="trade-alert-metric"><small>OPTION</small><b id="tradeAlertOption">—</b></div>
+      <div class="trade-alert-metric"><small>STRIKE</small><b id="tradeAlertStrike">—</b></div>
+      <div class="trade-alert-metric"><small>EXPIRY</small><b id="tradeAlertExpiry">—</b></div>
+      <div class="trade-alert-metric"><small>ENTRY</small><b id="tradeAlertEntry">—</b></div>
+      <div class="trade-alert-metric"><small>STOP LOSS</small><b id="tradeAlertSL">—</b></div>
+      <div class="trade-alert-metric"><small>TARGET 1</small><b id="tradeAlertTarget">—</b></div>
+    </div>
+    <div class="trade-alert-reason" id="tradeAlertReason">—</div>
+    <div class="trade-alert-actions">
+      <button class="trade-alert-consider" id="tradeAlertConsider">CONSIDER</button>
+      <button class="trade-alert-reject" id="tradeAlertReject">REJECT</button>
+      <button class="trade-alert-paper" id="tradeAlertPaper">PAPER TRADE</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 const BACKEND=location.origin;
@@ -195,6 +236,52 @@ function applyRealtimeTick(payload){
   $('marketUpdated').textContent=new Date(tick.timestamp||payload.at||Date.now()).toLocaleTimeString('en-IN');
 }
 
+
+// ============================================================
+// STEP 13 — TRADE ALERT POPUP UI
+// ============================================================
+let currentTradeAlert = null;
+let tradeAlertPopupTimer = null;
+function renderTradeAlertPopup(alert, open=true){
+  if(!alert?.trade)return;
+  currentTradeAlert=alert;
+  const t=alert.trade;
+  $('tradeAlertTitle').textContent=`${t.index||S.index} ${t.signal||'TRADE'} SETUP`;
+  $('tradeAlertSub').textContent=`Confidence ${t.confidence??'—'}% • ${alert.status||'NEW'}`;
+  $('tradeAlertOption').textContent=t.optionType||'—';
+  $('tradeAlertStrike').textContent=fmt(t.strike);
+  $('tradeAlertExpiry').textContent=t.expiry||'—';
+  $('tradeAlertEntry').textContent=fmt(t.entry);
+  $('tradeAlertSL').textContent=fmt(t.stopLoss);
+  $('tradeAlertTarget').textContent=fmt(t.targets?.[0]);
+  $('tradeAlertReason').textContent=(t.why||t.reason||t.reasoning||t.decisionReasons?.[0]||'ERA has confirmed this setup through its deterministic trade gate.');
+  const disabled=alert.status==='REJECTED'||alert.status==='PAPER_TRADE';
+  $('tradeAlertConsider').disabled=disabled; $('tradeAlertReject').disabled=disabled; $('tradeAlertPaper').disabled=disabled;
+  $('tradeAlertPopup').classList.toggle('open',open);
+}
+async function loadTradeAlerts(){
+  try{
+    const d=await api(`/api/trade-alerts?index=${encodeURIComponent(S.index)}`);
+    const active=(d.alerts||[]).find(a=>['NEW','CONSIDER'].includes(a.status));
+    if(active)renderTradeAlertPopup(active,false);
+  }catch(_){}
+}
+async function tradeAlertAction(action){
+  if(!currentTradeAlert)return;
+  try{
+    const d=await api(`/api/trade-alerts/${encodeURIComponent(currentTradeAlert.id)}/action`,{method:'POST',body:JSON.stringify({action})});
+    currentTradeAlert=d.alert||currentTradeAlert;
+    renderTradeAlertPopup(currentTradeAlert,true);
+    if(action==='PAPER_TRADE'){toast('Paper trade created from ERA trade alert');loadPaper();}
+    else if(action==='REJECT')toast('Trade setup rejected');
+    else toast('Trade setup marked as CONSIDER');
+  }catch(e){toast('Trade alert: '+errorText(e.message));}
+}
+$('tradeAlertClose').onclick=()=>$('tradeAlertPopup').classList.remove('open');
+$('tradeAlertConsider').onclick=()=>tradeAlertAction('CONSIDER');
+$('tradeAlertReject').onclick=()=>tradeAlertAction('REJECT');
+$('tradeAlertPaper').onclick=()=>tradeAlertAction('PAPER_TRADE');
+
 function connectRealtimeSync(){
   if(!('EventSource' in window)){
     $('liveStatus').textContent='🟡 LIVE SYNC • Browser stream unavailable';
@@ -205,6 +292,8 @@ function connectRealtimeSync(){
   realtimeSource.addEventListener('snapshot',e=>{try{applyRealtimeSnapshot(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('tick',e=>{try{applyRealtimeTick(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('trade-alert',e=>{try{const d=JSON.parse(e.data);if(d?.alert)renderTradeAlertPopup(d.alert,true)}catch(_){}});
+  realtimeSource.addEventListener('trade-alert-update',e=>{try{const d=JSON.parse(e.data);if(d?.alert&&currentTradeAlert?.id===d.alert.id)renderTradeAlertPopup(d.alert,true)}catch(_){}});
   realtimeSource.onopen=()=>{realtimeConnected=true;};
   realtimeSource.onerror=()=>{realtimeConnected=false;updateRealtimeStatusText({status:'RECONNECTING',marketOpen:S.marketOpen});};
 }
@@ -238,6 +327,8 @@ async function saveAlert(){try{await api('/api/alerts',{method:'POST',body:JSON.
 function showTool(name){document.querySelectorAll('.tool-panel').forEach(x=>x.style.display='none');$('tool-'+name).style.display='block';document.querySelectorAll('.tool-tab').forEach(x=>x.classList.toggle('active',x.dataset.tool===name));if(name==='risk')loadRisk();if(name==='alerts')loadAlerts()}
 // Welcome, menu, notifications and paper trading bindings
 $('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotifications(true);if(ok){$('notificationModal').classList.remove('open');$('notificationModalStatus').textContent='Notifications enabled.';}};$('notificationModalLater').onclick=()=>{$('notificationModal').classList.remove('open');};$('enableNotifications2').onclick=()=>setupPushNotifications(true);$('enableSettingsNotifications').onclick=()=>setupPushNotifications(true);$('enterEra')?.remove();$('skipWelcome')?.remove();$('menuBtn').onclick=()=>$('menuDrawer').classList.add('open');$('closeMenu').onclick=()=>$('menuDrawer').classList.remove('open');$('menuBackdrop').onclick=()=>$('menuDrawer').classList.remove('open');document.querySelectorAll('[data-menu-view]').forEach(b=>b.onclick=()=>{$('menuDrawer').classList.remove('open');setView(b.dataset.menuView)});$('bellBtn').onclick=()=>{$('notificationPanel').classList.toggle('open');loadAlerts()};$('closeNotifications').onclick=()=>$('notificationPanel').classList.remove('open');$('openAlerts').onclick=()=>{$('notificationPanel').classList.remove('open');setView('tools');showTool('alerts')};$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;$('paperMarketMode').onclick=()=>{paperEntryMode='market';$('paperMarketMode').classList.add('active');$('paperLimitMode').classList.remove('active');$('paperPrice').disabled=true;$('paperBuy').textContent='⚡ BUY PAPER @ MARKET';updatePaperSelection()};$('paperLimitMode').onclick=()=>{paperEntryMode='limit';$('paperLimitMode').classList.add('active');$('paperMarketMode').classList.remove('active');$('paperPrice').disabled=false;$('paperBuy').textContent='BUY PAPER @ CUSTOM PRICE';updatePaperSelection()};
+loadTradeAlerts();
+
 // Core bindings
 document.querySelectorAll('#homeIndices button,.market-index').forEach(b=>b.onclick=()=>selectIndex(b.dataset.index));document.querySelectorAll('.option-index').forEach(b=>b.onclick=()=>{S.optionIndex=b.dataset.index;document.querySelectorAll('.option-index').forEach(x=>x.classList.toggle('active',x===b));loadOptions()});$('expirySelect').onchange=()=>loadOptionChainForExpiry($('expirySelect').value);$('homeAsk').onclick=askEra;$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper()}};$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
 // Gmail/email OTP only — existing email OTP flow preserved.
