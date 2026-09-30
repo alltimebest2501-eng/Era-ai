@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "9.0.0-step13-trade-alerts";
+const VERSION = "9.1.1-step3-14-risk-ledger";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -283,7 +283,7 @@ const state = {
 
   settings: {
     movementThreshold: 20,
-    minConfidence: 60,
+    minConfidence: 65,
     scanIntervalMs: 60000,
     newsIntervalMs: 300000,
     notificationCooldownMs: 15 * 60 * 1000,
@@ -301,7 +301,9 @@ const state = {
     cash: 100000,
     positions: [],
     orders: [],
-    realizedPnl: 0
+    realizedPnl: 0,
+    unrealizedPnl: 0,
+    closedTrades: []
   },
 
   journal: [],
@@ -707,11 +709,15 @@ function loadState() {
     }
 
     if (saved.paper && typeof saved.paper === "object") {
-      state.paper = { ...state.paper, ...saved.paper, positions: Array.isArray(saved.paper.positions) ? saved.paper.positions : [], orders: Array.isArray(saved.paper.orders) ? saved.paper.orders : [] };
+      state.paper = { ...state.paper, ...saved.paper, positions: Array.isArray(saved.paper.positions) ? saved.paper.positions : [], orders: Array.isArray(saved.paper.orders) ? saved.paper.orders : [], closedTrades: Array.isArray(saved.paper.closedTrades) ? saved.paper.closedTrades : [] };
     }
 
     if (Array.isArray(saved.journal)) state.journal = saved.journal;
     if (saved.risk && typeof saved.risk === "object") state.risk = { ...state.risk, ...saved.risk };
+
+    // ERA trade decisions must never operate below the production 65% floor,
+    // even when an older state file contains minConfidence < 65.
+    state.settings.minConfidence = Math.max(65, Number(state.settings.minConfidence || 65));
 
   } catch (error) {
     console.error(
@@ -3697,7 +3703,7 @@ function createOptionTrades(
   // ERA trade signals remain gated at 65% confidence or higher.
   const tradeMinConfidence = Math.max(
     65,
-    Number(state.settings?.minConfidence || 60)
+    Math.max(65, Number(state.settings?.minConfidence || 65))
   );
 
   if (Number(confidenceData?.confidence || 0) < tradeMinConfidence) {
@@ -4107,16 +4113,9 @@ function invalidateSetupMemory({ index, direction, optionType, strike, expiry, r
 // ============================================================
 
 function countTradesToday() {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  const startMs = start.getTime();
-  return Array.isArray(state.history)
-    ? state.history.filter(item =>
-        item &&
-        item.type === "trade" &&
-        new Date(item.createdAt || 0).getTime() >= startMs
-      ).length
-    : 0;
+  // STEP 10 unified execution ledger for the current paper-trading stage.
+  // Count actual executed BUY orders, not generated/considered trade setups.
+  return paperTradesToday();
 }
 
 function tradeDecisionEngine({
@@ -4134,7 +4133,7 @@ function tradeDecisionEngine({
   const reasons = [];
   const risks = [];
   const baseConfidence = Number(confidenceData?.confidence || 0);
-  const minConfidence = Math.max(65, Number(state.settings?.minConfidence || 60));
+  const minConfidence = Math.max(65, Number(state.settings?.minConfidence || 65));
   const maxPositions = Number(state.risk?.maxPositions || 0);
   const maxTradesPerDay = Number(state.risk?.maxTradesPerDay || 0);
   const openPositions = Array.isArray(state.paper?.positions)
@@ -5058,10 +5057,9 @@ function applyTradeAlertAction(alert, action, req) {
     return { ok: true, alert, paper: state.paper };
   }
 
-  const risk = riskCheck(trade);
-  if (!risk.ok) return { ok: false, status: 403, error: risk.reason };
-
   const qty = Math.max(1, Math.floor(Number(req.body?.quantity || INDICES[trade.index]?.lotSize || 1)));
+  const risk = riskCheck(trade, qty);
+  if (!risk.ok) return { ok: false, status: 403, error: risk.reason };
   const price = Number(trade.entry);
   const value = price * qty;
   if (value > Number(state.paper.cash || 0)) {
@@ -6155,7 +6153,7 @@ function buildAIBrainContext(index) {
       trades
     },
     safety: {
-      minConfidence: Number(state.settings?.minConfidence || 60),
+      minConfidence: Math.max(65, Number(state.settings?.minConfidence || 65)),
       killSwitch: Boolean(state.risk?.killSwitch),
       maxPositions: Number(state.risk?.maxPositions || 0),
       maxTradesPerDay: Number(state.risk?.maxTradesPerDay || 0)
@@ -6175,7 +6173,7 @@ function deterministicAIBrainGate(context) {
   if (market.available === false) reasons.push("Live market data is unavailable.");
   if (market.stale === true) reasons.push("Live market data is stale.");
   if (!Number.isFinite(Number(market.price)) || Number(market.price) <= 0) reasons.push("Live price is unavailable.");
-  if (Number.isFinite(confidence) && confidence < Number(safety.minConfidence || 60)) {
+  if (Number.isFinite(confidence) && confidence < Math.max(65, Number(safety.minConfidence || 65))) {
     reasons.push(`Confidence ${confidence}% is below ERA minimum ${safety.minConfidence}%.`);
   }
   if (safety.killSwitch) reasons.push("ERA risk kill switch is ON.");
@@ -6633,7 +6631,7 @@ app.post(
 
         if (
           Number.isFinite(value) &&
-          value >= 1 &&
+          value >= 65 &&
           value <= 100
         ) {
           state.settings
@@ -6991,15 +6989,90 @@ function currentUserKey(req) {
   return raw.slice(0, 180) || "guest";
 }
 
-function riskCheck(trade) {
-  const r = state.risk;
+function riskCheck(trade, quantityOverride = null) {
+  const r = state.risk || {};
   if (r.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
   if ((state.paper.positions || []).length >= Number(r.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
-  const entry = Number(trade.entry || 0), stop = Number(trade.stopLoss || 0);
+  if (countTradesToday() >= Number(r.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
+
+  const entry = Number(trade.entry || 0);
+  const stop = Number(trade.stopLoss || 0);
   if (!entry || !stop || entry <= stop) return { ok: false, reason: "Invalid entry/stop values." };
-  const lossPct = ((entry - stop) / entry) * 100;
-  if (lossPct > Number(r.maxTradeLoss || 1) * 2) return { ok: false, reason: "Trade risk exceeds configured limit." };
-  return { ok: true, reason: "Risk checks passed." };
+
+  const startingCapital = Number(state.paper?.startingCapital || 100000);
+  const maxTradeRiskPct = Number(r.maxTradeLoss || 1);
+  const maxTradeRiskAmount = startingCapital * (maxTradeRiskPct / 100);
+  const qty = Math.max(1, Math.floor(Number(quantityOverride ?? trade.quantity ?? INDICES[trade.index]?.lotSize ?? 1)));
+  const perUnitRisk = entry - stop;
+  const totalTradeRisk = perUnitRisk * qty;
+
+  // Step 9 SL is intentionally based on option-premium behaviour (normally
+  // 10–35% of premium). Step 13/14 therefore validate the ACCOUNT risk
+  // created by that SL instead of comparing the premium SL percentage to 1%.
+  if (totalTradeRisk > maxTradeRiskAmount) {
+    return {
+      ok: false,
+      reason: `Account risk ₹${totalTradeRisk.toFixed(2)} exceeds configured maximum ₹${maxTradeRiskAmount.toFixed(2)} (${maxTradeRiskPct}% of paper capital).`,
+      quantity: qty,
+      perUnitRisk,
+      totalTradeRisk,
+      maxTradeRiskAmount
+    };
+  }
+
+  const realized = paperRealizedPnlToday();
+  const unrealized = Number(state.paper?.unrealizedPnl || 0);
+  const dailyLossLimit = startingCapital * (Number(r.maxDailyLoss || 2) / 100);
+  if (realized + unrealized <= -dailyLossLimit) return { ok: false, reason: "Maximum daily paper loss limit reached." };
+
+  const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
+  const proposedExposure = exposure + entry * qty;
+  const maxExposureValue = startingCapital * (Number(r.maxExposure || 50) / 100);
+  if (proposedExposure > maxExposureValue) return { ok: false, reason: "Maximum paper exposure limit reached." };
+
+  return {
+    ok: true,
+    reason: "Risk checks passed.",
+    quantity: qty,
+    perUnitRisk,
+    totalTradeRisk,
+    maxTradeRiskAmount,
+    riskPercentOfCapital: startingCapital > 0 ? (totalTradeRisk / startingCapital) * 100 : 0
+  };
+}
+
+function validateManualPaperBuy(b) {
+  const qty = Math.max(1, Math.floor(Number(b.quantity || 1)));
+  const price = Number(b.price || b.entry || 0);
+  if (!(price > 0)) return { ok: false, reason: "Valid order price is required." };
+  if (state.risk.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
+  if ((state.paper.positions || []).length >= Number(state.risk.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
+  if (paperTradesToday() >= Number(state.risk.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
+
+  const stop = Number(b.stopLoss || 0);
+  if (!(stop > 0) || price <= stop) return { ok: false, reason: "Valid stop loss below entry price is required." };
+  const startingCapital = Number(state.paper.startingCapital || 100000);
+  const maxTradeRiskPct = Number(state.risk.maxTradeLoss || 1);
+  const maxTradeRiskAmount = startingCapital * (maxTradeRiskPct / 100);
+  const totalTradeRisk = (price - stop) * qty;
+  if (totalTradeRisk > maxTradeRiskAmount) {
+    return { ok: false, reason: `Account risk ₹${totalTradeRisk.toFixed(2)} exceeds configured maximum ₹${maxTradeRiskAmount.toFixed(2)} (${maxTradeRiskPct}% of paper capital).` };
+  }
+
+  const currentPnl = paperRealizedPnlToday() + Number(state.paper.unrealizedPnl || 0);
+  if (currentPnl <= -(startingCapital * Number(state.risk.maxDailyLoss || 2) / 100)) return { ok: false, reason: "Maximum daily paper loss limit reached." };
+
+  const value = price * qty;
+  if (value > Number(state.paper.cash || 0)) return { ok: false, reason: "Insufficient paper cash." };
+  const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
+  const maxExposureValue = startingCapital * Number(state.risk.maxExposure || 50) / 100;
+  if (exposure + value > maxExposureValue) return { ok: false, reason: "Maximum paper exposure limit reached." };
+
+  const positionKey = [b.index, b.optionType, b.strike, b.instrumentKey].join("|");
+  if ((state.paper.positions || []).some(p => [p.index, p.optionType, p.strike, p.instrumentKey].join("|") === positionKey)) return { ok: false, reason: "A paper position for this exact contract is already open." };
+  if (!b.index || !b.optionType || !(Number(b.strike) > 0) || !b.instrumentKey) return { ok: false, reason: "Exact index, CE/PE, strike and instrument are required." };
+
+  return { ok: true, qty, price, value };
 }
 
 app.get("/api/candles", async (req, res) => {
@@ -7045,31 +7118,109 @@ app.post("/api/risk", (req,res)=>{
 });
 
 app.get("/api/paper", (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
-app.post("/api/paper/refresh", async (req,res)=>{
-  try {
-    const positions=Array.isArray(state.paper.positions)?state.paper.positions:[];
-    const keys=[...new Set(positions.map(p=>p.instrumentKey).filter(Boolean))];
-    let quotes={};
-    if(keys.length){
-      const data=(await upstoxRequest("https://api.upstox.com/v3/market-quote/quotes",{instrument_key:keys.join(",")})).data||{};
-      quotes=data;
-    }
-    let unrealized=0;
-    for(const p of positions){
-      let current=Number(p.currentPrice||p.entry||0);
+
+function paperTodayKey(){
+  return new Date().toLocaleDateString("en-CA", {timeZone:"Asia/Kolkata"});
+}
+
+function paperTradesToday(){
+  const key=paperTodayKey();
+  return (state.paper.orders||[]).filter(o=>o.side==="BUY" && String(o.createdAt||"").slice(0,10)===key).length;
+}
+
+function paperRealizedPnlToday(){
+  const key=paperTodayKey();
+  return (state.paper.closedTrades||[]).filter(x=>String(x.closedAt||"").slice(0,10)===key).reduce((sum,x)=>sum+Number(x.pnl||0),0);
+}
+
+function settlePaperPosition(position, exitPrice, reason="MANUAL_EXIT"){
+  if(!position || !state.paper.positions.some(p=>p.id===position.id)) return null;
+  const qty=Math.max(0,Number(position.quantity||0));
+  const exit=Number(exitPrice||0);
+  if(!qty || !Number.isFinite(exit) || exit<=0) return null;
+  const entry=Number(position.entry||0);
+  const pnl=(exit-entry)*qty;
+  const closedAt=nowISO();
+  const closed={
+    id:`C${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
+    positionId:position.id,
+    alertId:position.alertId||null,
+    index:position.index,
+    optionType:position.optionType,
+    strike:position.strike,
+    expiry:position.expiry||null,
+    instrumentKey:position.instrumentKey||null,
+    quantity:qty,
+    entry,
+    exit,
+    stopLoss:Number(position.stopLoss||0),
+    targets:Array.isArray(position.targets)?position.targets.slice(0,3):[],
+    pnl,
+    pnlPercent:entry>0?(pnl/(entry*qty))*100:0,
+    reason,
+    openedAt:position.openedAt||null,
+    closedAt,
+    confidence:position.confidence??null,
+    reasoning:position.reasoning||null
+  };
+  state.paper.cash += exit*qty;
+  state.paper.realizedPnl += pnl;
+  state.paper.closedTrades=Array.isArray(state.paper.closedTrades)?state.paper.closedTrades:[];
+  state.paper.closedTrades.unshift(closed);
+  state.paper.closedTrades=state.paper.closedTrades.slice(0,500);
+  state.paper.positions=state.paper.positions.filter(p=>p.id!==position.id);
+  state.paper.orders.unshift({id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"SELL",index:closed.index,optionType:closed.optionType,strike:closed.strike,expiry:closed.expiry,instrumentKey:closed.instrumentKey,quantity:qty,price:exit,positionId:closed.positionId,reason,createdAt:closedAt});
+  state.paper.orders=state.paper.orders.slice(0,500);
+  return closed;
+}
+
+async function refreshPaperPositions(priceOverrides={}){
+  const positions=Array.isArray(state.paper.positions)?state.paper.positions:[];
+  const keys=[...new Set(positions.map(p=>p.instrumentKey).filter(Boolean))];
+  let quotes={};
+  if(keys.length){
+    const data=(await upstoxRequest("https://api.upstox.com/v3/market-quote/quotes",{instrument_key:keys.join(",")})).data||{};
+    quotes=data;
+  }
+  const closed=[];
+  for(const p of [...positions]){
+    let current=Number(p.currentPrice||p.entry||0);
+    const override=Number(priceOverrides[p.instrumentKey]);
+    if(Number.isFinite(override) && override>0) current=override;
+    else {
       const raw=quotes[p.instrumentKey];
       const ltp=Number(raw?.ltpc?.ltp ?? raw?.last_price ?? raw?.ltp ?? 0);
       if(ltp>0) current=ltp;
-      p.currentPrice=current;
-      p.unrealizedPnl=(current-Number(p.entry||0))*Number(p.quantity||0);
-      unrealized+=p.unrealizedPnl;
-      if(p.stopLoss && current<=Number(p.stopLoss)) p.status="STOP_RISK";
-      else if(p.target && current>=Number(p.target)) p.status="TARGET_REACHED";
-      else p.status="OPEN";
     }
-    state.paper.unrealizedPnl=unrealized;
+    p.currentPrice=current;
+    p.unrealizedPnl=(current-Number(p.entry||0))*Number(p.quantity||0);
+    p.pnlPercent=Number(p.entry)>0?((current-Number(p.entry))/Number(p.entry))*100:0;
+    const expiryMs=p.expiry?new Date(`${String(p.expiry).slice(0,10)}T15:30:00+05:30`).getTime():NaN;
+    let trigger=null;
+    if(Number.isFinite(expiryMs) && Date.now()>=expiryMs) trigger="EXPIRY";
+    else if(Number(p.stopLoss)>0 && current<=Number(p.stopLoss)) trigger="SL_HIT";
+    else if(Number(p.target)>0 && current>=Number(p.target)) trigger="TARGET_HIT";
+    if(trigger){
+      const c=settlePaperPosition(p,current,trigger);
+      if(c){
+        closed.push(c);
+        realtimeBroadcast("paper-position-update", { type:"CLOSED", position:c, paper:state.paper, updatedAt:nowISO() });
+        try { await sendPush({ type:"paper-trade", title:`ERA Paper ${trigger.replace(/_/g," ")}`, body:`${c.index} ${c.optionType} ${c.strike} • Exit ₹${Number(c.exit).toFixed(2)} • P&L ₹${Number(c.pnl).toFixed(2)}`, data:c }); } catch(_) {}
+      }
+    } else {
+      realtimeBroadcast("paper-position-update", { type:"MARK", position:p, paper:{unrealizedPnl:state.paper.unrealizedPnl}, updatedAt:nowISO() });
+      p.status="RUNNING";
+    }
+  }
+  state.paper.unrealizedPnl=(state.paper.positions||[]).reduce((sum,p)=>sum+Number(p.unrealizedPnl||0),0);
+  return closed;
+}
+
+app.post("/api/paper/refresh", async (req,res)=>{
+  try {
+    const closed=await refreshPaperPositions(req.body?.prices||{});
     saveState();
-    res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()});
+    res.json({ok:true,paper:state.paper,risk:state.risk,closed,updatedAt:nowISO()});
   } catch(error){
     console.error("[ERA] Paper refresh:",error.response?.data||error.message);
     res.status(500).json({ok:false,error:apiError(error)});
@@ -7079,9 +7230,10 @@ app.post("/api/paper/refresh", async (req,res)=>{
 app.get('/api/paper-trading', (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
 
 app.post("/api/paper/reset", (req,res)=>{
-  state.paper={startingCapital:100000,cash:100000,positions:[],orders:[],realizedPnl:0};
+  state.paper={startingCapital:100000,cash:100000,positions:[],orders:[],realizedPnl:0,unrealizedPnl:0,closedTrades:[]};
   saveState(); res.json({ok:true,paper:state.paper});
 });
+
 app.post("/api/paper/order", (req,res)=>{
   try {
     const b=req.body||{};
@@ -7090,34 +7242,69 @@ app.post("/api/paper/order", (req,res)=>{
     const price=Number(b.price||b.entry||0);
     if (!price || price<=0) return res.status(400).json({ok:false,error:"Valid order price is required."});
     if (state.risk.killSwitch) return res.status(403).json({ok:false,error:"ERA risk kill switch is ON."});
-    const value=price*qty;
-    if (side==="BUY" && value>state.paper.cash) return res.status(400).json({ok:false,error:"Insufficient paper cash."});
-    const positionKey=[b.index,b.optionType,b.strike,b.instrumentKey].join("|");
-    if (side==="BUY") {
-      state.paper.cash-=value;
-      state.paper.positions.push({id:`P${Date.now()}`,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),instrumentKey:b.instrumentKey||null,quantity:qty,entry:price,currentPrice:price,stopLoss:Number(b.stopLoss||0),target:Number(b.target||0),openedAt:nowISO()});
-    } else {
-      const pos=state.paper.positions.find(p=>[p.index,p.optionType,p.strike,p.instrumentKey].join("|")===positionKey);
-      if (!pos) return res.status(400).json({ok:false,error:"Matching paper position not found."});
-      const closeQty=Math.min(qty,pos.quantity); const pnl=(price-pos.entry)*closeQty; state.paper.cash+=price*closeQty; state.paper.realizedPnl+=pnl; pos.quantity-=closeQty; if(pos.quantity<=0) state.paper.positions=state.paper.positions.filter(x=>x.id!==pos.id);
+
+    if(side==="SELL"){
+      let pos=null;
+      if(b.positionId) pos=state.paper.positions.find(p=>p.id===String(b.positionId));
+      if(!pos){
+        const positionKey=[b.index,b.optionType,b.strike,b.instrumentKey].join("|");
+        pos=state.paper.positions.find(p=>[p.index,p.optionType,p.strike,p.instrumentKey].join("|")===positionKey);
+      }
+      if(!pos) return res.status(400).json({ok:false,error:"Matching paper position not found."});
+      const closeQty=Math.min(qty,Number(pos.quantity||0));
+      if(closeQty<=0) return res.status(400).json({ok:false,error:"Paper position has no open quantity."});
+      if(closeQty<Number(pos.quantity||0)){
+        const entry=Number(pos.entry||0), pnl=(price-entry)*closeQty;
+        const partialAt=nowISO();
+        const remainingQuantity=Number(pos.quantity||0)-closeQty;
+        state.paper.cash+=price*closeQty; state.paper.realizedPnl+=pnl; pos.quantity=remainingQuantity;
+        const partialClosed={id:`C${Date.now()}-${Math.random().toString(36).slice(2,7)}`,positionId:pos.id,alertId:pos.alertId||null,index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry||null,instrumentKey:pos.instrumentKey||null,quantity:closeQty,entry,exit:price,stopLoss:Number(pos.stopLoss||0),targets:Array.isArray(pos.targets)?pos.targets.slice(0,3):[],pnl,pnlPercent:entry>0?(pnl/(entry*closeQty))*100:0,reason:"PARTIAL_EXIT",openedAt:pos.openedAt||null,closedAt:partialAt,remainingQuantity,confidence:pos.confidence??null,reasoning:pos.reasoning||null};
+        state.paper.closedTrades=Array.isArray(state.paper.closedTrades)?state.paper.closedTrades:[];
+        state.paper.closedTrades.unshift(partialClosed); state.paper.closedTrades=state.paper.closedTrades.slice(0,500);
+        state.paper.orders.unshift({id:`O${Date.now()}`,side:"SELL",index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,positionId:pos.id,reason:"PARTIAL_EXIT",createdAt:partialAt});
+        realtimeBroadcast("paper-position-update", { type:"PARTIAL_EXIT", position:partialClosed, paper:state.paper, updatedAt:partialAt });
+      } else {
+        const closed=settlePaperPosition(pos,price,String(b.reason||"MANUAL_EXIT"));
+        state.paper.unrealizedPnl=(state.paper.positions||[]).reduce((sum,p)=>sum+Number(p.unrealizedPnl||0),0);
+        saveState();
+        return res.json({ok:true,order:state.paper.orders[0],closed:closed||null,paper:state.paper});
+      }
+      state.paper.orders=state.paper.orders.slice(0,500); saveState();
+      return res.json({ok:true,order:state.paper.orders[0],paper:state.paper});
     }
-    const order={id:`O${Date.now()}`,side,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),quantity:qty,price,createdAt:nowISO()};
-    state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,200); saveState();
-    res.json({ok:true,order,paper:state.paper});
+
+    const validation=validateManualPaperBuy(b);
+    if(!validation.ok) return res.status(403).json({ok:false,error:validation.reason});
+    const openedAt=nowISO();
+    const position={id:`P${Date.now()}-${Math.random().toString(36).slice(2,7)}`,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),expiry:b.expiry||null,instrumentKey:b.instrumentKey||null,quantity:validation.qty,entry:validation.price,currentPrice:price,unrealizedPnl:0,pnlPercent:0,stopLoss:Number(b.stopLoss||0),targets:Array.isArray(b.targets)?b.targets.map(Number).filter(Number.isFinite).slice(0,3):[],target:Number(b.target||b.targets?.[0]||0),confidence:b.confidence??null,reasoning:b.reasoning||null,openedAt,status:"RUNNING",entryMode:b.entryMode||"market",source:b.source||"MANUAL_PAPER"};
+    state.paper.cash-=validation.value; state.paper.positions.push(position);
+    const order={id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"BUY",index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,positionId:position.id,source:position.source,createdAt:openedAt};
+    state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,500); saveState();
+    res.json({ok:true,order,position,paper:state.paper});
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.post("/api/paper/mark", (req,res)=>{
-  try {
-    for (const p of state.paper.positions) {
-      const m=state.market[p.index];
-      if (p.instrumentKey && Number.isFinite(Number(req.body?.prices?.[p.instrumentKey]))) p.currentPrice=Number(req.body.prices[p.instrumentKey]);
-      else if (p.optionLtp !== undefined) p.currentPrice=Number(p.optionLtp);
-      if (p.stopLoss && p.currentPrice<=p.stopLoss) p.status="STOP_RISK";
-      else if (p.target && p.currentPrice>=p.target) p.status="TARGET_REACHED";
-      else p.status="OPEN";
+app.post("/api/paper/exit", async (req,res)=>{
+  try{
+    const pos=state.paper.positions.find(p=>p.id===String(req.body?.positionId||""));
+    if(!pos) return res.status(404).json({ok:false,error:"Paper position not found."});
+    let price=Number(req.body?.price||0);
+    if(!(price>0) && pos.instrumentKey){
+      const data=(await upstoxRequest("https://api.upstox.com/v3/market-quote/quotes",{instrument_key:pos.instrumentKey})).data||{};
+      const raw=data[pos.instrumentKey]; price=Number(raw?.ltpc?.ltp ?? raw?.last_price ?? raw?.ltp ?? 0);
     }
-    saveState(); res.json({ok:true,paper:state.paper});
+    if(!(price>0)) price=Number(pos.currentPrice||0);
+    if(!(price>0)) return res.status(400).json({ok:false,error:"Current paper exit price is unavailable."});
+    const closed=settlePaperPosition(pos,price,String(req.body?.reason||"MANUAL_EXIT"));
+    state.paper.unrealizedPnl=(state.paper.positions||[]).reduce((sum,p)=>sum+Number(p.unrealizedPnl||0),0);
+    saveState(); res.json({ok:true,closed,paper:state.paper,updatedAt:nowISO()});
+  }catch(error){res.status(500).json({ok:false,error:apiError(error)});}
+});
+
+app.post("/api/paper/mark", async (req,res)=>{
+  try {
+    const closed=await refreshPaperPositions(req.body?.prices||{});
+    saveState(); res.json({ok:true,paper:state.paper,closed});
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
