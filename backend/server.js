@@ -3862,6 +3862,199 @@ function createOptionTrades(
 }
 
 // ============================================================
+// STEP 10 — TRADE DECISION ENGINE
+// Final deterministic gate after technical, price action, regime,
+// options and exact-strike selection. The engine decides TRADE / WAIT /
+// NO TRADE; AI does not override this gate.
+// ============================================================
+
+function countTradesToday() {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const startMs = start.getTime();
+  return Array.isArray(state.history)
+    ? state.history.filter(item =>
+        item &&
+        item.type === "trade" &&
+        new Date(item.createdAt || 0).getTime() >= startMs
+      ).length
+    : 0;
+}
+
+function tradeDecisionEngine({
+  index,
+  market,
+  technical,
+  movement,
+  regime,
+  optionSummary,
+  optionAdvanced,
+  confidenceData,
+  candidates
+}) {
+  const blockers = [];
+  const reasons = [];
+  const risks = [];
+  const baseConfidence = Number(confidenceData?.confidence || 0);
+  const minConfidence = Math.max(65, Number(state.settings?.minConfidence || 60));
+  const maxPositions = Number(state.risk?.maxPositions || 0);
+  const maxTradesPerDay = Number(state.risk?.maxTradesPerDay || 0);
+  const openPositions = Array.isArray(state.paper?.positions)
+    ? state.paper.positions.length
+    : 0;
+  const tradesToday = countTradesToday();
+
+  if (!state.engineRunning) blockers.push("ERA engine is stopped.");
+  if (!isMarketHours()) blockers.push("Market session is closed.");
+  if (!market?.available) blockers.push("Live market data is unavailable.");
+  if (market?.stale) blockers.push("Live market data is stale.");
+  if (state.risk?.killSwitch) blockers.push("ERA risk kill switch is ON.");
+  if (!movement?.significant) blockers.push("Price movement is not sufficiently confirmed.");
+  if (baseConfidence < minConfidence) blockers.push(`Confidence ${baseConfidence}% is below ERA minimum ${minConfidence}%.`);
+  if (!Array.isArray(candidates) || !candidates.length) blockers.push("No valid exact-strike option contract passed selection.");
+  if (maxPositions > 0 && openPositions >= maxPositions) blockers.push(`Maximum open paper positions reached (${openPositions}/${maxPositions}).`);
+  if (maxTradesPerDay > 0 && tradesToday >= maxTradesPerDay) blockers.push(`Maximum trades for today reached (${tradesToday}/${maxTradesPerDay}).`);
+
+  const direction = String(movement?.direction || "NONE").toUpperCase();
+  const expectedRegimeDirection = direction === "UP" ? "BULLISH" : direction === "DOWN" ? "BEARISH" : "NEUTRAL";
+  const regimeDirection = String(regime?.direction || "NEUTRAL").toUpperCase();
+  const mtfAlignment = String(technical?.multiTimeframe?.alignment || "NEUTRAL").toUpperCase();
+  const optionBias = String(regime?.optionBias || optionSummary?.sentiment || "NEUTRAL").toUpperCase();
+  const pa = technical?.priceAction || {};
+
+  let decisionScore = baseConfidence;
+
+  if (regimeDirection === expectedRegimeDirection) {
+    decisionScore += 5;
+    reasons.push("Market regime agrees with the directional move.");
+  } else if (regimeDirection !== "NEUTRAL") {
+    decisionScore -= 10;
+    risks.push(`Market regime conflicts with ${expectedRegimeDirection.toLowerCase()} direction.`);
+  } else {
+    risks.push("Market regime is neutral.");
+  }
+
+  if (mtfAlignment === "ALIGNED") {
+    decisionScore += 5;
+    reasons.push("Multi-timeframe direction is aligned.");
+  } else if (mtfAlignment === "CONFLICT") {
+    decisionScore -= 10;
+    risks.push("Multi-timeframe structure is conflicting.");
+  }
+
+  const optionExpected = expectedRegimeDirection === "BULLISH" ? "BULLISH" : expectedRegimeDirection === "BEARISH" ? "BEARISH" : "NEUTRAL";
+  if (optionBias === optionExpected) {
+    decisionScore += 5;
+    reasons.push("Options sentiment supports the trade direction.");
+  } else if (optionBias !== "NEUTRAL") {
+    decisionScore -= 7;
+    risks.push("Options sentiment conflicts with the trade direction.");
+  }
+
+  const paMomentum = String(pa.momentumConfirmation?.direction || "NONE").toUpperCase();
+  if (paMomentum === direction) {
+    decisionScore += 5;
+    reasons.push("Price-action momentum confirms the direction.");
+  } else if (paMomentum !== "NONE" && paMomentum !== "NEUTRAL") {
+    decisionScore -= 7;
+    risks.push("Price-action momentum conflicts with the direction.");
+  }
+
+  const breakoutDirection = String(pa.breakout?.direction || "NONE").toUpperCase();
+  if (pa.breakout?.detected && breakoutDirection === direction) {
+    decisionScore += 3;
+    reasons.push("Breakout direction agrees with the setup.");
+  } else if (pa.breakout?.detected && breakoutDirection !== direction) {
+    decisionScore -= 5;
+    risks.push("Detected breakout conflicts with the setup direction.");
+  }
+
+  const selected = Array.isArray(candidates) ? candidates[0] : null;
+  const strikeScore = Number(selected?.strikeSelection?.score);
+  if (Number.isFinite(strikeScore)) {
+    if (strikeScore >= 80) {
+      decisionScore += 5;
+      reasons.push(`Exact-strike selection score is strong at ${round(strikeScore, 1)}/100.`);
+    } else if (strikeScore >= 65) {
+      decisionScore += 2;
+      reasons.push(`Exact-strike selection score is acceptable at ${round(strikeScore, 1)}/100.`);
+    } else {
+      decisionScore -= 5;
+      risks.push(`Exact-strike selection score is weak at ${round(strikeScore, 1)}/100.`);
+    }
+  }
+
+  const finalScore = Math.round(clamp(decisionScore, 0, 100));
+
+  if (selected) {
+    const entry = Number(selected.entry);
+    const stopLoss = Number(selected.stopLoss);
+    const targets = Array.isArray(selected.targets) ? selected.targets.map(Number) : [];
+    if (!Number.isFinite(entry) || entry <= 0 || !Number.isFinite(stopLoss) || stopLoss <= 0 || stopLoss >= entry) {
+      blockers.push("Selected trade has invalid entry/stop values.");
+    }
+    if (targets.length < 1 || targets.some(v => !Number.isFinite(v) || v <= entry)) {
+      blockers.push("Selected trade does not have valid upside targets.");
+    }
+    if (!selected.expiry) blockers.push("Option expiry is missing.");
+    if (!selected.instrumentKey) blockers.push("Option instrument key is missing.");
+  }
+
+  const hardConflict =
+    regimeDirection !== "NEUTRAL" && regimeDirection !== expectedRegimeDirection;
+  const finalTradeAllowed = blockers.length === 0 && !hardConflict && finalScore >= minConfidence;
+
+  if (hardConflict && blockers.length === 0) {
+    blockers.push("Market regime direction is materially against the proposed trade.");
+  }
+
+  let decision = "NO TRADE";
+  if (finalTradeAllowed) decision = "TRADE";
+  else if (
+    blockers.length === 0 &&
+    finalScore >= 55 &&
+    !state.risk?.killSwitch &&
+    isMarketHours()
+  ) decision = "WAIT";
+
+  let finalTrade = null;
+  if (selected) {
+    finalTrade = {
+      ...selected,
+      status: finalTradeAllowed ? (finalScore >= 75 ? "CONFIRMED" : "SETUP") : "WAIT",
+      decision,
+      decisionScore: finalScore,
+      decisionReasons: reasons.slice(0, 8),
+      decisionRisks: [...risks, ...blockers].slice(0, 10),
+      decisionAt: nowISO()
+    };
+  }
+
+  return {
+    decision,
+    score: finalScore,
+    allowed: finalTradeAllowed,
+    trade: finalTradeAllowed ? finalTrade : null,
+    candidate: finalTrade,
+    reasons: reasons.slice(0, 8),
+    risks: [...risks, ...blockers].slice(0, 10),
+    blockers,
+    context: {
+      baseConfidence,
+      minConfidence,
+      regimeDirection,
+      timeframeAlignment: mtfAlignment,
+      optionBias,
+      strikeScore: Number.isFinite(strikeScore) ? round(strikeScore, 1) : null,
+      openPositions,
+      tradesToday,
+      maxPositions,
+      maxTradesPerDay
+    }
+  };
+}
+
+// ============================================================
 // COMPLETE INDEX ANALYSIS
 // ============================================================
 
@@ -4107,7 +4300,7 @@ async function analyzeIndex(
       optionSummary
     );
 
-  const trades =
+  const candidateTrades =
     createOptionTrades(
       index,
       market,
@@ -4118,6 +4311,23 @@ async function analyzeIndex(
       optionAdvanced,
       technical
     );
+
+  const decisionEngine =
+    tradeDecisionEngine({
+      index,
+      market,
+      technical,
+      movement,
+      regime: marketRegime,
+      optionSummary,
+      optionAdvanced,
+      confidenceData,
+      candidates: candidateTrades
+    });
+
+  const trades = decisionEngine.allowed && decisionEngine.trade
+    ? [decisionEngine.trade]
+    : [];
 
   recordGeneratedTrades(trades);
 
@@ -4181,7 +4391,9 @@ async function analyzeIndex(
       confidenceData.risks,
 
     suggestion:
-      confidenceData.suggestion,
+      decisionEngine.decision,
+
+    decision: decisionEngine,
 
     trades,
 
@@ -5336,6 +5548,7 @@ function buildAIBrainContext(index) {
       movement: analysis.movement,
       confidence: analysis.confidence,
       suggestion: analysis.suggestion,
+      decision: analysis.decision || null,
       reasons: Array.isArray(analysis.reasons) ? analysis.reasons.slice(0, 8) : [],
       risks: Array.isArray(analysis.risks) ? analysis.risks.slice(0, 8) : [],
       technical: {
@@ -5625,7 +5838,7 @@ Use the supplied market and analysis data as the source of truth.`;
         },
         analysis: {
           direction: a.direction, movement: a.movement, confidence: a.confidence,
-          suggestion: a.suggestion, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
+          suggestion: a.suggestion, decision: a.decision || null, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
           risks: Array.isArray(a.risks) ? a.risks.slice(0, 5) : [],
           technical: {
             emaTrend: t.emaTrend,
