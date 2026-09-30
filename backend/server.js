@@ -4306,6 +4306,103 @@ function tradeDecisionEngine({
 }
 
 // ============================================================
+// STEP 12 — NO-TRADE INTELLIGENCE
+// Converts deterministic trade blockers into structured, actionable
+// explanations. This layer never creates or overrides a trade.
+// ============================================================
+
+function classifyNoTradeReason(reason) {
+  const text = String(reason || "").toLowerCase();
+
+  if (text.includes("market session is closed")) return { code: "MARKET_CLOSED", category: "MARKET", severity: "INFO", action: "Wait for the next valid market session." };
+  if (text.includes("engine is stopped")) return { code: "ENGINE_STOPPED", category: "SYSTEM", severity: "BLOCKING", action: "Start the ERA engine before evaluating a setup." };
+  if (text.includes("market data unavailable")) return { code: "MARKET_DATA_UNAVAILABLE", category: "DATA", severity: "BLOCKING", action: "Wait for valid live market data." };
+  if (text.includes("market data is stale")) return { code: "MARKET_DATA_STALE", category: "DATA", severity: "BLOCKING", action: "Wait for a fresh live tick/data refresh." };
+  if (text.includes("movement is not sufficiently confirmed")) return { code: "INSUFFICIENT_MOVEMENT", category: "PRICE_ACTION", severity: "WAIT", action: "Wait for a clearer directional move and confirmation." };
+  if (text.includes("confidence") && text.includes("below era minimum")) return { code: "LOW_CONFIDENCE", category: "MODEL", severity: "WAIT", action: "Wait until the validated confidence clears ERA's minimum threshold." };
+  if (text.includes("no valid exact-strike option contract")) return { code: "NO_EXACT_STRIKE", category: "OPTIONS", severity: "BLOCKING", action: "Wait for an option contract that passes the exact-strike selection rules." };
+  if (text.includes("maximum open paper positions")) return { code: "MAX_OPEN_POSITIONS", category: "RISK", severity: "BLOCKING", action: "Do not add another position until an existing position is closed or the risk limit changes." };
+  if (text.includes("maximum trades for today")) return { code: "MAX_TRADES_DAY", category: "RISK", severity: "BLOCKING", action: "Wait for the next trading day or an explicitly changed risk limit." };
+  if (text.includes("kill switch")) return { code: "KILL_SWITCH", category: "RISK", severity: "BLOCKING", action: "Keep trading blocked until the risk kill switch is intentionally turned off." };
+  if (text.includes("regime direction is materially against") || text.includes("market regime conflicts")) return { code: "REGIME_CONFLICT", category: "MARKET_REGIME", severity: "BLOCKING", action: "Wait for regime and setup direction to align." };
+  if (text.includes("market regime is neutral")) return { code: "REGIME_NEUTRAL", category: "MARKET_REGIME", severity: "WAIT", action: "Wait for a clearer market regime before taking a directional setup." };
+  if (text.includes("multi-timeframe structure is conflicting")) return { code: "MTF_CONFLICT", category: "MULTI_TIMEFRAME", severity: "WAIT", action: "Wait for the 5m and 15m directional context to align." };
+  if (text.includes("options sentiment conflicts")) return { code: "OPTIONS_CONFLICT", category: "OPTIONS", severity: "WAIT", action: "Wait for options positioning to stop conflicting with the proposed direction." };
+  if (text.includes("options sentiment is neutral")) return { code: "OPTIONS_NEUTRAL", category: "OPTIONS", severity: "WAIT", action: "Wait for stronger options confirmation or a clearer directional setup." };
+  if (text.includes("price-action momentum conflicts")) return { code: "MOMENTUM_CONFLICT", category: "PRICE_ACTION", severity: "WAIT", action: "Wait for price-action momentum to confirm the proposed direction." };
+  if (text.includes("breakout conflicts")) return { code: "BREAKOUT_CONFLICT", category: "PRICE_ACTION", severity: "WAIT", action: "Wait for breakout direction to agree with the setup." };
+  if (text.includes("exact-strike selection score is weak")) return { code: "WEAK_STRIKE_SCORE", category: "OPTIONS", severity: "WAIT", action: "Wait for a stronger-liquidity, better-aligned strike candidate." };
+  if (text.includes("setup confirmation")) return { code: "SETUP_CONFIRMATION_PENDING", category: "SETUP_MEMORY", severity: "WAIT", action: "Wait for the next distinct market observation to confirm the same setup." };
+  if (text.includes("selected trade has invalid entry/stop")) return { code: "INVALID_RISK_LEVELS", category: "RISK", severity: "BLOCKING", action: "Wait for a candidate with valid entry and stop-loss levels." };
+  if (text.includes("does not have valid upside targets")) return { code: "INVALID_TARGETS", category: "RISK", severity: "BLOCKING", action: "Wait for a candidate with valid targets." };
+  if (text.includes("option expiry is missing")) return { code: "MISSING_EXPIRY", category: "OPTIONS", severity: "BLOCKING", action: "Wait for a contract with a valid expiry." };
+  if (text.includes("instrument key is missing")) return { code: "MISSING_INSTRUMENT", category: "OPTIONS", severity: "BLOCKING", action: "Wait for a contract with a valid broker instrument key." };
+
+  return { code: "UNSPECIFIED_RISK", category: "CONTEXT", severity: "WAIT", action: "Wait for the market conditions to become clearer and re-evaluate." };
+}
+
+function buildNoTradeIntelligence({ index, market, technical, movement, regime, confidenceData, decisionEngine }) {
+  const decision = String(decisionEngine?.decision || "NO TRADE").toUpperCase();
+  const blockers = Array.isArray(decisionEngine?.blockers) ? decisionEngine.blockers.filter(Boolean) : [];
+  const risks = Array.isArray(decisionEngine?.risks) ? decisionEngine.risks.filter(Boolean) : [];
+  const rawReasons = [...new Set([...blockers, ...risks])];
+
+  if (decision === "TRADE") {
+    return { available: false, status: "TRADE_ALLOWED", decision: "TRADE", primaryReason: null, reasons: [], whatMustChange: [], evaluatedAt: nowISO() };
+  }
+
+  const reasonMap = new Map();
+  for (const reason of rawReasons) {
+    const item = classifyNoTradeReason(reason);
+    if (!reasonMap.has(item.code)) {
+      reasonMap.set(item.code, { code: item.code, category: item.category, severity: item.severity, reason, action: item.action });
+    }
+  }
+
+  const setupMemory = decisionEngine?.setupMemory || {};
+  if (setupMemory?.state === "CONFIRMING" && !reasonMap.has("SETUP_CONFIRMATION_PENDING")) {
+    const confirmationReason = setupMemory.reason || `Setup confirmation ${setupMemory.confirmations || 0}/2 is pending.`;
+    reasonMap.set("SETUP_CONFIRMATION_PENDING", { code: "SETUP_CONFIRMATION_PENDING", category: "SETUP_MEMORY", severity: "WAIT", reason: confirmationReason, action: "Wait for the next distinct market observation to confirm the same setup." });
+  }
+
+  const reasons = Array.from(reasonMap.values());
+  if (!reasons.length) {
+    reasons.push({ code: "NO_QUALIFIED_SETUP", category: "SETUP", severity: "WAIT", reason: "No qualified trade setup passed ERA's deterministic decision gate.", action: "Wait for the required market, technical and options conditions to align." });
+  }
+
+  const priority = { BLOCKING: 0, WAIT: 1, INFO: 2 };
+  reasons.sort((a, b) => {
+    const severityDiff = (priority[a.severity] ?? 9) - (priority[b.severity] ?? 9);
+    return severityDiff || a.category.localeCompare(b.category);
+  });
+
+  const primary = reasons[0];
+  const whatMustChange = [...new Set(reasons.filter(item => item.action).map(item => item.action))].slice(0, 8);
+
+  return {
+    available: true,
+    status: decision === "WAIT" ? "WAIT" : "NO_TRADE",
+    decision,
+    index,
+    primaryReason: primary.reason,
+    primaryCode: primary.code,
+    reasons: reasons.slice(0, 10),
+    whatMustChange,
+    snapshot: {
+      marketOpen: isMarketHours(),
+      marketAvailable: Boolean(market?.available),
+      marketStale: Boolean(market?.stale),
+      price: Number.isFinite(Number(market?.price)) ? Number(market.price) : null,
+      movement: movement?.significant ? { significant: true, direction: movement.direction || null } : { significant: false, direction: movement?.direction || null },
+      confidence: Number.isFinite(Number(confidenceData?.confidence)) ? Number(confidenceData.confidence) : null,
+      regime: regime?.label || regime?.direction || null,
+      timeframeAlignment: technical?.multiTimeframe?.alignment || null
+    },
+    evaluatedAt: nowISO()
+  };
+}
+
+// ============================================================
 // COMPLETE INDEX ANALYSIS
 // ============================================================
 
@@ -4576,6 +4673,8 @@ async function analyzeIndex(
       candidates: candidateTrades
     });
 
+  const noTradeIntelligence = buildNoTradeIntelligence({ index, market, technical, movement, regime: marketRegime, confidenceData, decisionEngine });
+
   const trades = decisionEngine.allowed && decisionEngine.trade
     ? [decisionEngine.trade]
     : [];
@@ -4645,6 +4744,8 @@ async function analyzeIndex(
       decisionEngine.decision,
 
     decision: decisionEngine,
+
+    noTradeIntelligence,
 
     trades,
 
@@ -5328,6 +5429,38 @@ app.get(
 );
 
 // ============================================================
+// STEP 12 — NO-TRADE INTELLIGENCE API
+// Read-only view of the latest deterministic no-trade explanation.
+// It does not trigger a fresh scan and therefore cannot create a
+// new Step 11 confirmation by itself.
+// ============================================================
+
+app.get(
+  "/api/no-trade",
+  (req, res) => {
+    const index = normalizeIndex(req.query.index) || "NIFTY";
+    if (!INDICES[index]) {
+      return res.status(400).json({ ok: false, error: "Invalid index" });
+    }
+
+    const analysis = state.analysis?.[index] || null;
+    const intelligence = analysis?.noTradeIntelligence || {
+      available: true,
+      status: "NO_TRADE",
+      decision: "NO TRADE",
+      index,
+      primaryReason: "No analysis snapshot is available yet.",
+      primaryCode: "NO_ANALYSIS",
+      reasons: [{ code: "NO_ANALYSIS", category: "SYSTEM", severity: "INFO", reason: "ERA has not generated an analysis snapshot for this index yet.", action: "Run market analysis before evaluating no-trade conditions." }],
+      whatMustChange: ["Run market analysis and wait for a fresh deterministic market snapshot."],
+      evaluatedAt: nowISO()
+    };
+
+    return res.json({ ok: true, index, noTradeIntelligence: intelligence, updatedAt: nowISO() });
+  }
+);
+
+// ============================================================
 // ANALYSIS
 // ============================================================
 
@@ -5802,6 +5935,7 @@ function buildAIBrainContext(index) {
       decision: analysis.decision || null,
       reasons: Array.isArray(analysis.reasons) ? analysis.reasons.slice(0, 8) : [],
       risks: Array.isArray(analysis.risks) ? analysis.risks.slice(0, 8) : [],
+      noTradeIntelligence: analysis.noTradeIntelligence || null,
       technical: {
         emaTrend: technical.emaTrend,
         ema9: technical.ema9,
@@ -5900,6 +6034,7 @@ Rules:
 - Treat confidence as a model score, not a probability of profit.
 - A trade response may name CE/PE, strike, expiry, entry, stop loss and targets only when those values are present in the supplied data.
 - If evidence is incomplete or contradictory, choose WAIT.
+- Use noTradeIntelligence as an explanation layer only; never treat it as permission to bypass the deterministic trade gate.
 - Never guarantee profit or certainty.
 - Separate observed facts from reasoning.
 - Keep the answer concise, clear and useful to an Indian trader.
