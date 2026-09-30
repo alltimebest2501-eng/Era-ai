@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.6.0-step8-regime-options";
+const VERSION = "9.0.0-step9-exact-strike";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -3652,181 +3652,213 @@ function calculateConfidence(
 // OPTION TRADE SETUP
 // ============================================================
 
+// ============================================================
+// STEP 9 — EXACT STRIKE SELECTION ENGINE
+// Select one concrete option contract using deterministic market + Greeks +
+// liquidity scoring. The AI does not invent a strike; this engine supplies it.
+// ============================================================
+
 function createOptionTrades(
   index,
   market,
   movement,
   confidenceData,
-  rows
+  rows,
+  expiry = null,
+  optionAdvanced = null,
+  technical = null
 ) {
-  if (
-    !market ||
-    !market.available
-  ) {
+  if (!market || !market.available || !movement?.significant) {
     return [];
   }
 
-  if (
-    !movement.significant
-  ) {
+  // ERA trade signals remain gated at 65% confidence or higher.
+  const tradeMinConfidence = Math.max(
+    65,
+    Number(state.settings?.minConfidence || 60)
+  );
+
+  if (Number(confidenceData?.confidence || 0) < tradeMinConfidence) {
     return [];
   }
 
-  if (
-    confidenceData.confidence <
-    61
-  ) {
-    return [];
-  }
-
-  const direction =
-    movement.direction;
-
+  const direction = movement.direction;
   const optionType =
-    direction === "UP"
-      ? "CE"
-      : direction === "DOWN"
-        ? "PE"
-        : null;
+    direction === "UP" ? "CE" :
+    direction === "DOWN" ? "PE" : null;
 
-  if (!optionType) {
+  if (!optionType || !Array.isArray(rows) || !rows.length) {
     return [];
   }
 
-  const spot =
-    Number(
-      market.price
-    );
+  const spot = Number(market.price);
+  if (!Number.isFinite(spot) || spot <= 0) return [];
 
-  const sorted =
-    [...rows]
-      .sort(
-        (a, b) =>
-          Math.abs(
-            a.strike -
-            spot
-          ) -
-          Math.abs(
-            b.strike -
-            spot
-          )
-      )
-      .slice(0, 9);
+  const validRows = rows
+    .filter(row => Number.isFinite(Number(row?.strike)))
+    .sort((a, b) => Math.abs(Number(a.strike) - spot) - Math.abs(Number(b.strike) - spot));
 
-  const trades = [];
+  if (!validRows.length) return [];
 
-  for (
-    const row of sorted
-  ) {
-    const side =
-      optionType === "CE"
-        ? row.call
-        : row.put;
+  // Infer the exchange strike step from the option chain instead of hard-coding
+  // one value, so NIFTY/BANKNIFTY/FINNIFTY/SENSEX can use their own spacing.
+  const uniqueStrikes = [...new Set(validRows.map(r => Number(r.strike)).filter(Number.isFinite))].sort((a, b) => a - b);
+  const stepCandidates = [];
+  for (let i = 1; i < uniqueStrikes.length; i++) {
+    const d = uniqueStrikes[i] - uniqueStrikes[i - 1];
+    if (d > 0) stepCandidates.push(d);
+  }
+  const strikeStep = stepCandidates.length
+    ? stepCandidates.sort((a, b) => a - b)[Math.floor(stepCandidates.length / 2)]
+    : Math.max(1, Math.round(spot * 0.005));
 
-    if (
-      !side ||
-      !side.instrumentKey
-    ) {
-      continue;
+  const maxDistance = Math.max(strikeStep * 6, spot * 0.025);
+  const candidates = [];
+
+  for (const row of validRows) {
+    const strike = Number(row.strike);
+    const distance = Math.abs(strike - spot);
+    if (distance > maxDistance) continue;
+
+    const side = optionType === "CE" ? row.call : row.put;
+    if (!side || !side.instrumentKey) continue;
+
+    const entry = Number(side.ltp);
+    if (!Number.isFinite(entry) || entry <= 0) continue;
+
+    const volume = Math.max(0, Number(side.volume) || 0);
+    const oi = Math.max(0, Number(side.oi) || 0);
+    if (volume <= 0 && oi <= 0) continue;
+
+    const bid = Number(side.bidPrice) || 0;
+    const ask = Number(side.askPrice) || 0;
+    let spreadPct = null;
+    if (bid > 0 && ask >= bid) {
+      spreadPct = ((ask - bid) / Math.max(entry, 0.01)) * 100;
+      // Avoid contracts whose quoted spread is too wide for a deterministic
+      // entry price. Missing bid/ask is allowed when LTP/OI/volume are valid.
+      if (spreadPct > 15) continue;
     }
 
-    const entry =
-      Number(
-        side.ltp
-      );
+    const rawDelta = Number(side.delta);
+    const absDelta = Number.isFinite(rawDelta) && rawDelta !== 0 ? Math.abs(rawDelta) : null;
+    if (absDelta !== null && (absDelta < 0.20 || absDelta > 0.80)) continue;
 
-    if (
-      !Number.isFinite(
-        entry
-      ) ||
-      entry <= 0
-    ) {
-      continue;
-    }
-
-    const stopLoss =
-      entry *
-      (
-        confidenceData.confidence >=
-        75
-          ? 0.83
-          : 0.80
-      );
-
-    const risk =
-      entry -
-      stopLoss;
-
-    if (
-      risk <= 0
-    ) {
-      continue;
-    }
-
-    const target1 =
-      entry +
-      risk * 1.5;
-
-    const target2 =
-      entry +
-      risk * 2.5;
-
-    const target3 =
-      entry +
-      risk * 3.5;
-
-    trades.push({
-      index,
-
-      instrumentKey:
-        side.instrumentKey,
-
-      optionType,
-
-      strike:
-        row.strike,
-
-      signal:
-        "BUY",
-
-      direction,
-
-      entry:
-        round(entry),
-
-      stopLoss:
-        round(stopLoss),
-
-      targets: [
-        round(target1),
-        round(target2),
-        round(target3)
-      ],
-
-      rr: 3.5,
-
-      confidence:
-        confidenceData.confidence,
-
-      status:
-        confidenceData.confidence >=
-        75
-          ? "CONFIRMED"
-          : "SETUP",
-
-      invalidation:
-        `Option price below ${round(
-          stopLoss
-        )}`,
-
-      generatedAt:
-        nowISO()
-    });
+    candidates.push({ row, side, strike, distance, entry, volume, oi, spreadPct, absDelta });
   }
 
-  return trades
-    .filter(t => Number(t?.confidence || 0) > 60)
-    .slice(0, 3);
+  if (!candidates.length) return [];
+
+  const maxVolume = Math.max(...candidates.map(c => c.volume), 1);
+  const maxOI = Math.max(...candidates.map(c => c.oi), 1);
+  const atmIV = Number(optionAdvanced?.atmIV);
+
+  for (const c of candidates) {
+    const distanceScore = Math.max(0, 1 - c.distance / maxDistance) * 30;
+
+    let deltaScore = 15;
+    if (c.absDelta !== null) {
+      deltaScore = Math.max(0, 1 - Math.abs(c.absDelta - 0.50) / 0.30) * 25;
+    }
+
+    const liquidityScore =
+      (Math.log1p(c.volume) / Math.log1p(maxVolume)) * 10 +
+      (Math.log1p(c.oi) / Math.log1p(maxOI)) * 10;
+
+    // Scoring weights total exactly 100: distance 30 + delta 25 +
+    // liquidity 20 + spread 20 + IV 5.
+    let spreadScore = 20;
+    if (c.spreadPct !== null) {
+      spreadScore = Math.max(0, 20 - c.spreadPct * 2);
+    }
+
+    let ivScore = 5;
+    const sideIV = Number(c.side.iv);
+    if (Number.isFinite(atmIV) && atmIV > 0 && Number.isFinite(sideIV) && sideIV > 0) {
+      const ivDistance = Math.abs(sideIV - atmIV) / atmIV;
+      ivScore = Math.max(0, 5 - ivDistance * 10);
+    }
+
+    c.score = distanceScore + deltaScore + liquidityScore + spreadScore + ivScore;
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  const selected = candidates[0];
+
+  // A weak contract should result in NO TRADE rather than forcing an exact strike.
+  if (!selected || selected.score < 55) return [];
+
+  const entry = selected.entry;
+
+  // Step 9 uses the underlying ATR + option delta to estimate a dynamic
+  // premium risk instead of applying one fixed 20% stop to every contract.
+  // Step 10 can later refine these levels with the full risk/decision engine.
+  const underlyingATR = Number(technical?.atr);
+  const deltaForRisk = selected.absDelta ?? 0.50;
+  const volatilityLabel = String(technical?.volatility?.state || '').toUpperCase();
+  let rawRisk = Number.isFinite(underlyingATR) && underlyingATR > 0
+    ? underlyingATR * Math.max(0.20, Math.min(0.80, deltaForRisk))
+    : entry * 0.20;
+
+  if (volatilityLabel.includes('HIGH')) rawRisk *= 1.15;
+  if (volatilityLabel.includes('LOW')) rawRisk *= 0.85;
+
+  // Keep the provisional premium risk bounded so a missing/noisy ATR cannot
+  // create an unusable stop distance.
+  const minRisk = entry * 0.10;
+  const maxRisk = entry * 0.35;
+  const risk = Math.max(minRisk, Math.min(maxRisk, rawRisk));
+  const stopLoss = entry - risk;
+  if (!Number.isFinite(risk) || risk <= 0 || stopLoss <= 0) return [];
+
+  const target1 = entry + risk * 1.5;
+  const target2 = entry + risk * 2.5;
+  const target3 = entry + risk * 3.5;
+
+  const deltaText = selected.absDelta === null ? "delta unavailable" : `Δ ${round(selected.absDelta, 2)}`;
+  const spreadText = selected.spreadPct === null ? "spread unavailable" : `spread ${round(selected.spreadPct, 2)}%`;
+  const reason =
+    `${optionType} ${round(selected.strike)} selected near ATM with ${deltaText}, ` +
+    `OI ${Math.round(selected.oi)}, volume ${Math.round(selected.volume)}, ${spreadText}; ` +
+    `selection score ${round(selected.score, 1)}/100.`;
+
+  return [{
+    index,
+    instrumentKey: selected.side.instrumentKey,
+    optionType,
+    strike: round(selected.strike),
+    expiry: expiry || selected.row.expiry || null,
+    signal: "BUY",
+    direction,
+    entry: round(entry),
+    stopLoss: round(stopLoss),
+    targets: [round(target1), round(target2), round(target3)],
+    rr: 3.5,
+    riskModel: {
+      method: 'UNDERLYING_ATR_X_DELTA',
+      underlyingATR: Number.isFinite(underlyingATR) ? round(underlyingATR) : null,
+      deltaUsed: round(deltaForRisk, 3),
+      volatility: volatilityLabel || null,
+      premiumRisk: round(risk),
+      riskPercent: round((risk / entry) * 100, 2)
+    },
+    confidence: Number(confidenceData.confidence),
+    status: Number(confidenceData.confidence) >= 75 ? "CONFIRMED" : "SETUP",
+    invalidation: `Option price below ${round(stopLoss)}`,
+    strikeSelection: {
+      method: "ATM_DELTA_LIQUIDITY_SCORE",
+      score: round(selected.score, 1),
+      spot: round(spot),
+      strikeStep: round(strikeStep),
+      distanceFromSpot: round(selected.distance, 2),
+      delta: selected.absDelta === null ? null : round(selected.absDelta, 3),
+      volume: Math.round(selected.volume),
+      oi: Math.round(selected.oi),
+      spreadPct: selected.spreadPct === null ? null : round(selected.spreadPct, 3),
+      reason
+    },
+    generatedAt: nowISO()
+  }];
 }
 
 // ============================================================
@@ -4081,7 +4113,10 @@ async function analyzeIndex(
       market,
       movement,
       confidenceData,
-      optionRows
+      optionRows,
+      expiry,
+      optionAdvanced,
+      technical
     );
 
   recordGeneratedTrades(trades);
@@ -4115,6 +4150,8 @@ async function analyzeIndex(
     movement,
 
     technical,
+
+    exactStrikeSelection: trades[0]?.strikeSelection || null,
 
     options: {
       expiry,
@@ -5267,7 +5304,8 @@ function buildAIBrainContext(index) {
         stopLoss: trade.stopLoss,
         targets: Array.isArray(trade.targets) ? trade.targets.slice(0, 3) : [],
         confidence: trade.confidence,
-        status: trade.status
+        status: trade.status,
+        strikeSelection: trade.strikeSelection || null
       }))
     : [];
 
@@ -5324,6 +5362,7 @@ function buildAIBrainContext(index) {
         multiTimeframe: technical.multiTimeframe
       },
       regime: analysis.regime || null,
+      exactStrikeSelection: analysis.exactStrikeSelection || trades[0]?.strikeSelection || null,
       options: {
         expiry: options.expiry,
         summary: options.summary || null,
@@ -5573,7 +5612,8 @@ Use the supplied market and analysis data as the source of truth.`;
       const compactTrades = Array.isArray(a.trades) ? a.trades.slice(0, 3).map(x => ({
         optionType: x.optionType, strike: x.strike, entry: x.entry,
         stopLoss: x.stopLoss, targets: Array.isArray(x.targets) ? x.targets.slice(0, 3) : [],
-        confidence: x.confidence, status: x.status
+        confidence: x.confidence, status: x.status, expiry: x.expiry,
+        strikeSelection: x.strikeSelection || null
       })) : [];
       const compactContext = {
         index,
@@ -5610,6 +5650,7 @@ Use the supplied market and analysis data as the source of truth.`;
             multiTimeframe: t.multiTimeframe || null
           },
           regime: a.regime || null,
+          exactStrikeSelection: a.exactStrikeSelection || compactTrades[0]?.strikeSelection || null,
           options: {
             expiry: o.expiry || null,
             summary: o.summary || null,
