@@ -8,6 +8,16 @@ const axios = require("axios");
 const webpush = require("web-push");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const { AsyncLocalStorage } = require("async_hooks");
+
+// STEP 22/PHASE 2: PostgreSQL persistence is optional until DATABASE_URL is configured.
+let PgPool = null;
+try {
+  ({ Pool: PgPool } = require("pg"));
+} catch (error) {
+  console.warn("[ERA] pg package not installed. Persistent DB mode will remain unavailable until dependency is installed.");
+}
 
 // STEP 3 PHASE 2: Upstox V3 real-time market feed SDK
 let UpstoxClient = null;
@@ -20,10 +30,43 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "9.1.0-step14-paper-trading";
+const VERSION = "10.2.0-phase2-persistent-auth-foundation";
 
-app.use(cors());
+// STEP 22: security/cloud hardening. Existing auth/UI behavior is preserved.
+const ALLOWED_ORIGIN = String(process.env.ERA_ALLOWED_ORIGIN || "*").trim();
+app.use(cors({ origin: ALLOWED_ORIGIN === "*" ? true : ALLOWED_ORIGIN, credentials: ALLOWED_ORIGIN !== "*" }));
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  const requestId = `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  req.eraRequestId = requestId;
+  res.setHeader("X-Request-ID", requestId);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+  if (req.secure || req.headers["x-forwarded-proto"] === "https") res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  next();
+});
 app.use(express.json({ limit: "2mb" }));
+
+const rateBuckets = new Map();
+function eraRateLimit({ windowMs = 60000, max = 60, keyPrefix = "api" } = {}) {
+  return (req, res, next) => {
+    const ip = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
+    const key = `${keyPrefix}:${ip}`; const now = Date.now();
+    let bucket = rateBuckets.get(key);
+    if (!bucket || now - bucket.startedAt >= windowMs) { bucket = { startedAt: now, count: 0 }; rateBuckets.set(key, bucket); }
+    bucket.count += 1;
+    res.setHeader("X-RateLimit-Limit", String(max));
+    res.setHeader("X-RateLimit-Remaining", String(Math.max(0, max - bucket.count)));
+    if (bucket.count > max) {
+      res.setHeader("Retry-After", String(Math.ceil((windowMs - (now - bucket.startedAt)) / 1000)));
+      return res.status(429).json({ ok:false, error:"Too many requests", requestId:req.eraRequestId });
+    }
+    next();
+  };
+}
+setInterval(() => { const cutoff = Date.now() - 10 * 60_000; for (const [key, b] of rateBuckets) if (b.startedAt < cutoff) rateBuckets.delete(key); }, 5 * 60_000).unref();
 
 // Serve the test UI from the root index.html shipped with this package.
 // This avoids accidentally serving an older public/index.html from a previous deploy.
@@ -57,6 +100,14 @@ const BACKEND_URL =
 const UPSTOX_ACCESS_TOKEN =
   process.env.UPSTOX_ACCESS_TOKEN || "";
 
+// STEP 20: Broker execution is OFF by default. Live orders require an explicit
+// environment enable flag AND an explicit live=true request.
+const BROKER_EXECUTION_ENABLED = String(process.env.ERA_BROKER_EXECUTION_ENABLED || "false").toLowerCase() === "true";
+const BROKER_NAME = String(process.env.ERA_BROKER_NAME || "upstox").toLowerCase();
+const BROKER_ORDER_BASE_URL = process.env.ERA_BROKER_ORDER_BASE_URL || "https://api-hft.upstox.com/v3";
+const BROKER_STATUS_BASE_URL = process.env.ERA_BROKER_STATUS_BASE_URL || "https://api.upstox.com/v2";
+const BROKER_PRODUCT = process.env.ERA_BROKER_PRODUCT || "I";
+
 const OPENROUTER_API_KEY =
   process.env.OPENROUTER_API_KEY || "";
 
@@ -74,12 +125,248 @@ const VAPID_SUBJECT =
   process.env.VAPID_SUBJECT ||
   "mailto:admin@era-ai.app";
 
+// STEP 22/PHASE 2 — persistent database readiness.
+async function ensurePersistentDatabase() {
+  if (!DATABASE_URL || !dbPool) return false;
+  try {
+    await initPersistentDatabase();
+    return true;
+  } catch (error) {
+    dbReady = false;
+    console.error("[ERA] Persistent DB initialization failed:", error.message);
+    return false;
+  }
+}
+
 // ============================================================
 // TEST AUTH / EMAIL OTP
 // ============================================================
 const authOtps = new Map();
 const AUTH_OTP_TTL_MS = 5 * 60 * 1000;
 const AUTH_RESEND_MS = 10 * 1000;
+const AUTH_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+const AUTH_MAX_OTP_ATTEMPTS = 5;
+const authSessions = new Map();
+const AUTH_SESSION_SECRET = process.env.ERA_AUTH_SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+
+const DATABASE_URL = String(process.env.DATABASE_URL || process.env.POSTGRES_URL || "").trim();
+const DB_SSL = String(process.env.ERA_DB_SSL || "true").toLowerCase() !== "false";
+const dbPool = PgPool && DATABASE_URL ? new PgPool({ connectionString: DATABASE_URL, ssl: DB_SSL ? { rejectUnauthorized: false } : false, max: 5 }) : null;
+let dbReady = false;
+
+async function initPersistentDatabase() {
+  if (!dbPool) return false;
+  await dbPool.query(`
+    CREATE TABLE IF NOT EXISTS era_users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE,
+      mobile TEXT UNIQUE,
+      verified BOOLEAN NOT NULL DEFAULT FALSE,
+      login_method TEXT NOT NULL DEFAULT 'email',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE TABLE IF NOT EXISTS era_sessions (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES era_users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_era_sessions_user ON era_sessions(user_id);
+    CREATE INDEX IF NOT EXISTS idx_era_sessions_expiry ON era_sessions(expires_at);
+    CREATE TABLE IF NOT EXISTS era_user_state (
+      user_id TEXT PRIMARY KEY REFERENCES era_users(id) ON DELETE CASCADE,
+      state_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  dbReady = true;
+  return true;
+}
+
+function userIdFor(user) {
+  const identity = normalizeAuthEmail(user?.email || user?.mobile || "");
+  return crypto.createHash("sha256").update(`${user?.loginMethod || user?.login_method || "email"}:${identity}`).digest("hex").slice(0, 32);
+}
+
+async function upsertPersistentUser(user) {
+  if (!dbReady || !dbPool) return userIdFor(user);
+  const id = userIdFor(user);
+  await dbPool.query(`
+    INSERT INTO era_users(id,email,mobile,verified,login_method) VALUES($1,$2,$3,$4,$5)
+    ON CONFLICT(id) DO UPDATE SET email=EXCLUDED.email,mobile=EXCLUDED.mobile,verified=EXCLUDED.verified,login_method=EXCLUDED.login_method,updated_at=NOW()
+  `, [id, user.email || null, user.mobile || null, Boolean(user.verified), user.loginMethod || "email"]);
+  return id;
+}
+
+function hashSessionToken(token) {
+  return crypto.createHash("sha256").update(String(token)).digest("hex");
+}
+
+async function persistAuthSession(token, user, expiresAt) {
+  if (!dbReady || !dbPool) return;
+  const userId = await upsertPersistentUser(user);
+  await dbPool.query(`INSERT INTO era_sessions(token_hash,user_id,expires_at) VALUES($1,$2,$3) ON CONFLICT(token_hash) DO UPDATE SET expires_at=EXCLUDED.expires_at`, [hashSessionToken(token), userId, new Date(expiresAt)]);
+}
+
+async function loadPersistentSession(token) {
+  if (!dbReady || !dbPool || !token) return null;
+  const r = await dbPool.query(`SELECT s.expires_at,u.email,u.mobile,u.verified,u.login_method FROM era_sessions s JOIN era_users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>NOW()`, [hashSessionToken(token)]);
+  if (!r.rows.length) return null;
+  const row = r.rows[0];
+  return { token, user: { ...(row.email ? { email: row.email } : {}), ...(row.mobile ? { mobile: row.mobile } : {}), verified: row.verified, loginMethod: row.login_method }, createdAt: Date.now(), expiresAt: new Date(row.expires_at).getTime() };
+}
+
+async function deletePersistentSession(token) {
+  if (dbReady && dbPool && token) await dbPool.query("DELETE FROM era_sessions WHERE token_hash=$1", [hashSessionToken(token)]);
+}
+
+async function createAuthSessionPersistent(user) {
+  const token = createAuthSession(user);
+  const expiresAt = Date.now() + AUTH_SESSION_TTL_MS;
+  await persistAuthSession(token, user, expiresAt);
+  return token;
+}
+
+function createAuthSession(user) {
+  const sessionId = crypto.randomBytes(32).toString("hex");
+  const token = crypto.createHmac("sha256", AUTH_SESSION_SECRET).update(sessionId).digest("hex");
+  authSessions.set(token, { user: { ...user }, createdAt: Date.now(), expiresAt: Date.now() + AUTH_SESSION_TTL_MS });
+  return token;
+}
+
+function parseCookies(req) {
+  const raw = String(req.headers.cookie || "");
+  const out = {};
+  for (const part of raw.split(";")) {
+    const i = part.indexOf("=");
+    if (i <= 0) continue;
+    out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return out;
+}
+
+function getAuthSession(req) {
+  const token = parseCookies(req).era_session;
+  if (!token) return null;
+  const session = authSessions.get(token);
+  if (!session || Date.now() > session.expiresAt) {
+    if (session) authSessions.delete(token);
+    return null;
+  }
+  return { token, ...session };
+}
+
+const USER_SCOPED_STATE_KEYS = [
+  "settings",
+  "alerts",
+  "pushSubscriptions",
+  "history",
+  "setupMemory",
+  "notificationHistory",
+  "tradeAlerts",
+  "paper",
+  "journal",
+  "executionLedger",
+  "backtests",
+  "risk"
+];
+
+const userStateLocks = new Map();
+
+function cloneJson(value) {
+  try { return JSON.parse(JSON.stringify(value)); } catch (_) { return value; }
+}
+
+function getUserScopedStateSnapshot() {
+  const snapshot = {};
+  for (const key of USER_SCOPED_STATE_KEYS) snapshot[key] = cloneJson(state[key]);
+  snapshot.aiSelfAudit = cloneJson(state.aiSelfAudit || null);
+  return snapshot;
+}
+
+function applyUserScopedState(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") return;
+  for (const key of USER_SCOPED_STATE_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(snapshot, key)) state[key] = cloneJson(snapshot[key]);
+  }
+  if (Object.prototype.hasOwnProperty.call(snapshot, "aiSelfAudit")) state.aiSelfAudit = cloneJson(snapshot.aiSelfAudit);
+}
+
+async function loadUserScopedState(userId) {
+  if (!dbReady || !dbPool || !userId) return;
+  const result = await dbPool.query("SELECT state_json FROM era_user_state WHERE user_id=$1", [userId]);
+  if (result.rows.length) {
+    applyUserScopedState(result.rows[0].state_json || {});
+    return;
+  }
+  // One-time compatibility bootstrap: the first authenticated user receives the
+  // existing legacy file state. New users receive clean defaults thereafter.
+  const bootstrap = getUserScopedStateSnapshot();
+  await dbPool.query(
+    "INSERT INTO era_user_state(user_id,state_json) VALUES($1,$2::jsonb) ON CONFLICT(user_id) DO NOTHING",
+    [userId, JSON.stringify(bootstrap)]
+  );
+}
+
+async function saveUserScopedState(userId) {
+  if (!dbReady || !dbPool || !userId) return;
+  const snapshot = getUserScopedStateSnapshot();
+  await dbPool.query(
+    `INSERT INTO era_user_state(user_id,state_json,updated_at) VALUES($1,$2::jsonb,NOW())
+     ON CONFLICT(user_id) DO UPDATE SET state_json=EXCLUDED.state_json,updated_at=NOW()`,
+    [userId, JSON.stringify(snapshot)]
+  );
+}
+
+async function withUserStateLock(userId, task) {
+  const previous = userStateLocks.get(userId) || Promise.resolve();
+  let release;
+  const current = new Promise(resolve => { release = resolve; });
+  userStateLocks.set(userId, current);
+  await previous;
+  try { return await task(); } finally {
+    release();
+    if (userStateLocks.get(userId) === current) userStateLocks.delete(userId);
+  }
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const token = parseCookies(req).era_session;
+    const session = getAuthSession(req) || await loadPersistentSession(token);
+    if (!session) return res.status(401).json({ ok:false, error:"Authentication required.", code:"AUTH_REQUIRED", requestId:req.eraRequestId });
+    req.eraUser = session.user;
+    req.eraUserId = userIdFor(session.user);
+    if (!dbReady || !dbPool) {
+      return res.status(503).json({ok:false,error:"Persistent user database is required for authenticated data access.",code:"USER_DB_REQUIRED",requestId:req.eraRequestId});
+    }
+    const previous = userStateLocks.get(req.eraUserId) || Promise.resolve();
+    let releaseLock;
+    const lockPromise = new Promise(resolve => { releaseLock = resolve; });
+    userStateLocks.set(req.eraUserId, lockPromise);
+    await previous;
+    await loadUserScopedState(req.eraUserId);
+    let released = false;
+    const finish = async () => {
+      if (released) return;
+      released = true;
+      try { await saveUserScopedState(req.eraUserId); }
+      catch (error) { console.error("[ERA] User state persistence error:", error.message); }
+      releaseLock();
+      if (userStateLocks.get(req.eraUserId) === lockPromise) userStateLocks.delete(req.eraUserId);
+    };
+    res.once("finish", finish);
+    res.once("close", finish);
+    next();
+  } catch (error) {
+    return res.status(503).json({ ok:false, error:"Authentication service unavailable.", code:"AUTH_SERVICE_UNAVAILABLE", requestId:req.eraRequestId });
+  }
+}
+function setAuthCookie(res, token) {
+  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `era_session=${encodeURIComponent(token)}; Max-Age=${Math.floor(AUTH_SESSION_TTL_MS/1000)}; Path=/; HttpOnly; SameSite=Lax${secure}`);
+}
 
 function normalizeAuthEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -132,7 +419,7 @@ async function sendEmailOtp(email, otp) {
   return response.data;
 }
 
-app.post("/api/auth/send-otp", async (req, res) => {
+app.post("/api/auth/send-otp", eraRateLimit({windowMs:10*60_000,max:8,keyPrefix:"otp-send"}), async (req, res) => {
   try {
     const mode = req.body?.mode === "mobile" ? "mobile" : "email";
     const value = String(req.body?.value || "").trim();
@@ -151,7 +438,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
     }
 
     const otp = String(Math.floor(100000 + Math.random() * 900000));
-    authOtps.set(key, { otp, sentAt: Date.now(), expiresAt: Date.now() + AUTH_OTP_TTL_MS });
+    authOtps.set(key, { otp, sentAt: Date.now(), expiresAt: Date.now() + AUTH_OTP_TTL_MS, attempts: 0 });
 
     if (mode === "email") {
       await sendEmailOtp(normalizeAuthEmail(value), otp);
@@ -166,7 +453,7 @@ app.post("/api/auth/send-otp", async (req, res) => {
   }
 });
 
-app.post("/api/auth/verify-otp", (req, res) => {
+app.post("/api/auth/verify-otp", eraRateLimit({windowMs:10*60_000,max:20,keyPrefix:"otp-verify"}), async (req, res) => {
   const mode = req.body?.mode === "mobile" ? "mobile" : "email";
   const value = String(req.body?.value || "").trim();
   const otp = String(req.body?.otp || "").trim();
@@ -177,11 +464,37 @@ app.post("/api/auth/verify-otp", (req, res) => {
   if (!/^\d{6}$/.test(otp)) return res.status(400).json({ ok: false, error: "Enter the 6-digit OTP." });
   if (!record) return res.status(400).json({ ok: false, error: "OTP not found. Please request a new OTP." });
   if (Date.now() > record.expiresAt) { authOtps.delete(key); return res.status(400).json({ ok: false, error: "OTP expired. Please request a new OTP." }); }
-  if (record.otp !== otp) return res.status(400).json({ ok: false, error: "Incorrect OTP. Please try again." });
+  if (record.otp !== otp) {
+    record.attempts = Number(record.attempts || 0) + 1;
+    if (record.attempts >= AUTH_MAX_OTP_ATTEMPTS) authOtps.delete(key);
+    return res.status(400).json({ ok: false, error: record.attempts >= AUTH_MAX_OTP_ATTEMPTS ? "Too many incorrect OTP attempts. Please request a new OTP." : "Incorrect OTP. Please try again." });
+  }
 
   authOtps.delete(key);
   const user = mode === "email" ? { email: normalized, verified: true, loginMethod: "email" } : { mobile: normalized, verified: true, loginMethod: "mobile" };
+  let sessionToken;
+  try {
+    sessionToken = await createAuthSessionPersistent(user);
+  } catch (error) {
+    console.error("[ERA] Persistent auth session error:", error.message);
+    return res.status(503).json({ ok:false, error:"Authentication persistence is temporarily unavailable.", code:"AUTH_PERSISTENCE_UNAVAILABLE" });
+  }
+  setAuthCookie(res, sessionToken);
   return res.json({ ok: true, user });
+});
+
+app.get("/api/auth/me", async (req, res) => {
+  const session = getAuthSession(req) || await loadPersistentSession(parseCookies(req).era_session);
+  if (!session) return res.status(401).json({ ok:false, authenticated:false });
+  res.json({ ok:true, authenticated:true, user:session.user, expiresAt:new Date(session.expiresAt).toISOString() });
+});
+
+app.post("/api/auth/logout", async (req, res) => {
+  const token = parseCookies(req).era_session;
+  if (token) authSessions.delete(token);
+  await deletePersistentSession(token);
+  res.setHeader("Set-Cookie", "era_session=; Max-Age=0; Path=/; HttpOnly; SameSite=Lax");
+  res.json({ ok:true });
 });
 
 if (
@@ -263,6 +576,20 @@ const state = {
 
   news: [],
 
+  // STEP 16 — NEWS + GLOBAL INTELLIGENCE
+  globalIntelligence: {
+    status: "UNAVAILABLE",
+    updatedAt: null,
+    sourceStatus: {},
+    riskLevel: "LOW",
+    riskScore: 0,
+    marketBias: "NEUTRAL",
+    themes: [],
+    events: [],
+    sources: [],
+    failures: []
+  },
+
   history: [],
 
   pushSubscriptions: [],
@@ -307,6 +634,13 @@ const state = {
   },
 
   journal: [],
+
+  // STEP 15 — PERMANENT APPEND-ONLY EXECUTION LEDGER
+  // This is the canonical execution/history source for paper trades and future broker trades.
+  executionLedger: [],
+
+  // STEP 17 — PROFESSIONAL BACKTESTING
+  backtests: [],
 
   risk: {
     riskPerTrade: 1,
@@ -700,6 +1034,18 @@ function loadState() {
       };
     }
 
+    if (saved.globalIntelligence && typeof saved.globalIntelligence === "object") {
+      state.globalIntelligence = {
+        ...state.globalIntelligence,
+        ...saved.globalIntelligence,
+        sourceStatus: saved.globalIntelligence.sourceStatus || {},
+        themes: Array.isArray(saved.globalIntelligence.themes) ? saved.globalIntelligence.themes : [],
+        events: Array.isArray(saved.globalIntelligence.events) ? saved.globalIntelligence.events : [],
+        sources: Array.isArray(saved.globalIntelligence.sources) ? saved.globalIntelligence.sources : [],
+        failures: Array.isArray(saved.globalIntelligence.failures) ? saved.globalIntelligence.failures : []
+      };
+    }
+
     if (saved.notificationHistory && typeof saved.notificationHistory === "object") {
       state.notificationHistory = saved.notificationHistory;
     }
@@ -708,11 +1054,16 @@ function loadState() {
       state.setupMemory = saved.setupMemory;
     }
 
+    if (Array.isArray(saved.backtests)) {
+      state.backtests = saved.backtests;
+    }
+
     if (saved.paper && typeof saved.paper === "object") {
       state.paper = { ...state.paper, ...saved.paper, positions: Array.isArray(saved.paper.positions) ? saved.paper.positions : [], orders: Array.isArray(saved.paper.orders) ? saved.paper.orders : [], closedTrades: Array.isArray(saved.paper.closedTrades) ? saved.paper.closedTrades : [] };
     }
 
     if (Array.isArray(saved.journal)) state.journal = saved.journal;
+    if (Array.isArray(saved.executionLedger)) state.executionLedger = saved.executionLedger;
     if (saved.risk && typeof saved.risk === "object") state.risk = { ...state.risk, ...saved.risk };
 
   } catch (error) {
@@ -729,35 +1080,8 @@ function saveState() {
       STATE_FILE,
       JSON.stringify(
         {
-          pushSubscriptions:
-            state.pushSubscriptions,
-
-          history:
-            state.history,
-
-          alerts:
-            state.alerts,
-
-          tradeAlerts:
-            state.tradeAlerts,
-
-          settings:
-            state.settings,
-
-          notificationHistory:
-            state.notificationHistory,
-
-          setupMemory:
-            state.setupMemory,
-
-          paper:
-            state.paper,
-
-          journal:
-            state.journal,
-
-          risk:
-            state.risk
+          globalIntelligence:
+            state.globalIntelligence
         },
         null,
         2
@@ -771,7 +1095,46 @@ function saveState() {
   }
 }
 
-loadState();
+function migrateLegacyPaperHistory() {
+  if (Array.isArray(state.executionLedger) && state.executionLedger.length) return;
+  const orders = Array.isArray(state.paper?.orders) ? state.paper.orders : [];
+  const closed = Array.isArray(state.paper?.closedTrades) ? state.paper.closedTrades : [];
+  const migrated = [];
+  const tradeIdByPosition = new Map();
+
+  for (const order of [...orders].reverse()) {
+    if (String(order?.side || "").toUpperCase() !== "BUY") continue;
+    const tradeId = `LEGACY-${order.positionId || order.id}`;
+    if (tradeIdByPosition.has(order.positionId || order.id)) continue;
+    tradeIdByPosition.set(order.positionId || order.id, tradeId);
+    migrated.push({
+      id:`EX-LEGACY-${order.id}`, tradeId, eventType:"OPEN", executionType:"PAPER", side:"BUY",
+      index:order.index||null, optionType:order.optionType||null, strike:Number(order.strike||0)||null, expiry:order.expiry||null,
+      instrumentKey:order.instrumentKey||null, quantity:Number(order.quantity||0), price:Number(order.price||0),
+      source:order.source||"LEGACY_PAPER", positionId:order.positionId||null, alertId:order.alertId||null,
+      executedAt:order.createdAt||nowISO(), stopLoss:0, targets:[], pnl:null, pnlPercent:null, result:null, reason:null, confidence:null, reasoning:null
+    });
+  }
+
+  for (const c of [...closed].reverse()) {
+    const tradeId = tradeIdByPosition.get(c.positionId) || `LEGACY-${c.positionId || c.id}`;
+    if (!tradeIdByPosition.has(c.positionId)) tradeIdByPosition.set(c.positionId, tradeId);
+    migrated.push({
+      id:`EX-LEGACY-CLOSE-${c.id}`, tradeId, eventType:"CLOSE", executionType:"PAPER", side:"SELL",
+      index:c.index||null, optionType:c.optionType||null, strike:Number(c.strike||0)||null, expiry:c.expiry||null, instrumentKey:c.instrumentKey||null,
+      quantity:Number(c.quantity||0), price:Number(c.exit||0), stopLoss:Number(c.stopLoss||0), targets:Array.isArray(c.targets)?c.targets:[],
+      pnl:Number(c.pnl||0), pnlPercent:Number(c.pnlPercent||0), reason:c.reason||null, result:c.reason||null, confidence:c.confidence??null,
+      reasoning:c.reasoning||null, source:"LEGACY_PAPER", alertId:c.alertId||null, positionId:c.positionId||null, executedAt:c.closedAt||nowISO()
+    });
+  }
+
+  if (migrated.length) {
+    state.executionLedger = migrated;
+    saveState();
+  }
+}
+
+migrateLegacyPaperHistory();
 
 // ============================================================
 // HELPERS
@@ -940,6 +1303,24 @@ async function upstoxRequest(
       }
     );
 
+  return response.data;
+}
+
+// STEP 20: authenticated broker request helper for order operations.
+async function upstoxOrderRequest(method, url, body = null, timeout = 20000) {
+  if (!UPSTOX_ACCESS_TOKEN) throw new Error("UPSTOX_ACCESS_TOKEN is not configured");
+  const config = {
+    method,
+    url,
+    timeout,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${UPSTOX_ACCESS_TOKEN}`
+    }
+  };
+  if (body !== null) config.data = body;
+  const response = await axios(config);
   return response.data;
 }
 
@@ -4109,9 +4490,20 @@ function invalidateSetupMemory({ index, direction, optionType, strike, expiry, r
 // ============================================================
 
 function countTradesToday() {
-  // Step 10 and Step 14 use the same execution ledger: paper BUY orders.
-  // Generated opportunities in state.history are not executions.
-  return paperTradesToday();
+  // Step 10 uses the Step 15 canonical execution ledger.
+  // Daily boundaries are explicitly Asia/Kolkata.
+  const dayKey = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const ledger = Array.isArray(state.executionLedger) ? state.executionLedger : [];
+  const ids = new Set();
+  for (const event of ledger) {
+    if (!event || String(event.executionType).toUpperCase() !== "PAPER") continue;
+    if (String(event.eventType).toUpperCase() !== "OPEN") continue;
+    if (String(event.side).toUpperCase() !== "BUY") continue;
+    const ts = new Date(event.executedAt || 0);
+    if (Number.isNaN(ts.getTime())) continue;
+    if (ts.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }) === dayKey) ids.add(event.tradeId || event.id);
+  }
+  return ids.size;
 }
 
 function tradeDecisionEngine({
@@ -5064,8 +5456,11 @@ function applyTradeAlertAction(alert, action, req) {
     return { ok: false, status: 409, error: "A paper position for this exact contract is already open." };
   }
 
+  const tradeId = `T${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
   const position = {
     id: `P${Date.now()}`,
+    tradeId,
     alertId: alert.id,
     index: trade.index,
     optionType: trade.optionType,
@@ -5102,6 +5497,11 @@ function applyTradeAlertAction(alert, action, req) {
     createdAt: nowISO()
   });
   state.paper.orders = state.paper.orders.slice(0, 200);
+  appendExecutionEvent({
+    tradeId, eventType:"OPEN", executionType:"PAPER", side:"BUY", index:trade.index, optionType:trade.optionType,
+    strike:trade.strike, expiry:trade.expiry, instrumentKey:trade.instrumentKey, quantity:qty, price, stopLoss:trade.stopLoss,
+    targets:trade.targets, confidence:trade.confidence, reasoning:position.reasoning, source:"STEP13_TRADE_ALERT", alertId:alert.id, positionId:position.id
+  });
 
   alert.status = "PAPER_TRADE";
   alert.action = "PAPER_TRADE";
@@ -5313,106 +5713,183 @@ async function monitorMarketState() {
 // NEWS
 // ============================================================
 
-async function fetchNews() {
-  try {
-    const query =
-      encodeURIComponent(
-        "Nifty BankNifty Sensex stock market India"
-      );
+// ============================================================
+// NEWS + GLOBAL INTELLIGENCE — STEP 16
+// Multi-topic RSS intelligence, deduplication, event-risk tagging,
+// global market context, source health and AI-ready structured context.
+// No broker/auth/UI changes are made here.
+// ============================================================
 
-    const url =
-      `https://news.google.com/rss/search?q=${query}&hl=en-IN&gl=IN&ceid=IN:en`;
+const STEP16_NEWS_TOPICS = [
+  { key: "india_markets", query: "Nifty Bank Nifty Sensex Indian stock market NSE BSE", weight: 1.2 },
+  { key: "rbi_macro", query: "RBI India inflation interest rates economy", weight: 1.0 },
+  { key: "us_markets", query: "Federal Reserve US stocks Nasdaq S&P 500 Dow Jones", weight: 0.9 },
+  { key: "global_macro", query: "global markets central banks inflation recession", weight: 0.9 },
+  { key: "oil_currency", query: "crude oil Brent WTI USD INR dollar India", weight: 1.0 },
+  { key: "geopolitics", query: "geopolitics war sanctions Middle East Russia Ukraine global markets", weight: 1.1 }
+];
 
-    const response =
-      await axios.get(
-        url,
-        {
-          timeout: 20000
-        }
-      );
+function decodeXml(value = "") {
+  return String(value)
+    .replace(/<!\[CDATA\[/g, "")
+    .replace(/\]\]>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
 
-    const xml =
-      response.data || "";
+function rssField(item, tag) {
+  const match = item.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i"));
+  return match ? decodeXml(match[1]) : "";
+}
 
-    const items =
-      xml.match(
-        /<item>[\s\S]*?<\/item>/g
-      ) || [];
+function normalizeNewsItem(item, topic) {
+  const title = rssField(item, "title");
+  const link = rssField(item, "link");
+  const pubDate = rssField(item, "pubDate");
+  const sourceMatch = item.match(/<source[^>]*>([\s\S]*?)<\/source>/i);
+  const source = sourceMatch ? decodeXml(sourceMatch[1]) : "Google News RSS";
+  const publishedAt = pubDate ? new Date(pubDate).toISOString() : null;
+  if (!title) return null;
+  return {
+    id: `NEWS-${Buffer.from(`${title}|${link}`).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 32)}`,
+    title,
+    link,
+    source,
+    topic: topic.key,
+    publishedAt,
+    fetchedAt: nowISO(),
+    timestamp: publishedAt || nowISO()
+  };
+}
 
-    const news =
-      items
-        .slice(0, 20)
-        .map(
-          item => {
-            const title =
-              (
-                item.match(
-                  /<title>([\s\S]*?)<\/title>/
-                ) || []
-              )[1];
+function newsDedupe(items) {
+  const seen = new Set();
+  return items.filter(item => {
+    const key = String(item.link || item.title || "").toLowerCase().replace(/\\s+/g, " ").trim();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
-            const link =
-              (
-                item.match(
-                  /<link>([\s\S]*?)<\/link>/
-                ) || []
-              )[1];
+function classifyNews(item) {
+  const text = `${item.title} ${item.topic}`.toLowerCase();
+  const positive = /(rally|surge|gains|gain|bullish|record high|eases|cooling inflation|rate cut|stimulus|recovery|strong growth|inflow|falls? in inflation)/i;
+  const negative = /(crash|plunge|selloff|sell-off|bearish|war|attack|sanction|tariff|recession|rate hike|inflation|hawkish|default|crisis|geopolitical|escalat|surge in oil|rupee falls|volatility)/i;
+  const highRisk = /(war|attack|sanction|tariff|emergency|default|crisis|rate decision|fomc|fed decision|rbi policy|repo rate|election|geopolitical|escalat|oil shock)/i;
+  const mediumRisk = /(inflation|cpi|wpi|gdp|jobs|payroll|yield|crude|oil|rupee|currency|central bank|earnings)/i;
+  let sentiment = "NEUTRAL";
+  if (negative.test(text) && !positive.test(text)) sentiment = "NEGATIVE";
+  else if (positive.test(text) && !negative.test(text)) sentiment = "POSITIVE";
+  let risk = "LOW";
+  if (highRisk.test(text)) risk = "HIGH";
+  else if (mediumRisk.test(text)) risk = "MEDIUM";
+  return { ...item, sentiment, eventRisk: risk };
+}
 
-            const pubDate =
-              (
-                item.match(
-                  /<pubDate>([\s\S]*?)<\/pubDate>/
-                ) || []
-              )[1];
-
-            return {
-              title:
-                title
-                  ? title
-                      .replace(
-                        /<!\[CDATA\[/g,
-                        ""
-                      )
-                      .replace(
-                        /\]\]>/g,
-                        ""
-                      )
-                      .trim()
-                  : "",
-
-              link:
-                link
-                  ? link.trim()
-                  : "",
-
-              pubDate:
-                pubDate
-                  ? pubDate.trim()
-                  : ""
-            };
-          }
-        )
-        .filter(
-          item =>
-            item.title
-        );
-
-    state.news =
-      news;
-
-    state.lastNewsFetch =
-      nowISO();
-
-    return news;
-
-  } catch (error) {
-    console.error(
-      "[ERA] News error:",
-      error.message
-    );
-
-    return state.news;
+function buildGlobalIntelligence(items) {
+  const classified = items.map(classifyNews);
+  let score = 0;
+  const themes = new Map();
+  const events = [];
+  for (const item of classified) {
+    const topicWeight = STEP16_NEWS_TOPICS.find(x => x.key === item.topic)?.weight || 1;
+    if (item.sentiment === "POSITIVE") score += 1 * topicWeight;
+    if (item.sentiment === "NEGATIVE") score -= 1 * topicWeight;
+    if (item.eventRisk === "HIGH") events.push({
+      id: item.id,
+      title: item.title,
+      topic: item.topic,
+      source: item.source,
+      publishedAt: item.publishedAt,
+      risk: item.eventRisk,
+      link: item.link
+    });
+    const current = themes.get(item.topic) || { topic: item.topic, positive: 0, negative: 0, neutral: 0 };
+    current[item.sentiment.toLowerCase()] += 1;
+    themes.set(item.topic, current);
   }
+  const riskScore = Math.max(0, Math.min(100, Math.round(
+    classified.reduce((sum, x) => sum + (x.eventRisk === "HIGH" ? 5 : x.eventRisk === "MEDIUM" ? 2 : 0), 0)
+  )));
+  let riskLevel = riskScore >= 35 ? "HIGH" : riskScore >= 15 ? "MEDIUM" : "LOW";
+  if (classified.length < 3) riskLevel = "UNKNOWN";
+  const marketBias = score > 2 ? "BULLISH_BIAS" : score < -2 ? "BEARISH_BIAS" : "NEUTRAL";
+
+  const gift = state.market?.GIFT_NIFTY || {};
+  const vix = state.market?.INDIA_VIX || {};
+  return {
+    status: classified.length ? "LIVE" : "PARTIAL",
+    updatedAt: nowISO(),
+    sourceStatus: state.globalIntelligence?.sourceStatus || {},
+    riskLevel,
+    riskScore,
+    marketBias,
+    themes: Array.from(themes.values()).sort((a,b) => (b.positive+b.negative+b.neutral) - (a.positive+a.negative+a.neutral)),
+    events: events.slice(0, 20),
+    sources: Array.from(new Set(classified.map(x => x.source).filter(Boolean))).slice(0, 30),
+    failures: state.globalIntelligence?.failures || [],
+    marketContext: {
+      giftNifty: { price: gift.price ?? null, change: gift.change ?? null, changePercent: gift.changePercent ?? null, timestamp: gift.timestamp ?? null, stale: gift.stale ?? null },
+      indiaVix: { price: vix.price ?? null, change: vix.change ?? null, changePercent: vix.changePercent ?? null, timestamp: vix.timestamp ?? null, stale: vix.stale ?? null }
+    }
+  };
+}
+
+async function fetchNews() {
+  const all = [];
+  const sourceStatus = {};
+  const failures = [];
+  for (const topic of STEP16_NEWS_TOPICS) {
+    try {
+      const query = encodeURIComponent(topic.query);
+      const url = `https://news.google.com/rss/search?q=${query}&hl=en-IN&gl=IN&ceid=IN:en`;
+      const response = await axios.get(url, { timeout: 15000, headers: { "User-Agent": "Era-AI/16.0" } });
+      const xml = String(response.data || "");
+      const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+      const parsed = items.slice(0, 10).map(x => normalizeNewsItem(x, topic)).filter(Boolean);
+      sourceStatus[topic.key] = { ok: true, count: parsed.length, fetchedAt: nowISO() };
+      all.push(...parsed);
+    } catch (error) {
+      sourceStatus[topic.key] = { ok: false, count: 0, fetchedAt: nowISO(), error: apiError(error) };
+      failures.push({ source: topic.key, error: apiError(error), at: nowISO() });
+    }
+  }
+
+  const news = newsDedupe(all)
+    .map(classifyNews)
+    .sort((a, b) => new Date(b.publishedAt || b.fetchedAt) - new Date(a.publishedAt || a.fetchedAt))
+    .slice(0, 60);
+
+  if (news.length) state.news = news;
+  state.lastNewsFetch = nowISO();
+  state.globalIntelligence = buildGlobalIntelligence(state.news);
+  state.globalIntelligence.sourceStatus = sourceStatus;
+  state.globalIntelligence.failures = failures;
+  if (failures.length && news.length) state.globalIntelligence.status = "PARTIAL";
+  if (!news.length && state.news.length) state.globalIntelligence.status = "STALE";
+  else if (!news.length) state.globalIntelligence.status = "UNAVAILABLE";
+  saveState();
+  return state.news;
+}
+
+function globalIntelligenceContext() {
+  const g = state.globalIntelligence || {};
+  return {
+    status: g.status,
+    updatedAt: g.updatedAt,
+    riskLevel: g.riskLevel,
+    riskScore: g.riskScore,
+    marketBias: g.marketBias,
+    themes: Array.isArray(g.themes) ? g.themes.slice(0, 10) : [],
+    events: Array.isArray(g.events) ? g.events.slice(0, 10) : [],
+    marketContext: g.marketContext || {},
+    sourceHealth: g.sourceStatus || {}
+  };
 }
 
 // ============================================================
@@ -6059,6 +6536,11 @@ app.get(
   }
 );
 
+// STEP 16 — GLOBAL INTELLIGENCE API
+app.get("/api/global-intelligence", (req, res) => {
+  res.json({ ok: true, intelligence: globalIntelligenceContext(), updatedAt: state.globalIntelligence?.updatedAt || null });
+});
+
 // ERA AI BRAIN — STEP 5
 // Structured market context + AI reasoning + deterministic safety gate.
 // This module is additive: existing chat/auth/trading routes remain unchanged.
@@ -6288,7 +6770,7 @@ tradePlan must be null when there is no qualified trade.
   };
 }
 
-app.post("/api/ai/brain", async (req, res) => {
+app.post("/api/ai/brain", requireAuth, async (req, res) => {
   try {
     if (!OPENROUTER_API_KEY) {
       return res.status(503).json({ ok: false, error: "OPENROUTER_API_KEY is not configured" });
@@ -6332,6 +6814,7 @@ app.post("/api/ai/brain", async (req, res) => {
 
 app.post(
   "/api/chat",
+  requireAuth,
   async (req, res) => {
     try {
       if (
@@ -6401,6 +6884,7 @@ Use the supplied market and analysis data as the source of truth.`;
           high: m.high, low: m.low, volume: m.volume, timestamp: m.timestamp,
           source: m.source, stale: m.stale
         },
+        globalIntelligence: globalIntelligenceContext(),
         analysis: {
           direction: a.direction, movement: a.movement, confidence: a.confidence,
           suggestion: a.suggestion, decision: a.decision || null, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
@@ -6560,6 +7044,7 @@ app.post(
 
 app.get(
   "/api/settings",
+  requireAuth,
   (req, res) => {
     res.json({
       ok: true,
@@ -6576,6 +7061,7 @@ app.get(
 
 app.post(
   "/api/settings",
+  requireAuth,
   (req, res) => {
     try {
       const body =
@@ -6654,6 +7140,292 @@ app.post(
     }
   }
 );
+
+// ============================================================
+// STEP 17 — PROFESSIONAL BACKTESTING
+// Historical strategy testing, deterministic execution simulation,
+// slippage/fees, risk-aware sizing, metrics and replay.
+// This layer is independent from live/paper execution and never places
+// broker orders.
+// ============================================================
+
+function parseBacktestDate(value, fallback) {
+  const d = value ? new Date(value) : new Date(fallback);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function candleObject(candle) {
+  return {
+    timestamp: candle[0],
+    open: Number(candle[1]),
+    high: Number(candle[2]),
+    low: Number(candle[3]),
+    close: Number(candle[4]),
+    volume: Number(candle[5] || 0)
+  };
+}
+
+async function fetchHistoricalInstrumentCandlesRange(instrumentKey, interval, fromDate, toDate) {
+  const from = parseBacktestDate(fromDate);
+  const to = parseBacktestDate(toDate);
+  if (!instrumentKey || !from || !to || from >= to) throw new Error("Invalid instrument or backtest date range.");
+  const maxDays = 60;
+  if ((to.getTime() - from.getTime()) > maxDays * 86400000) throw new Error(`Backtest range cannot exceed ${maxDays} days.`);
+  const url = `https://api.upstox.com/v3/historical-candle/${encodeURIComponent(instrumentKey)}/minutes/${Number(interval)}/${to.toISOString().slice(0,10)}/${from.toISOString().slice(0,10)}`;
+  const response = await upstoxRequest(url);
+  return (response.data?.candles || []).filter(c => Array.isArray(c) && c.length >= 6).map(candleObject).filter(c => Number.isFinite(c.close) && c.close > 0).sort((a,b) => new Date(a.timestamp)-new Date(b.timestamp));
+}
+
+async function fetchHistoricalCandlesRange(index, interval, fromDate, toDate) {
+  const config = INDICES[index];
+  if (!config) throw new Error(`Unknown index: ${index}`);
+  const from = parseBacktestDate(fromDate);
+  const to = parseBacktestDate(toDate);
+  if (!from || !to || from >= to) throw new Error("Invalid backtest date range.");
+  const maxDays = 60;
+  if ((to.getTime() - from.getTime()) > maxDays * 86400000) {
+    throw new Error(`Backtest range cannot exceed ${maxDays} days.`);
+  }
+  const url = `https://api.upstox.com/v3/historical-candle/${encodeURIComponent(config.symbol)}/minutes/${Number(interval)}/${to.toISOString().slice(0,10)}/${from.toISOString().slice(0,10)}`;
+  const response = await upstoxRequest(url);
+  const candles = (response.data?.candles || [])
+    .filter(c => Array.isArray(c) && c.length >= 6)
+    .map(candleObject)
+    .filter(c => Number.isFinite(c.close) && c.close > 0)
+    .sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+  return candles;
+}
+
+function backtestAtr(candles, period = 14) {
+  if (candles.length < 2) return null;
+  const trs = [];
+  for (let i = 1; i < candles.length; i++) {
+    const c = candles[i], prev = candles[i - 1];
+    trs.push(Math.max(c.high - c.low, Math.abs(c.high - prev.close), Math.abs(c.low - prev.close)));
+  }
+  if (trs.length < period) return null;
+  return trs.slice(-period).reduce((a,b) => a+b, 0) / period;
+}
+
+function backtestEma(candles, period) {
+  if (candles.length < period) return null;
+  const k = 2 / (period + 1);
+  let ema = candles.slice(0, period).reduce((s,c) => s + c.close, 0) / period;
+  for (let i = period; i < candles.length; i++) ema = candles[i].close * k + ema * (1-k);
+  return ema;
+}
+
+function backtestRsi(candles, period = 14) {
+  if (candles.length <= period) return null;
+  let gains = 0, losses = 0;
+  for (let i = candles.length - period; i < candles.length; i++) {
+    const diff = candles[i].close - candles[i-1].close;
+    if (diff >= 0) gains += diff; else losses += Math.abs(diff);
+  }
+  if (losses === 0) return 100;
+  const rs = (gains / period) / (losses / period);
+  return 100 - (100 / (1 + rs));
+}
+
+function backtestSignal(window, params) {
+  const fast = backtestEma(window, Number(params.fastEma || 20));
+  const slow = backtestEma(window, Number(params.slowEma || 50));
+  const rsi = backtestRsi(window, Number(params.rsiPeriod || 14));
+  const atr = backtestAtr(window, Number(params.atrPeriod || 14));
+  if (![fast, slow, rsi, atr].every(Number.isFinite)) return null;
+  const last = window[window.length - 1];
+  const previous = window.slice(0, -1);
+  const prevFast = backtestEma(previous, Number(params.fastEma || 20));
+  const prevSlow = backtestEma(previous, Number(params.slowEma || 50));
+  const longCross = Number.isFinite(prevFast) && Number.isFinite(prevSlow) && prevFast <= prevSlow && fast > slow;
+  const shortCross = Number.isFinite(prevFast) && Number.isFinite(prevSlow) && prevFast >= prevSlow && fast < slow;
+  const longOk = rsi >= Number(params.longRsiMin ?? 55) && rsi <= Number(params.longRsiMax ?? 75);
+  const shortOk = rsi <= Number(params.shortRsiMax ?? 45) && rsi >= Number(params.shortRsiMin ?? 25);
+  if (longCross && longOk) return { side: "LONG", price: last.close, atr, emaFast: fast, emaSlow: slow, rsi };
+  if (shortCross && shortOk) return { side: "SHORT", price: last.close, atr, emaFast: fast, emaSlow: slow, rsi };
+  return null;
+}
+
+function backtestMetrics(trades, initialCapital, equityCurve) {
+  const wins = trades.filter(t => t.pnl > 0);
+  const losses = trades.filter(t => t.pnl < 0);
+  const grossProfit = wins.reduce((s,t) => s + t.pnl, 0);
+  const grossLoss = Math.abs(losses.reduce((s,t) => s + t.pnl, 0));
+  let peak = initialCapital, maxDrawdown = 0;
+  for (const point of equityCurve) {
+    peak = Math.max(peak, point.equity);
+    maxDrawdown = Math.max(maxDrawdown, peak - point.equity);
+  }
+  const returns = equityCurve.map(x => x.equity / initialCapital - 1);
+  const avgReturn = returns.length ? returns.reduce((a,b)=>a+b,0)/returns.length : 0;
+  const variance = returns.length ? returns.reduce((s,r)=>s + Math.pow(r-avgReturn,2),0)/returns.length : 0;
+  const sharpe = variance > 0 ? (avgReturn / Math.sqrt(variance)) * Math.sqrt(Math.max(1, returns.length)) : 0;
+  return {
+    totalTrades: trades.length,
+    wins: wins.length,
+    losses: losses.length,
+    winRate: trades.length ? Number((wins.length / trades.length * 100).toFixed(2)) : 0,
+    grossProfit: Number(grossProfit.toFixed(2)),
+    grossLoss: Number(grossLoss.toFixed(2)),
+    netPnl: Number(trades.reduce((s,t)=>s+t.pnl,0).toFixed(2)),
+    profitFactor: grossLoss > 0 ? Number((grossProfit / grossLoss).toFixed(3)) : grossProfit > 0 ? null : 0,
+    maxDrawdown: Number(maxDrawdown.toFixed(2)),
+    maxDrawdownPercent: initialCapital ? Number((maxDrawdown / initialCapital * 100).toFixed(2)) : 0,
+    finalEquity: Number((equityCurve.length ? equityCurve[equityCurve.length-1].equity : initialCapital).toFixed(2)),
+    returnPercent: initialCapital ? Number(((equityCurve.length ? equityCurve[equityCurve.length-1].equity / initialCapital - 1 : 0) * 100).toFixed(2)) : 0,
+    sharpeApprox: Number(sharpe.toFixed(3)),
+    avgTradePnl: trades.length ? Number((trades.reduce((s,t)=>s+t.pnl,0)/trades.length).toFixed(2)) : 0
+  };
+}
+
+async function runBacktest(config = {}) {
+  const index = String(config.index || "NIFTY").toUpperCase();
+  const interval = Math.max(1, Number(config.interval || 5));
+  const end = parseBacktestDate(config.to, new Date());
+  const start = parseBacktestDate(config.from, new Date(end.getTime() - 30 * 86400000));
+  if (!start || !end) throw new Error("Invalid backtest dates.");
+  const candles = config.instrumentKey
+    ? await fetchHistoricalInstrumentCandlesRange(config.instrumentKey, interval, start, end)
+    : await fetchHistoricalCandlesRange(index, interval, start, end);
+  if (candles.length < 80) throw new Error(`Not enough historical candles for backtest (${candles.length}).`);
+
+  const p = {
+    fastEma: Number(config.fastEma || 20), slowEma: Number(config.slowEma || 50), rsiPeriod: Number(config.rsiPeriod || 14),
+    atrPeriod: Number(config.atrPeriod || 14), stopAtr: Number(config.stopAtr || 1.2), targetR: Number(config.targetR || 2),
+    slippageBps: Math.max(0, Number(config.slippageBps ?? 5)), feeBps: Math.max(0, Number(config.feeBps ?? 3)),
+    riskPerTrade: Math.max(0.1, Number(config.riskPerTrade ?? 1)), maxBarsInTrade: Math.max(1, Number(config.maxBarsInTrade || 48)),
+    initialCapital: Math.max(1000, Number(config.initialCapital || 100000)), quantity: config.quantity !== undefined && Number(config.quantity) > 0 ? Math.floor(Number(config.quantity)) : null
+  };
+  if (p.fastEma >= p.slowEma) throw new Error("fastEma must be lower than slowEma.");
+
+  let equity = p.initialCapital;
+  let position = null;
+  const trades = [];
+  const equityCurve = [];
+  const replay = [];
+  const warmup = Math.max(p.slowEma + 5, p.atrPeriod + 5, p.rsiPeriod + 5);
+  const slip = p.slippageBps / 10000;
+  const fee = p.feeBps / 10000;
+
+  for (let i = warmup; i < candles.length; i++) {
+    const c = candles[i];
+    if (!position) {
+      // Signal is evaluated only after candle i closes. Execution is deferred
+      // to candle i+1, preventing same-candle look-ahead/execution bias.
+      if (i >= candles.length - 1) {
+        equityCurve.push({ timestamp:c.timestamp, equity:round(equity,2) });
+        continue;
+      }
+      const signal = backtestSignal(candles.slice(0, i + 1), p);
+      if (signal) {
+        const next = candles[i + 1];
+        const rawEntry = Number(next.open);
+        if (!(rawEntry > 0)) {
+          equityCurve.push({ timestamp:c.timestamp, equity:round(equity,2) });
+          continue;
+        }
+        const entry = signal.side === "LONG" ? rawEntry * (1 + slip) : rawEntry * (1 - slip);
+        const stopDistance = Math.max(signal.atr * p.stopAtr, entry * 0.002);
+        const stop = signal.side === "LONG" ? entry - stopDistance : entry + stopDistance;
+        const target = signal.side === "LONG" ? entry + stopDistance * p.targetR : entry - stopDistance * p.targetR;
+        const riskAmount = equity * p.riskPerTrade / 100;
+        const riskPerUnit = Math.abs(entry - stop);
+        const riskQty = Math.max(1, Math.floor(riskAmount / riskPerUnit));
+        const qty = p.quantity ? Math.min(riskQty, p.quantity) : riskQty;
+        position = { side: signal.side, entry, stop, target, quantity: Math.min(qty, p.quantity || qty), entryIndex: i + 1, entryAt: next.timestamp, signalAt: c.timestamp, entryReason: `EMA${p.fastEma}/${p.slowEma} cross + RSI ${signal.rsi.toFixed(1)}`, atr: signal.atr };
+        replay.push({ type:"SIGNAL", timestamp:c.timestamp, index, signal });
+        replay.push({ type:"ENTRY", timestamp:next.timestamp, index, ...position });
+      }
+    } else {
+      let exitPrice = null, reason = null;
+      if (position.side === "LONG") {
+        if (c.low <= position.stop) { exitPrice = position.stop; reason = "SL"; }
+        else if (c.high >= position.target) { exitPrice = position.target; reason = "TARGET"; }
+      } else {
+        if (c.high >= position.stop) { exitPrice = position.stop; reason = "SL"; }
+        else if (c.low <= position.target) { exitPrice = position.target; reason = "TARGET"; }
+      }
+      if (!exitPrice && (i - position.entryIndex) >= p.maxBarsInTrade) { exitPrice = c.close; reason = "TIME"; }
+      if (!exitPrice && i === candles.length - 1) { exitPrice = c.close; reason = "END"; }
+      if (exitPrice) {
+        const executedExit = position.side === "LONG" ? exitPrice * (1 - slip) : exitPrice * (1 + slip);
+        const gross = position.side === "LONG" ? (executedExit - position.entry) * position.quantity : (position.entry - executedExit) * position.quantity;
+        const fees = (position.entry * position.quantity + executedExit * position.quantity) * fee;
+        const pnl = gross - fees;
+        equity += pnl;
+        const trade = { id:`BT-${Date.now()}-${trades.length+1}`, index, side:position.side, quantity:position.quantity, entry:round(position.entry,2), exit:round(executedExit,2), stop:round(position.stop,2), target:round(position.target,2), entryAt:position.entryAt, exitAt:c.timestamp, barsHeld:i-position.entryIndex, reason, pnl:round(pnl,2), pnlPercent:round((pnl/(position.entry*position.quantity))*100,2), fees:round(fees,2), entryReason:position.entryReason };
+        trades.push(trade);
+        replay.push({ type:"EXIT", timestamp:c.timestamp, ...trade });
+        position = null;
+      }
+    }
+    equityCurve.push({ timestamp:c.timestamp, equity:round(equity,2) });
+  }
+
+  const result = {
+    id:`BT-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    createdAt:nowISO(), index, instrumentKey:config.instrumentKey || null, interval, from:start.toISOString(), to:end.toISOString(), parameters:p,
+    candleCount:candles.length, dataType:config.instrumentKey ? "OPTION_OR_INSTRUMENT" : "INDEX", metrics:backtestMetrics(trades,p.initialCapital,equityCurve), trades,
+    replay, equityCurve, dataSource:"Upstox historical candles", status:"COMPLETED"
+  };
+  state.backtests.unshift(result);
+  state.backtests = state.backtests.slice(0, 20);
+  saveState();
+  return result;
+}
+
+function validateBacktestAgainstPaper(backtest, paperTrades) {
+  const bt = Array.isArray(backtest?.trades) ? backtest.trades : [];
+  const paper = Array.isArray(paperTrades) ? paperTrades : [];
+  const btWins = bt.filter(t=>Number(t.pnl)>0).length;
+  const pWins = paper.filter(t=>Number(t.pnl)>0).length;
+  const btPnl = bt.reduce((s,t)=>s+Number(t.pnl||0),0);
+  const pPnl = paper.reduce((s,t)=>s+Number(t.pnl||0),0);
+  return {
+    backtestTrades:bt.length, paperTrades:paper.length,
+    backtestWinRate:bt.length ? Number((btWins/bt.length*100).toFixed(2)) : 0,
+    paperWinRate:paper.length ? Number((pWins/paper.length*100).toFixed(2)) : 0,
+    backtestPnl:Number(btPnl.toFixed(2)), paperPnl:Number(pPnl.toFixed(2)),
+    pnlDifference:Number((pPnl-btPnl).toFixed(2)),
+    comparisonNote:"Backtest and paper trades are different samples unless the same dates, setup rules, instrument and execution assumptions are used. This endpoint reports differences; it does not declare strategy validity."
+  };
+}
+
+app.post("/api/backtest/run", requireAuth, async (req,res) => {
+  try {
+    const result = await runBacktest(req.body || {});
+    res.json({ok:true, result});
+  } catch (error) {
+    res.status(400).json({ok:false,error:error.message});
+  }
+});
+
+app.get("/api/backtest", requireAuth, (req,res) => {
+  const limit = Math.min(20, Math.max(1, Number(req.query.limit || 10)));
+  res.json({ok:true, backtests:state.backtests.slice(0,limit).map(x => ({ id:x.id, createdAt:x.createdAt, index:x.index, interval:x.interval, from:x.from, to:x.to, candleCount:x.candleCount, parameters:x.parameters, metrics:x.metrics, status:x.status }))});
+});
+
+app.get("/api/backtest/:id", requireAuth, (req,res) => {
+  const result = state.backtests.find(x => x.id === req.params.id);
+  if (!result) return res.status(404).json({ok:false,error:"Backtest not found."});
+  res.json({ok:true,result});
+});
+
+app.get("/api/backtest/:id/replay", requireAuth, (req,res) => {
+  const result = state.backtests.find(x => x.id === req.params.id);
+  if (!result) return res.status(404).json({ok:false,error:"Backtest not found."});
+  const step = Math.max(1, Number(req.query.step || 1));
+  const cursor = Math.max(0, Number(req.query.cursor || 0));
+  res.json({ok:true,id:result.id,cursor,nextCursor:Math.min(result.replay.length,cursor+step),done:cursor+step>=result.replay.length,events:result.replay.slice(cursor,cursor+step)});
+});
+
+app.get("/api/backtest/paper-validation", requireAuth, (req,res) => {
+  const id = req.query.id;
+  const result = id ? state.backtests.find(x=>x.id===id) : state.backtests[0];
+  if (!result) return res.status(404).json({ok:false,error:"No backtest available."});
+  const paper = (state.executionLedger || []).filter(x => x.executionType === "PAPER" && x.eventType === "CLOSE");
+  res.json({ok:true,resultId:result.id,validation:validateBacktestAgainstPaper(result,paper)});
+});
 
 // ============================================================
 // HISTORY GET
@@ -6749,6 +7521,7 @@ app.get(
 
 app.post(
   "/api/subscribe",
+  requireAuth,
   (req, res) => {
     try {
       const subscription =
@@ -6806,6 +7579,7 @@ app.post(
 
 app.post(
   "/api/push/test",
+  requireAuth,
   async (req, res) => {
     try {
       if (
@@ -6968,7 +7742,10 @@ setInterval(
 );
 
 // ============================================================
-// ERA V8.2 FEATURE APIs
+// STEP 19 — PROFESSIONAL DETERMINISTIC RISK ENGINE
+// Account risk, daily loss, position sizing, exposure, portfolio risk,
+// single-index concentration, correlated exposure and kill switch.
+// AI cannot override these deterministic controls.
 // ============================================================
 
 function apiError(error) {
@@ -6980,14 +7757,88 @@ function apiError(error) {
 }
 
 function currentUserKey(req) {
-  const raw = String(req.headers["x-era-user"] || "guest").trim().toLowerCase();
+  const authenticated = req?.eraUser?.email || req?.eraUser?.id || "guest";
+  const raw = String(authenticated).trim().toLowerCase();
   return raw.slice(0, 180) || "guest";
+}
+
+function riskConfig() {
+  const r = state.risk || {};
+  return {
+    riskPerTrade: Math.max(0.1, Number(r.riskPerTrade || 1)),
+    maxDailyLoss: Math.max(0.1, Number(r.maxDailyLoss || 2)),
+    maxTradeLoss: Math.max(0.1, Number(r.maxTradeLoss || 1)),
+    maxPositions: Math.max(1, Math.floor(Number(r.maxPositions || 3))),
+    maxTradesPerDay: Math.max(1, Math.floor(Number(r.maxTradesPerDay || 5))),
+    maxExposure: Math.max(1, Number(r.maxExposure || 50)),
+    maxPortfolioRisk: Math.max(0.1, Number(r.maxPortfolioRisk || 3)),
+    maxSingleIndexExposure: Math.max(1, Number(r.maxSingleIndexExposure || 25)),
+    maxCorrelationExposure: Math.max(1, Number(r.maxCorrelationExposure || 35)),
+    killSwitch: Boolean(r.killSwitch)
+  };
+}
+
+function paperOpenExposure() {
+  return (state.paper?.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
+}
+
+function paperOpenRisk() {
+  return (state.paper?.positions || []).reduce((sum, p) => {
+    const entry = Number(p.entry || 0), stop = Number(p.stopLoss || 0), qty = Number(p.quantity || 0);
+    return sum + (entry > stop && qty > 0 ? (entry - stop) * qty : 0);
+  }, 0);
+}
+
+function paperIndexExposure(index) {
+  return (state.paper?.positions || []).filter(p => String(p.index || '') === String(index || '')).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
+}
+
+function riskSnapshot(trade = null, requestedQuantity = null) {
+  const r = riskConfig();
+  const capital = Number(state.paper?.startingCapital || 100000);
+  const cash = Number(state.paper?.cash || 0);
+  const realized = Number(paperRealizedPnlToday() || 0);
+  const unrealized = Number(state.paper?.unrealizedPnl || 0);
+  const dailyPnl = realized + unrealized;
+  const dailyLossLimit = capital * r.maxDailyLoss / 100;
+  const exposure = paperOpenExposure();
+  const exposureLimit = capital * r.maxExposure / 100;
+  const correlatedExposureLimit = capital * r.maxCorrelationExposure / 100;
+  const portfolioRisk = paperOpenRisk();
+  const portfolioRiskLimit = capital * r.maxPortfolioRisk / 100;
+  const positions = (state.paper?.positions || []).length;
+  const tradesToday = countTradesToday();
+  const snapshot = {
+    capital, cash, realizedPnlToday: Number(realized.toFixed(2)), unrealizedPnl: Number(unrealized.toFixed(2)), dailyPnl: Number(dailyPnl.toFixed(2)),
+    dailyLossLimit: Number(dailyLossLimit.toFixed(2)), remainingDailyLoss: Number(Math.max(0, dailyLossLimit + dailyPnl).toFixed(2)),
+    exposure: Number(exposure.toFixed(2)), exposureLimit: Number(exposureLimit.toFixed(2)), correlatedExposureLimit: Number(correlatedExposureLimit.toFixed(2)), exposurePct: capital ? Number((exposure / capital * 100).toFixed(2)) : 0,
+    portfolioRisk: Number(portfolioRisk.toFixed(2)), portfolioRiskLimit: Number(portfolioRiskLimit.toFixed(2)),
+    positions, maxPositions: r.maxPositions, tradesToday, maxTradesPerDay: r.maxTradesPerDay,
+    killSwitch: r.killSwitch, config:r
+  };
+  if (trade) {
+    const sizing = calculateRiskSizing(trade, requestedQuantity);
+    snapshot.proposed = sizing;
+    if (sizing.ok) {
+      snapshot.proposedExposure = Number((exposure + sizing.entry * sizing.qty).toFixed(2));
+      snapshot.proposedPortfolioRisk = Number((portfolioRisk + sizing.totalTradeRisk).toFixed(2));
+      snapshot.proposedCorrelatedExposure = Number((exposure + sizing.entry * sizing.qty).toFixed(2));
+      snapshot.proposedIndexExposure = Number((paperIndexExposure(trade.index) + sizing.entry * sizing.qty).toFixed(2));
+      snapshot.proposedIndexExposureLimit = Number((capital * r.maxSingleIndexExposure / 100).toFixed(2));
+      snapshot.proposedRiskAllowed = snapshot.proposedPortfolioRisk <= portfolioRiskLimit &&
+        snapshot.proposedExposure <= exposureLimit &&
+        snapshot.proposedIndexExposure <= snapshot.proposedIndexExposureLimit &&
+        snapshot.proposedCorrelatedExposure <= correlatedExposureLimit;
+    }
+  }
+  return snapshot;
 }
 
 function calculateRiskSizing(trade, requestedQuantity = null) {
   const r = state.risk || {};
   const startingCapital = Number(state.paper?.startingCapital || 100000);
-  const maxRiskAmount = startingCapital * (Number(r.maxTradeLoss || 1) / 100);
+  const allowedTradeRiskPct = Math.min(Number(r.maxTradeLoss || 1), Number(r.riskPerTrade || 1));
+  const maxRiskAmount = startingCapital * (allowedTradeRiskPct / 100);
   const entry = Number(trade.entry || 0);
   const stop = Number(trade.stopLoss || 0);
   const perUnitRisk = entry - stop;
@@ -7030,38 +7881,32 @@ function calculateRiskSizing(trade, requestedQuantity = null) {
 }
 
 function riskCheck(trade, requestedQuantity = null) {
-  const r = state.risk || {};
-  if (r.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
-  if ((state.paper.positions || []).length >= Number(r.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
-  if (paperTradesToday() >= Number(r.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
+  const r = riskConfig();
+  if (r.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON.", code:"KILL_SWITCH" };
+  if ((state.paper.positions || []).length >= r.maxPositions) return { ok: false, reason: "Maximum open paper positions reached.", code:"MAX_POSITIONS" };
+  if (countTradesToday() >= r.maxTradesPerDay) return { ok: false, reason: "Maximum paper trades for today reached.", code:"MAX_TRADES_DAY" };
 
   const sizing = calculateRiskSizing(trade, requestedQuantity);
-  if (!sizing.ok) return sizing;
+  if (!sizing.ok) return { ...sizing, code:"POSITION_RISK" };
 
-  const startingCapital = Number(state.paper?.startingCapital || 100000);
-  const realized = paperRealizedPnlToday();
-  const unrealized = Number(state.paper?.unrealizedPnl || 0);
-  const dailyLossLimit = startingCapital * (Number(r.maxDailyLoss || 2) / 100);
-  if (realized + unrealized <= -dailyLossLimit) return { ok: false, reason: "Maximum daily paper loss limit reached." };
-
-  const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
-  const proposedExposure = exposure + sizing.entry * sizing.qty;
-  const maxExposureValue = startingCapital * (Number(r.maxExposure || 50) / 100);
-  if (proposedExposure > maxExposureValue) return { ok: false, reason: "Maximum paper exposure limit reached." };
+  const snapshot = riskSnapshot(trade, requestedQuantity);
+  if (snapshot.dailyPnl <= -snapshot.dailyLossLimit) return { ok: false, reason: "Maximum daily paper loss limit reached.", code:"DAILY_LOSS", risk:snapshot };
+  if (snapshot.proposedPortfolioRisk > snapshot.portfolioRiskLimit) return { ok: false, reason: "Maximum portfolio risk limit reached.", code:"PORTFOLIO_RISK", risk:snapshot };
+  if (snapshot.proposedExposure > snapshot.exposureLimit) return { ok: false, reason: "Maximum paper exposure limit reached.", code:"EXPOSURE", risk:snapshot };
+  if (snapshot.proposedCorrelatedExposure > snapshot.correlatedExposureLimit) return { ok: false, reason: "Maximum correlated portfolio exposure limit reached.", code:"CORRELATED_EXPOSURE", risk:snapshot };
+  if (snapshot.proposedIndexExposure > snapshot.proposedIndexExposureLimit) return { ok: false, reason: "Maximum single-index exposure limit reached.", code:"INDEX_EXPOSURE", risk:snapshot };
 
   const cash = Number(state.paper?.cash || 0);
   const orderValue = sizing.entry * sizing.qty;
-  if (orderValue > cash) return { ok: false, reason: "Insufficient paper cash for this trade." };
-
-  return { ...sizing, ok: true, reason: "Risk checks passed." };
+  if (orderValue > cash) return { ok: false, reason: "Insufficient paper cash for this trade.", code:"CASH", risk:snapshot };
+  return { ...sizing, ok: true, reason: "All deterministic risk checks passed.", code:"PASS", risk:snapshot };
 }
-
 function validateManualPaperBuy(b) {
   const price = Number(b.price || b.entry || 0);
   if (!(price > 0)) return { ok: false, reason: "Valid order price is required." };
-  if (state.risk.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
+  if (riskConfig().killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
   if ((state.paper.positions || []).length >= Number(state.risk.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
-  if (paperTradesToday() >= Number(state.risk.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
+  if (countTradesToday() >= Number(state.risk.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
 
   if (!b.index || !b.optionType || !(Number(b.strike) > 0) || !b.instrumentKey) return { ok: false, reason: "Exact index, CE/PE, strike and instrument are required." };
 
@@ -7077,9 +7922,17 @@ function validateManualPaperBuy(b) {
 
   const value = price * sizing.qty;
   if (value > Number(state.paper.cash || 0)) return { ok: false, reason: "Insufficient paper cash." };
-  const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
-  const maxExposureValue = startingCapital * Number(state.risk.maxExposure || 50) / 100;
+  const exposure = paperOpenExposure();
+  const maxExposureValue = startingCapital * riskConfig().maxExposure / 100;
   if (exposure + value > maxExposureValue) return { ok: false, reason: "Maximum paper exposure limit reached." };
+  const correlatedExposureLimit = startingCapital * riskConfig().maxCorrelationExposure / 100;
+  if (exposure + value > correlatedExposureLimit) return { ok: false, reason: "Maximum correlated portfolio exposure limit reached." };
+  const portfolioRisk = paperOpenRisk() + Number(sizing.totalTradeRisk || 0);
+  const portfolioRiskLimit = startingCapital * riskConfig().maxPortfolioRisk / 100;
+  if (portfolioRisk > portfolioRiskLimit) return { ok: false, reason: "Maximum portfolio risk limit reached." };
+  const indexExposure = paperIndexExposure(b.index) + value;
+  const indexExposureLimit = startingCapital * riskConfig().maxSingleIndexExposure / 100;
+  if (indexExposure > indexExposureLimit) return { ok: false, reason: "Maximum single-index exposure limit reached." };
 
   const positionKey = [b.index, b.optionType, b.strike, b.instrumentKey].join("|");
   if ((state.paper.positions || []).some(p => [p.index, p.optionType, p.strike, p.instrumentKey].join("|") === positionKey)) return { ok: false, reason: "A paper position for this exact contract is already open." };
@@ -7116,11 +7969,13 @@ app.get("/api/opportunities", async (req, res) => {
   } catch (error) { res.status(500).json({ok:false,error:apiError(error)}); }
 });
 
-app.get("/api/risk", (req,res)=>res.json({ok:true,risk:state.risk,killSwitch:Boolean(state.risk.killSwitch),updatedAt:nowISO()}));
-app.post("/api/risk", (req,res)=>{
+app.get("/api/risk", requireAuth, (req,res)=>res.json({ok:true,risk:state.risk,killSwitch:Boolean(state.risk.killSwitch),snapshot:riskSnapshot(),updatedAt:nowISO()}));
+app.get("/api/risk/status", requireAuth, (req,res)=>{ try { res.json({ok:true,status:riskSnapshot(),updatedAt:nowISO()}); } catch(error){ res.status(500).json({ok:false,error:apiError(error)}); } });
+app.post("/api/risk/check", requireAuth, (req,res)=>{ try { const b=req.body||{}; const trade=b.trade||b; const result=riskCheck(trade,b.quantity!==undefined?b.quantity:null); res.status(result.ok?200:403).json({ok:result.ok,result,updatedAt:nowISO()}); } catch(error){ res.status(400).json({ok:false,error:apiError(error)}); } });
+app.post("/api/risk", requireAuth, (req,res)=>{
   try {
     const b=req.body||{};
-    for (const k of ["riskPerTrade","maxDailyLoss","maxTradeLoss","maxPositions","maxTradesPerDay","maxExposure"]) {
+    for (const k of ["riskPerTrade","maxDailyLoss","maxTradeLoss","maxPositions","maxTradesPerDay","maxExposure","maxPortfolioRisk","maxSingleIndexExposure","maxCorrelationExposure"]) {
       if (b[k] !== undefined && Number.isFinite(Number(b[k])) && Number(b[k]) > 0) state.risk[k]=Number(b[k]);
     }
     if (b.killSwitch !== undefined) state.risk.killSwitch=Boolean(b.killSwitch);
@@ -7128,7 +7983,112 @@ app.post("/api/risk", (req,res)=>{
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.get("/api/paper", (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
+// ============================================================
+// STEP 15 — PERMANENT TRADE HISTORY / EXECUTION LEDGER
+// Append-only: records are never removed or overwritten.
+// Paper and future broker execution events share this ledger.
+// ============================================================
+
+function appendExecutionEvent(event = {}) {
+  const record = {
+    id: event.id || `EX${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    tradeId: event.tradeId || `T${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    eventType: String(event.eventType || "OPEN").toUpperCase(),
+    executionType: String(event.executionType || "PAPER").toUpperCase(),
+    side: String(event.side || "BUY").toUpperCase(),
+    index: event.index || null,
+    optionType: event.optionType || null,
+    strike: Number.isFinite(Number(event.strike)) ? Number(event.strike) : null,
+    expiry: event.expiry || null,
+    instrumentKey: event.instrumentKey || null,
+    quantity: Number(event.quantity || 0),
+    price: Number(event.price || 0),
+    stopLoss: Number(event.stopLoss || 0),
+    targets: Array.isArray(event.targets) ? event.targets.slice(0, 3).map(Number) : [],
+    pnl: Number.isFinite(Number(event.pnl)) ? Number(event.pnl) : null,
+    pnlPercent: Number.isFinite(Number(event.pnlPercent)) ? Number(event.pnlPercent) : null,
+    reason: event.reason || null,
+    result: event.result || null,
+    confidence: event.confidence ?? null,
+    reasoning: event.reasoning || null,
+    source: event.source || "PAPER",
+    alertId: event.alertId || null,
+    positionId: event.positionId || null,
+    executedAt: event.executedAt || nowISO(),
+    metadata: event.metadata || null
+  };
+
+  state.executionLedger = Array.isArray(state.executionLedger) ? state.executionLedger : [];
+  state.executionLedger.push(record);
+  saveState();
+  return record;
+}
+
+function buildPermanentTradeHistory(filters = {}) {
+  const ledger = Array.isArray(state.executionLedger) ? state.executionLedger : [];
+  const grouped = new Map();
+
+  for (const event of ledger) {
+    if (!event?.tradeId) continue;
+    let trade = grouped.get(event.tradeId);
+    if (!trade) {
+      trade = {
+        tradeId: event.tradeId, executionType: event.executionType || "PAPER", index: event.index,
+        optionType: event.optionType, strike: event.strike, expiry: event.expiry, instrumentKey: event.instrumentKey,
+        quantity: 0, entry: null, exit: null, stopLoss: event.stopLoss || null, targets: event.targets || [],
+        pnl: 0, pnlPercent: null, result: null, reasoning: event.reasoning || null, confidence: event.confidence ?? null,
+        openedAt: null, closedAt: null, status: "OPEN", source: event.source || "PAPER", alertId: event.alertId || null, events: []
+      };
+      grouped.set(event.tradeId, trade);
+    }
+    trade.events.push(event);
+    if (event.eventType === "OPEN") {
+      trade.entry = event.price; trade.openedAt = event.executedAt; trade.quantity = event.quantity;
+      trade.stopLoss = event.stopLoss || trade.stopLoss; trade.targets = event.targets?.length ? event.targets : trade.targets;
+      trade.reasoning = event.reasoning || trade.reasoning; trade.confidence = event.confidence ?? trade.confidence;
+      trade.status = "OPEN";
+    } else if (event.eventType === "PARTIAL_EXIT" || event.eventType === "CLOSE") {
+      trade.exit = event.price; trade.closedAt = event.executedAt; trade.pnl += Number(event.pnl || 0);
+      trade.pnlPercent = event.pnlPercent ?? trade.pnlPercent; trade.result = event.result || event.reason || trade.result;
+      if (event.eventType === "CLOSE") trade.status = "CLOSED";
+    }
+  }
+
+  let list = [...grouped.values()];
+  const q = String(filters.search || "").trim().toLowerCase();
+  const status = String(filters.status || "ALL").toUpperCase();
+  const type = String(filters.executionType || "ALL").toUpperCase();
+  if (q) list = list.filter(t => JSON.stringify(t).toLowerCase().includes(q));
+  if (status !== "ALL") list = list.filter(t => t.status === status);
+  if (type !== "ALL") list = list.filter(t => t.executionType === type);
+  list.sort((a,b) => new Date(b.closedAt || b.openedAt || 0) - new Date(a.closedAt || a.openedAt || 0));
+  return list;
+}
+
+function tradeHistoryStats(list) {
+  const trades = Array.isArray(list) ? list : [];
+  const closed = trades.filter(t => t.status === "CLOSED");
+  const wins = closed.filter(t => Number(t.pnl || 0) > 0);
+  const losses = closed.filter(t => Number(t.pnl || 0) < 0);
+  const pnl = closed.reduce((s,t) => s + Number(t.pnl || 0), 0);
+  return { total: trades.length, open: trades.filter(t => t.status === "OPEN").length, closed: closed.length, wins: wins.length, losses: losses.length, winRate: closed.length ? (wins.length / closed.length) * 100 : 0, realizedPnl: pnl };
+}
+
+app.get("/api/trade-history", requireAuth, (req,res)=>{
+  try {
+    const history = buildPermanentTradeHistory({ search:req.query.search, status:req.query.status, executionType:req.query.executionType });
+    res.json({ok:true,history:history.slice(0,1000),stats:tradeHistoryStats(history),ledgerSize:(state.executionLedger||[]).length,updatedAt:nowISO()});
+  } catch(error) { res.status(500).json({ok:false,error:apiError(error)}); }
+});
+
+app.get("/api/trade-history/:tradeId", requireAuth, (req,res)=>{
+  const history = buildPermanentTradeHistory();
+  const trade = history.find(t => t.tradeId === String(req.params.tradeId));
+  if(!trade) return res.status(404).json({ok:false,error:"Trade history record not found."});
+  res.json({ok:true,trade,events:trade.events,updatedAt:nowISO()});
+});
+
+app.get("/api/paper", requireAuth, (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
 
 function paperTodayKey(){
   return new Date().toLocaleDateString("en-CA", {timeZone:"Asia/Kolkata"});
@@ -7182,6 +8142,12 @@ function settlePaperPosition(position, exitPrice, reason="MANUAL_EXIT"){
   state.paper.positions=state.paper.positions.filter(p=>p.id!==position.id);
   state.paper.orders.unshift({id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"SELL",index:closed.index,optionType:closed.optionType,strike:closed.strike,expiry:closed.expiry,instrumentKey:closed.instrumentKey,quantity:qty,price:exit,positionId:closed.positionId,reason,createdAt:closedAt});
   state.paper.orders=state.paper.orders.slice(0,500);
+  appendExecutionEvent({
+    tradeId:position.tradeId || `T${position.id}`, eventType:"CLOSE", executionType:"PAPER", side:"SELL", index:closed.index,
+    optionType:closed.optionType, strike:closed.strike, expiry:closed.expiry, instrumentKey:closed.instrumentKey, quantity:qty,
+    price:exit, stopLoss:closed.stopLoss, targets:closed.targets, pnl:closed.pnl, pnlPercent:closed.pnlPercent,
+    reason, result:reason, confidence:closed.confidence, reasoning:closed.reasoning, source:"PAPER", alertId:closed.alertId, positionId:closed.positionId
+  });
   return closed;
 }
 
@@ -7227,7 +8193,7 @@ async function refreshPaperPositions(priceOverrides={}){
   return closed;
 }
 
-app.post("/api/paper/refresh", async (req,res)=>{
+app.post("/api/paper/refresh", requireAuth, async (req,res)=>{
   try {
     const closed=await refreshPaperPositions(req.body?.prices||{});
     saveState();
@@ -7238,14 +8204,14 @@ app.post("/api/paper/refresh", async (req,res)=>{
   }
 });
 
-app.get('/api/paper-trading', (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
+app.get('/api/paper-trading', requireAuth, (req,res)=>res.json({ok:true,paper:state.paper,risk:state.risk,updatedAt:nowISO()}));
 
-app.post("/api/paper/reset", (req,res)=>{
+app.post("/api/paper/reset", requireAuth, (req,res)=>{
   state.paper={startingCapital:100000,cash:100000,positions:[],orders:[],realizedPnl:0,unrealizedPnl:0,closedTrades:[]};
   saveState(); res.json({ok:true,paper:state.paper});
 });
 
-app.post("/api/paper/order", (req,res)=>{
+app.post("/api/paper/order", requireAuth, (req,res)=>{
   try {
     const b=req.body||{};
     const side=String(b.side||"BUY").toUpperCase()==="SELL"?"SELL":"BUY";
@@ -7272,6 +8238,7 @@ app.post("/api/paper/order", (req,res)=>{
         const partialClosed={id:`C${Date.now()}-${Math.random().toString(36).slice(2,7)}`,positionId:pos.id,alertId:pos.alertId||null,index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry||null,instrumentKey:pos.instrumentKey||null,quantity:closeQty,entry,exit:price,stopLoss:Number(pos.stopLoss||0),targets:Array.isArray(pos.targets)?pos.targets.slice(0,3):[],pnl,pnlPercent:entry>0?(pnl/(entry*closeQty))*100:0,reason:"PARTIAL_EXIT",openedAt:pos.openedAt||null,closedAt:partialAt,remainingQuantity,confidence:pos.confidence??null,reasoning:pos.reasoning||null};
         state.paper.closedTrades=Array.isArray(state.paper.closedTrades)?state.paper.closedTrades:[];
         state.paper.closedTrades.unshift(partialClosed); state.paper.closedTrades=state.paper.closedTrades.slice(0,500);
+        appendExecutionEvent({tradeId:pos.tradeId || `T${pos.id}`,eventType:"PARTIAL_EXIT",executionType:"PAPER",side:"SELL",index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,stopLoss:pos.stopLoss,targets:pos.targets,pnl,pnlPercent:entry>0?(pnl/(entry*closeQty))*100:0,reason:"PARTIAL_EXIT",result:"PARTIAL_EXIT",confidence:pos.confidence,reasoning:pos.reasoning,source:"PAPER",alertId:pos.alertId,positionId:pos.id});
         state.paper.orders.unshift({id:`O${Date.now()}`,side:"SELL",index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,positionId:pos.id,reason:"PARTIAL_EXIT",createdAt:partialAt});
         realtimeBroadcast("paper-position-update", { type:"PARTIAL_EXIT", position:partialClosed, paper:state.paper, updatedAt:partialAt });
       } else {
@@ -7287,15 +8254,17 @@ app.post("/api/paper/order", (req,res)=>{
     const validation=validateManualPaperBuy(b);
     if(!validation.ok) return res.status(403).json({ok:false,error:validation.reason});
     const openedAt=nowISO();
-    const position={id:`P${Date.now()}-${Math.random().toString(36).slice(2,7)}`,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),expiry:b.expiry||null,instrumentKey:b.instrumentKey||null,quantity:validation.qty,entry:validation.price,currentPrice:price,unrealizedPnl:0,pnlPercent:0,stopLoss:Number(b.stopLoss||0),targets:Array.isArray(b.targets)?b.targets.map(Number).filter(Number.isFinite).slice(0,3):[],target:Number(b.target||b.targets?.[0]||0),confidence:b.confidence??null,reasoning:b.reasoning||null,openedAt,status:"RUNNING",entryMode:b.entryMode||"market",source:b.source||"MANUAL_PAPER"};
+    const tradeId=`T${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const position={id:`P${Date.now()}-${Math.random().toString(36).slice(2,7)}`,tradeId,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),expiry:b.expiry||null,instrumentKey:b.instrumentKey||null,quantity:validation.qty,entry:validation.price,currentPrice:price,unrealizedPnl:0,pnlPercent:0,stopLoss:Number(b.stopLoss||0),targets:Array.isArray(b.targets)?b.targets.map(Number).filter(Number.isFinite).slice(0,3):[],target:Number(b.target||b.targets?.[0]||0),confidence:b.confidence??null,reasoning:b.reasoning||null,openedAt,status:"RUNNING",entryMode:b.entryMode||"market",source:b.source||"MANUAL_PAPER"};
     state.paper.cash-=validation.value; state.paper.positions.push(position);
     const order={id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"BUY",index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,positionId:position.id,source:position.source,createdAt:openedAt};
-    state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,500); saveState();
+    state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,500);
+    appendExecutionEvent({tradeId,eventType:"OPEN",executionType:"PAPER",side:"BUY",index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,stopLoss:position.stopLoss,targets:position.targets,confidence:position.confidence,reasoning:position.reasoning,source:position.source,positionId:position.id});
     res.json({ok:true,order,position,paper:state.paper});
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.post("/api/paper/exit", async (req,res)=>{
+app.post("/api/paper/exit", requireAuth, async (req,res)=>{
   try{
     const pos=state.paper.positions.find(p=>p.id===String(req.body?.positionId||""));
     if(!pos) return res.status(404).json({ok:false,error:"Paper position not found."});
@@ -7312,15 +8281,15 @@ app.post("/api/paper/exit", async (req,res)=>{
   }catch(error){res.status(500).json({ok:false,error:apiError(error)});}
 });
 
-app.post("/api/paper/mark", async (req,res)=>{
+app.post("/api/paper/mark", requireAuth, async (req,res)=>{
   try {
     const closed=await refreshPaperPositions(req.body?.prices||{});
     saveState(); res.json({ok:true,paper:state.paper,closed});
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.get("/api/journal", (req,res)=>res.json({ok:true,journal:state.journal.slice(0,500)}));
-app.post("/api/journal", (req,res)=>{
+app.get("/api/journal", requireAuth, (req,res)=>res.json({ok:true,journal:state.journal.slice(0,500)}));
+app.post("/api/journal", requireAuth, (req,res)=>{
   try {
     const b=req.body||{}; const record={id:b.id||`J${Date.now()}`,createdAt:b.createdAt||nowISO(),...b};
     state.journal.unshift(record); state.journal=state.journal.slice(0,500); saveState(); res.json({ok:true,record,journal:state.journal});
@@ -7339,27 +8308,19 @@ app.post("/api/calculator", (req,res)=>{
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.post("/api/backtest", async (req,res)=>{
+app.post("/api/backtest", requireAuth, async (req,res)=>{
   try {
-    const index=normalizeIndex(req.body?.index||"NIFTY"); const interval=Math.max(1,Math.min(60,Number(req.body?.interval||5)));
-    if(!INDICES[index]) return res.status(400).json({ok:false,error:"Invalid index"});
-    let candles=await fetchHistoricalCandles(index,interval); if(candles.length<30) candles=await fetchIntradayCandles(index,interval);
-    if(candles.length<30) return res.status(400).json({ok:false,error:"Not enough candle data for backtest."});
-    const closes=candles.map(c=>Number(c[4])); const trades=[]; let equity=Number(req.body?.capital||100000), peak=equity, maxDD=0;
-    for(let i=25;i<candles.length-1;i++){
-      const ema9=ema(closes.slice(0,i+1),9), ema20=ema(closes.slice(0,i+1),20), r=rsi(closes.slice(0,i+1),14); if(ema9===null||ema20===null||r===null) continue;
-      const up=ema9>ema20 && r>=52, down=ema9<ema20 && r<=48; if(!up&&!down) continue;
-      const entry=closes[i], exit=closes[i+1], pnl=up?exit-entry:entry-exit; equity+=pnl; peak=Math.max(peak,equity); maxDD=Math.max(maxDD,peak-equity); trades.push({time:candles[i][0],side:up?"BUY":"SELL",entry,exit,pnl});
-    }
-    const wins=trades.filter(t=>t.pnl>0), losses=trades.filter(t=>t.pnl<=0); const grossWin=wins.reduce((s,t)=>s+t.pnl,0), grossLoss=Math.abs(losses.reduce((s,t)=>s+t.pnl,0));
-    res.json({ok:true,index,interval,capital:Number(req.body?.capital||100000),endingCapital:round(equity),netPnl:round(equity-Number(req.body?.capital||100000)),trades:trades.length,winRate:trades.length?round(wins.length/trades.length*100):0,maxDrawdown:round(maxDD),profitFactor:grossLoss?round(grossWin/grossLoss):null,history:trades.slice(-100),dataWindow:trades.length?{from:trades[0].time,to:trades[trades.length-1].time}:null,updatedAt:nowISO()});
-  } catch(error){res.status(500).json({ok:false,error:apiError(error)});}
+    const result = await runBacktest(req.body || {});
+    res.json({ok:true,result});
+  } catch(error) {
+    res.status(400).json({ok:false,error:apiError(error)});
+  }
 });
 
 // ============================================================
 // STEP 13 — TRADE ALERT APIs
 // ============================================================
-app.get("/api/trade-alerts", (req,res)=>{
+app.get("/api/trade-alerts", requireAuth, (req,res)=>{
   const index = req.query.index ? normalizeIndex(req.query.index) : null;
   const alerts = state.tradeAlerts
     .filter(item => !index || item.trade?.index === index)
@@ -7367,13 +8328,13 @@ app.get("/api/trade-alerts", (req,res)=>{
   res.json({ok:true,alerts,updatedAt:nowISO()});
 });
 
-app.get("/api/trade-alerts/:id", (req,res)=>{
+app.get("/api/trade-alerts/:id", requireAuth, (req,res)=>{
   const alert=findTradeAlert(req.params.id);
   if(!alert) return res.status(404).json({ok:false,error:"Trade alert not found."});
   res.json({ok:true,alert,updatedAt:nowISO()});
 });
 
-app.post("/api/trade-alerts/:id/action", (req,res)=>{
+app.post("/api/trade-alerts/:id/action", requireAuth, (req,res)=>{
   try {
     const result=applyTradeAlertAction(findTradeAlert(req.params.id), req.body?.action, req);
     return res.status(result.status || (result.ok ? 200 : 400)).json(result);
@@ -7383,8 +8344,8 @@ app.post("/api/trade-alerts/:id/action", (req,res)=>{
   }
 });
 
-app.get("/api/alerts", (req,res)=>res.json({ok:true,alerts:state.alerts.slice(0,200),updatedAt:nowISO()}));
-app.post("/api/alerts", (req,res)=>{
+app.get("/api/alerts", requireAuth, (req,res)=>res.json({ok:true,alerts:state.alerts.slice(0,200),updatedAt:nowISO()}));
+app.post("/api/alerts", requireAuth, (req,res)=>{
   try { const b=req.body||{}; const alert={id:b.id||`A${Date.now()}`,createdAt:nowISO(),active:true,...b}; state.alerts.unshift(alert); state.alerts=state.alerts.slice(0,200); saveState(); res.json({ok:true,alert}); }
   catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
@@ -7459,9 +8420,496 @@ setTimeout(startRealtimeMarketFeed, 1500);
 })();
 
 // ============================================================
+// ============================================================
+// STEP 18 — AI SELF-AUDIT / PERFORMANCE INTELLIGENCE
+// Deterministic audit first; optional AI narrative second.
+// AI observations never override deterministic trading/risk gates.
+// ============================================================
+
+function buildAISelfAudit() {
+  const ledger = Array.isArray(state.executionLedger) ? state.executionLedger : [];
+  const opens = ledger.filter(e => String(e.executionType).toUpperCase() === "PAPER" && String(e.eventType).toUpperCase() === "OPEN" && String(e.side).toUpperCase() === "BUY");
+  const closes = ledger.filter(e => String(e.executionType).toUpperCase() === "PAPER" && ["CLOSE","PARTIAL_EXIT"].includes(String(e.eventType).toUpperCase()) && Number.isFinite(Number(e.pnl)));
+  const trades = new Map();
+  for (const e of opens) if (e.tradeId) trades.set(e.tradeId, { tradeId:e.tradeId, confidence:Number(e.confidence || 0), pnl:0, closed:false, index:e.index, optionType:e.optionType, reasoning:e.reasoning || null, openedAt:e.executedAt });
+  for (const e of closes) { const t=trades.get(e.tradeId); if (!t) continue; t.pnl += Number(e.pnl || 0); t.closed=true; t.result=e.result || e.reason || t.result; }
+  const completed=[...trades.values()].filter(t=>t.closed);
+  const wins=completed.filter(t=>t.pnl>0), losses=completed.filter(t=>t.pnl<0), flat=completed.filter(t=>t.pnl===0);
+  const totalPnl=completed.reduce((a,t)=>a+t.pnl,0);
+  const buckets={};
+  for(const t of completed){ const k=t.confidence>=80?"80+":t.confidence>=70?"70-79":t.confidence>=65?"65-69":"<65"; buckets[k] ||= {trades:0,wins:0,losses:0,pnl:0,winRate:0}; const b=buckets[k]; b.trades++; b.pnl+=t.pnl; if(t.pnl>0)b.wins++; if(t.pnl<0)b.losses++; }
+  for(const b of Object.values(buckets)) b.winRate=b.trades?Number((b.wins/b.trades*100).toFixed(2)):0;
+  const resultCounts={}; for(const e of closes){const k=String(e.result||e.reason||"UNKNOWN").toUpperCase(); resultCounts[k]=(resultCounts[k]||0)+1;}
+  const audit={auditId:`AUDIT-${Date.now()}`,generatedAt:nowISO(),source:"STEP15_EXECUTION_LEDGER",sample:{opened:opens.length,completed:completed.length,pending:opens.length-completed.length},performance:{wins:wins.length,losses:losses.length,flat:flat.length,winRate:completed.length?Number((wins.length/completed.length*100).toFixed(2)):0,totalPnl:Number(totalPnl.toFixed(2)),avgPnl:completed.length?Number((totalPnl/completed.length).toFixed(2)):0,avgConfidence:completed.length?Number((completed.reduce((a,t)=>a+t.confidence,0)/completed.length).toFixed(2)):0},confidenceBuckets:buckets,resultCounts,falseSignals:{highConfidenceLosses:completed.filter(t=>t.confidence>=65&&t.pnl<0).length,lowConfidenceWins:completed.filter(t=>t.confidence<65&&t.pnl>0).length},findings:[],guardrail:{deterministicGateRemainsAuthoritative:true,aiMayNotOverrideRiskOrTradeDecision:true}};
+  if(!completed.length) audit.findings.push("Insufficient completed paper trades for outcome-based calibration.");
+  if(audit.falseSignals.highConfidenceLosses>0) audit.findings.push("High-confidence losing trades are present; review their technical, price-action, options and regime evidence.");
+  if(audit.falseSignals.lowConfidenceWins>0) audit.findings.push("Lower-confidence winners are present; confidence calibration may be conservative for some setups.");
+  return audit;
+}
+
+app.get("/api/ai-self-audit", requireAuth, (req,res)=>{ try { const audit=buildAISelfAudit(); state.aiSelfAudit=audit; saveState(); res.json({ok:true,audit,updatedAt:nowISO()}); } catch(error){ res.status(500).json({ok:false,error:apiError(error)}); } });
+
+app.post("/api/ai-self-audit/run", requireAuth, async (req,res)=>{
+  try {
+    const audit=buildAISelfAudit(); let aiReview=null;
+    if(OPENROUTER_API_KEY){ try { aiReview=await callAIBrain({mode:"SELF_AUDIT",audit,instruction:"Review this deterministic ERA performance audit. Identify recurring weaknesses, confidence-calibration observations and data gaps. Do not override deterministic risk/trade gates and do not invent evidence."},"Review ERA's trading-system self-audit."); } catch(error){ aiReview={status:"AI_REVIEW_UNAVAILABLE",error:apiError(error)}; } }
+    else aiReview={status:"AI_REVIEW_UNAVAILABLE",reason:"OPENROUTER_API_KEY is not configured"};
+    state.aiSelfAudit={...audit,aiReview}; saveState(); res.json({ok:true,audit:state.aiSelfAudit,updatedAt:nowISO()});
+  } catch(error){ res.status(500).json({ok:false,error:apiError(error)}); }
+});
+
+// ============================================================
+// STEP 20 — BROKER / ALGO EXECUTION
+// Deterministic risk gates remain authoritative. Live broker execution is
+// disabled by default and cannot be triggered by an AI response alone.
+// ============================================================
+
+function brokerExecutionConfig() {
+  return {
+    broker: BROKER_NAME,
+    enabled: BROKER_EXECUTION_ENABLED,
+    product: BROKER_PRODUCT,
+    orderBaseUrl: BROKER_ORDER_BASE_URL,
+    liveExecutionRequiresExplicitRequest: true,
+    deterministicRiskGateRequired: true,
+    executionLedger: true
+  };
+}
+
+function normalizeBrokerOrder(input = {}) {
+  const side = String(input.transactionType || input.side || "").toUpperCase();
+  const orderType = String(input.orderType || "MARKET").toUpperCase();
+  const quantity = Number(input.quantity);
+  const instrumentKey = String(input.instrumentKey || input.instrument_token || "").trim();
+  const price = Number(input.price || 0);
+  const triggerPrice = Number(input.triggerPrice || input.trigger_price || 0);
+  if (!instrumentKey) throw new Error("Broker instrument key is required.");
+  if (!Number.isInteger(quantity) || quantity <= 0) throw new Error("Broker quantity must be a positive integer.");
+  if (!["BUY","SELL"].includes(side)) throw new Error("Broker transaction type must be BUY or SELL.");
+  if (!["MARKET","LIMIT","SL","SL-M"].includes(orderType)) throw new Error("Unsupported broker order type.");
+  if (["LIMIT","SL"].includes(orderType) && !(price > 0)) throw new Error("Valid order price is required for this order type.");
+  if (["SL","SL-M"].includes(orderType) && !(triggerPrice > 0)) throw new Error("Valid trigger price is required for stop-loss orders.");
+  return {
+    quantity,
+    product: String(input.product || BROKER_PRODUCT || "I").toUpperCase(),
+    validity: String(input.validity || "DAY").toUpperCase(),
+    price: orderType === "MARKET" || orderType === "SL-M" ? 0 : price,
+    tag: String(input.tag || `ERA20-${Date.now().toString(36)}`).slice(0, 40),
+    instrument_token: instrumentKey,
+    order_type: orderType,
+    transaction_type: side,
+    disclosed_quantity: Number(input.disclosedQuantity || 0),
+    trigger_price: triggerPrice,
+    is_amo: Boolean(input.isAmo),
+    market_protection: Number.isFinite(Number(input.marketProtection)) ? Number(input.marketProtection) : -1,
+    slice: input.slice !== undefined ? Boolean(input.slice) : true
+  };
+}
+
+function brokerGuard(trade, quantity, liveRequested, transactionType = "BUY") {
+  if (!liveRequested) return { ok: true, mode: "DRY_RUN" };
+  if (!BROKER_EXECUTION_ENABLED) return { ok:false, code:"BROKER_DISABLED", reason:"Live broker execution is disabled. Set ERA_BROKER_EXECUTION_ENABLED=true only after broker validation." };
+  if (BROKER_NAME !== "upstox") return { ok:false, code:"BROKER_UNSUPPORTED", reason:`Unsupported broker: ${BROKER_NAME}` };
+  if (!isMarketOpen()) return { ok:false, code:"MARKET_CLOSED", reason:"Live broker execution is blocked outside market hours." };
+  // Entry orders must pass every deterministic risk gate. Exit orders are allowed
+  // to reduce risk even when the entry gate or kill switch is blocking new trades.
+  if (String(transactionType).toUpperCase() === "SELL") return { ok:true, mode:"LIVE_EXIT" };
+  if (state.risk?.killSwitch) return { ok:false, code:"KILL_SWITCH", reason:"Risk kill switch is active." };
+  const risk = riskCheck(trade, quantity);
+  if (!risk.ok) return { ok:false, code:"RISK_BLOCK", reason:risk.reason || "Deterministic risk gate rejected the trade.", risk };
+  return { ok:true, mode:"LIVE", risk };
+}
+
+async function executeBrokerOrder({ trade = {}, quantity, transactionType = "BUY", orderType = "MARKET", price = 0, triggerPrice = 0, tag, live = false, product, validity = "DAY", isAmo = false } = {}) {
+  const guard = brokerGuard(trade, quantity, Boolean(live), transactionType);
+  if (!guard.ok) return { ok:false, live:Boolean(live), guard };
+  const order = normalizeBrokerOrder({
+    instrumentKey: trade.instrumentKey,
+    quantity,
+    transactionType,
+    orderType,
+    price,
+    triggerPrice,
+    tag,
+    product,
+    validity,
+    isAmo
+  });
+  const clientExecutionId = `ERA20-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+  if (!live) {
+    const simulated = {
+      ok:true,
+      live:false,
+      mode:"DRY_RUN",
+      clientExecutionId,
+      broker:brokerExecutionConfig(),
+      order,
+      message:"Dry-run only. No broker order was sent."
+    };
+    appendExecutionEvent({
+      tradeId: trade.tradeId || clientExecutionId,
+      eventType: "BROKER_DRY_RUN",
+      executionType: "BROKER",
+      side: order.transaction_type,
+      index: trade.index || null,
+      optionType: trade.optionType || null,
+      strike: trade.strike || null,
+      expiry: trade.expiry || null,
+      instrumentKey: order.instrument_token,
+      quantity: order.quantity,
+      price: order.price || trade.entry || 0,
+      source: "STEP20_DRY_RUN",
+      executedAt: nowISO(),
+      reasoning: trade.reasoning || null,
+      confidence: trade.confidence || null,
+      broker: BROKER_NAME,
+      brokerOrder: order
+    });
+    saveState();
+    return simulated;
+  }
+  const response = await upstoxOrderRequest("POST", `${BROKER_ORDER_BASE_URL}/order/place`, order);
+  const brokerOrderId = response?.data?.order_id || response?.order_id || response?.data?.orderId || null;
+  appendExecutionEvent({
+    tradeId: trade.tradeId || brokerOrderId || clientExecutionId,
+    eventType: "BROKER_ORDER_PLACED",
+    executionType: "BROKER",
+    side: order.transaction_type,
+    index: trade.index || null,
+    optionType: trade.optionType || null,
+    strike: trade.strike || null,
+    expiry: trade.expiry || null,
+    instrumentKey: order.instrument_token,
+    quantity: order.quantity,
+    price: order.price || trade.entry || 0,
+    source: "STEP20_BROKER",
+    executedAt: nowISO(),
+    reasoning: trade.reasoning || null,
+    confidence: trade.confidence || null,
+    broker: BROKER_NAME,
+    brokerOrderId,
+    brokerResponse: response
+  });
+  saveState();
+  return { ok:true, live:true, mode:"LIVE", clientExecutionId, broker:BROKER_NAME, brokerOrderId, order, response };
+}
+
+app.get("/api/broker/status", (req,res) => {
+  res.json({ ok:true, status:brokerExecutionConfig(), updatedAt:nowISO() });
+});
+
+app.post("/api/broker/dry-run", requireAuth, async (req,res) => {
+  try {
+    const b=req.body||{};
+    const result=await executeBrokerOrder({ ...b, live:false });
+    res.status(result.ok?200:403).json({ ...result, updatedAt:nowISO() });
+  } catch(error) {
+    res.status(400).json({ok:false,error:apiError(error),updatedAt:nowISO()});
+  }
+});
+
+app.post("/api/broker/order", requireAuth, async (req,res) => {
+  try {
+    const b=req.body||{};
+    // Live mode must be explicitly requested; AI-generated payloads cannot opt in implicitly.
+    if (b.live !== true) {
+      const result=await executeBrokerOrder({ ...b, live:false });
+      return res.status(result.ok?200:403).json({ ...result, updatedAt:nowISO() });
+    }
+    if (b.confirmLiveExecution !== true) {
+      return res.status(400).json({ok:false,error:"Live execution requires confirmLiveExecution=true.",code:"LIVE_CONFIRMATION_REQUIRED",updatedAt:nowISO()});
+    }
+    const result=await executeBrokerOrder({ ...b, live:true });
+    res.status(result.ok?200:403).json({ ...result, updatedAt:nowISO() });
+  } catch(error) {
+    res.status(400).json({ok:false,error:apiError(error),updatedAt:nowISO()});
+  }
+});
+
+app.get("/api/broker/order/:orderId", requireAuth, async (req,res) => {
+  try {
+    if (!BROKER_EXECUTION_ENABLED) return res.status(403).json({ok:false,error:"Broker execution is disabled."});
+    if (BROKER_NAME !== "upstox") return res.status(400).json({ok:false,error:`Unsupported broker: ${BROKER_NAME}`});
+    const result=await upstoxOrderRequest("GET", `${BROKER_STATUS_BASE_URL}/order/details`, { order_id:req.params.orderId });
+    res.json({ok:true,broker:BROKER_NAME,orderId:req.params.orderId,data:result,updatedAt:nowISO()});
+  } catch(error) { res.status(500).json({ok:false,error:apiError(error),updatedAt:nowISO()}); }
+});
+
+app.post("/api/broker/order/:orderId/cancel", requireAuth, async (req,res) => {
+  try {
+    if (!BROKER_EXECUTION_ENABLED) return res.status(403).json({ok:false,error:"Broker execution is disabled."});
+    if (BROKER_NAME !== "upstox") return res.status(400).json({ok:false,error:`Unsupported broker: ${BROKER_NAME}`});
+    const result=await upstoxOrderRequest("DELETE", `${BROKER_ORDER_BASE_URL}/order/cancel?order_id=${encodeURIComponent(req.params.orderId)}`);
+    appendExecutionEvent({ tradeId:req.params.orderId, eventType:"BROKER_ORDER_CANCEL_REQUESTED", executionType:"BROKER", side:"SYSTEM", source:"STEP20_BROKER", executedAt:nowISO(), broker:BROKER_NAME, brokerOrderId:req.params.orderId, brokerResponse:result });
+    saveState();
+    res.json({ok:true,broker:BROKER_NAME,orderId:req.params.orderId,data:result,updatedAt:nowISO()});
+  } catch(error) { res.status(500).json({ok:false,error:apiError(error),updatedAt:nowISO()}); }
+});
+
+// ============================================================
+// STEP 21 — PORTFOLIO ANALYTICS
+// Portfolio analytics are read-only intelligence. They do not place,
+// modify, or override trades and never bypass Step 19 risk controls.
+// ============================================================
+
+function portfolioDateKey(value = Date.now()) {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+function portfolioClosedTrades() {
+  return Array.isArray(state.paper?.closedTrades) ? state.paper.closedTrades : [];
+}
+
+function portfolioOpenPositions() {
+  return Array.isArray(state.paper?.positions) ? state.paper.positions.filter(p => Number(p.quantity || 0) > 0) : [];
+}
+
+function buildPortfolioAnalytics() {
+  const paper = state.paper || {};
+  const startingCapital = Number(paper.startingCapital || 0);
+  const cash = Number(paper.cash || 0);
+  const positions = portfolioOpenPositions();
+  const closed = portfolioClosedTrades();
+
+  let marketValue = 0;
+  let unrealizedPnl = 0;
+  const byIndex = {};
+  const byOptionType = {};
+
+  for (const p of positions) {
+    const qty = Number(p.quantity || 0);
+    const entry = Number(p.entry || 0);
+    const current = Number(p.currentPrice ?? p.entry ?? 0);
+    const value = current * qty;
+    const pnl = (current - entry) * qty;
+    marketValue += value;
+    unrealizedPnl += pnl;
+    const index = String(p.index || "UNKNOWN");
+    const type = String(p.optionType || "UNKNOWN").toUpperCase();
+    if (!byIndex[index]) byIndex[index] = { positions: 0, quantity: 0, marketValue: 0, unrealizedPnl: 0 };
+    byIndex[index].positions += 1;
+    byIndex[index].quantity += qty;
+    byIndex[index].marketValue += value;
+    byIndex[index].unrealizedPnl += pnl;
+    if (!byOptionType[type]) byOptionType[type] = { positions: 0, marketValue: 0, unrealizedPnl: 0 };
+    byOptionType[type].positions += 1;
+    byOptionType[type].marketValue += value;
+    byOptionType[type].unrealizedPnl += pnl;
+  }
+
+  const realizedPnl = closed.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
+  const totalPnl = realizedPnl + unrealizedPnl;
+  const equity = cash + marketValue;
+  const returnPct = startingCapital > 0 ? (totalPnl / startingCapital) * 100 : 0;
+  const exposure = equity > 0 ? (marketValue / equity) * 100 : 0;
+  const wins = closed.filter(t => Number(t.pnl || 0) > 0);
+  const losses = closed.filter(t => Number(t.pnl || 0) < 0);
+  const grossProfit = wins.reduce((s,t) => s + Number(t.pnl || 0), 0);
+  const grossLoss = Math.abs(losses.reduce((s,t) => s + Number(t.pnl || 0), 0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : (grossProfit > 0 ? null : 0);
+  const avgWin = wins.length ? grossProfit / wins.length : 0;
+  const avgLoss = losses.length ? grossLoss / losses.length : 0;
+
+  const daily = {};
+  for (const t of closed) {
+    const key = portfolioDateKey(t.closedAt);
+    if (!key) continue;
+    daily[key] = Number(((daily[key] || 0) + Number(t.pnl || 0)).toFixed(2));
+  }
+  const dailySeries = Object.entries(daily).sort((a,b) => a[0].localeCompare(b[0])).map(([date,pnl]) => ({ date, pnl }));
+
+  let running = startingCapital;
+  let peak = startingCapital;
+  let maxDrawdown = 0;
+  const equityCurve = dailySeries.map(item => {
+    running += item.pnl;
+    peak = Math.max(peak, running);
+    const dd = peak > 0 ? ((peak - running) / peak) * 100 : 0;
+    maxDrawdown = Math.max(maxDrawdown, dd);
+    return { date:item.date, equity:Number(running.toFixed(2)), drawdownPct:Number(dd.toFixed(2)) };
+  });
+
+  const today = portfolioDateKey();
+  const todayRealized = daily[today] || 0;
+  const todayPnl = todayRealized + unrealizedPnl;
+
+  return {
+    generatedAt: nowISO(),
+    source: "STEP15_EXECUTION_LEDGER_AND_PAPER_PORTFOLIO",
+    account: {
+      startingCapital: Number(startingCapital.toFixed(2)),
+      cash: Number(cash.toFixed(2)),
+      marketValue: Number(marketValue.toFixed(2)),
+      equity: Number(equity.toFixed(2)),
+      realizedPnl: Number(realizedPnl.toFixed(2)),
+      unrealizedPnl: Number(unrealizedPnl.toFixed(2)),
+      totalPnl: Number(totalPnl.toFixed(2)),
+      returnPct: Number(returnPct.toFixed(2)),
+      exposurePct: Number(exposure.toFixed(2))
+    },
+    performance: {
+      completedTrades: closed.length,
+      wins: wins.length,
+      losses: losses.length,
+      winRatePct: closed.length ? Number((wins.length / closed.length * 100).toFixed(2)) : 0,
+      grossProfit: Number(grossProfit.toFixed(2)),
+      grossLoss: Number(grossLoss.toFixed(2)),
+      profitFactor: profitFactor === null ? null : Number(profitFactor.toFixed(2)),
+      averageWin: Number(avgWin.toFixed(2)),
+      averageLoss: Number(avgLoss.toFixed(2)),
+      maxDrawdownPct: Number(maxDrawdown.toFixed(2))
+    },
+    today: {
+      date: today,
+      realizedPnl: Number(todayRealized.toFixed(2)),
+      unrealizedPnl: Number(unrealizedPnl.toFixed(2)),
+      totalPnl: Number(todayPnl.toFixed(2))
+    },
+    openPositions: positions.map(p => ({
+      tradeId:p.tradeId || null, positionId:p.id || null, index:p.index || null,
+      optionType:p.optionType || null, strike:p.strike || null, expiry:p.expiry || null,
+      quantity:Number(p.quantity || 0), entry:Number(p.entry || 0), currentPrice:Number(p.currentPrice ?? p.entry ?? 0),
+      marketValue:Number((Number(p.currentPrice ?? p.entry ?? 0) * Number(p.quantity || 0)).toFixed(2)),
+      unrealizedPnl:Number(((Number(p.currentPrice ?? p.entry ?? 0) - Number(p.entry || 0)) * Number(p.quantity || 0)).toFixed(2)),
+      stopLoss:p.stopLoss || null, targets:p.targets || [], openedAt:p.openedAt || null
+    })),
+    allocation: { byIndex, byOptionType },
+    dailyPnl: dailySeries,
+    equityCurve,
+    risk: {
+      maxDailyLossPct:Number(state.risk?.maxDailyLoss || 0),
+      maxExposurePct:Number(state.risk?.maxExposure || 0),
+      killSwitch:Boolean(state.risk?.killSwitch)
+    }
+  };
+}
+
+app.get("/api/portfolio", requireAuth, (req,res) => {
+  try { res.json({ ok:true, portfolio:buildPortfolioAnalytics(), updatedAt:nowISO() }); }
+  catch(error) { res.status(500).json({ ok:false, error:apiError(error) }); }
+});
+
+app.get("/api/portfolio/summary", requireAuth, (req,res) => {
+  try {
+    const p = buildPortfolioAnalytics();
+    res.json({ ok:true, summary:{account:p.account,performance:p.performance,today:p.today,openPositions:p.openPositions.length,risk:p.risk}, updatedAt:nowISO() });
+  } catch(error) { res.status(500).json({ ok:false, error:apiError(error) }); }
+});
+
+app.get("/api/portfolio/equity", requireAuth, (req,res) => {
+  try {
+    const p = buildPortfolioAnalytics();
+    res.json({ ok:true, equityCurve:p.equityCurve,dailyPnl:p.dailyPnl,updatedAt:nowISO() });
+  } catch(error) { res.status(500).json({ ok:false,error:apiError(error) }); }
+});
+
+app.get("/api/portfolio/allocation", requireAuth, (req,res) => {
+  try {
+    const p = buildPortfolioAnalytics();
+    res.json({ ok:true, allocation:p.allocation,openPositions:p.openPositions,updatedAt:nowISO() });
+  } catch(error) { res.status(500).json({ ok:false,error:apiError(error) }); }
+});
+
+// STEP 22 security/deployment status. This reports hardening gaps without exposing secret values.
+app.get("/api/security/status", eraRateLimit({windowMs:60_000,max:30,keyPrefix:"security"}), (req,res) => {
+  const brokerLive = String(process.env.ERA_BROKER_EXECUTION_ENABLED || "false").toLowerCase() === "true";
+  const checks = {
+    https: Boolean(req.secure || req.headers["x-forwarded-proto"] === "https"),
+    brokerDisabledByDefault: !brokerLive,
+    upstoxTokenConfigured: Boolean(String(process.env.UPSTOX_ACCESS_TOKEN || "").trim()),
+    openRouterKeyConfigured: Boolean(String(process.env.OPENROUTER_API_KEY || "").trim()),
+    vapidConfigured: Boolean(String(process.env.VAPID_PUBLIC_KEY || "").trim() && String(process.env.VAPID_PRIVATE_KEY || "").trim()),
+    allowedOriginConfigured: ALLOWED_ORIGIN !== "*",
+    serverSideAuthSessions: typeof requireAuth === "function" && typeof createAuthSession === "function",
+    multiUserDatabase: Boolean(dbReady && dbPool)
+  };
+  const warnings = [];
+  if (!checks.allowedOriginConfigured) warnings.push("Configure ERA_ALLOWED_ORIGIN for production instead of wildcard CORS.");
+  if (!checks.serverSideAuthSessions) warnings.push("Server-side authentication sessions are not configured.");
+  if (!checks.multiUserDatabase) warnings.push("Persistent user-scoped database is unavailable.");
+  if (checks.multiUserDatabase) warnings.push("Authenticated user state is persisted per user; in-process request serialization is used until the engine is fully dependency-injected for concurrent multi-user execution.");
+  if (!checks.https) warnings.push("HTTPS was not detected on this request; public production traffic should use HTTPS.");
+  res.json({ok:true,step:22,checks,warnings,updatedAt:nowISO()});
+});
+
+// STEP 23 — FINAL ERA TRADING OS
+// ============================================================
+function buildEraTradingOSStatus(req) {
+  const brokerLive = String(process.env.ERA_BROKER_EXECUTION_ENABLED || "false").toLowerCase() === "true";
+  const ledgerSize = Array.isArray(state.executionLedger) ? state.executionLedger.length : 0;
+  const paperPositions = Array.isArray(state.paper?.positions) ? state.paper.positions.length : 0;
+  const engineRunning = Boolean(state.engineRunning);
+  const riskKillSwitch = Boolean(state.risk?.killSwitch);
+  const readiness = {
+    engine: engineRunning,
+    riskEngine: typeof riskCheck === "function",
+    executionLedger: ledgerSize >= 0,
+    paperTrading: Boolean(state.paper),
+    portfolioAnalytics: typeof buildPortfolioAnalytics === "function",
+    aiSelfAudit: typeof buildAISelfAudit === "function",
+    backtesting: typeof runBacktest === "function",
+    globalIntelligence: typeof getGlobalIntelligence === "function" || typeof buildGlobalIntelligence === "function",
+    realtime: typeof realtimeState === "object",
+    securityHardening: Boolean(typeof requireAuth === "function" && typeof createAuthSession === "function"),
+    brokerExecution: !brokerLive || (BROKER_NAME === "upstox" && Boolean(process.env.UPSTOX_ACCESS_TOKEN)),
+    liveBrokerDisabledByDefault: !brokerLive,
+    userScopedPersistence: Boolean(dbReady)
+  };
+  const blockers = [];
+  if (!readiness.engine) blockers.push("Market engine is not running.");
+  if (riskKillSwitch) blockers.push("Risk kill switch is enabled.");
+  if (!readiness.brokerExecution) blockers.push("Live broker execution is enabled but broker credentials/configuration are incomplete.");
+  if (!readiness.globalIntelligence) blockers.push("Global intelligence module is unavailable.");
+  if (!readiness.realtime) blockers.push("Realtime market module is unavailable.");
+  if (!readiness.securityHardening) blockers.push("Server-side authentication hardening is incomplete.");
+  if (!readiness.userScopedPersistence) blockers.push("Production multi-user persistence is not complete; current state remains file-based/global. Enable a user-scoped database before multi-user production.");
+  const runtimeMode = brokerLive ? "LIVE_BROKER_ENABLED" : "PAPER_SAFE_MODE";
+  readiness.persistentDatabase = Boolean(dbReady);
+  if (!dbReady) blockers.push("Persistent PostgreSQL database is not connected/configured.");
+  readiness.userScopedPersistence = Boolean(dbReady);
+  const productionReady = readiness.engine && readiness.riskEngine && readiness.executionLedger && readiness.paperTrading && readiness.portfolioAnalytics && readiness.aiSelfAudit && readiness.backtesting && readiness.globalIntelligence && readiness.realtime && readiness.securityHardening && readiness.brokerExecution && readiness.userScopedPersistence && readiness.persistentDatabase && blockers.length === 0;
+  return {
+    ok: true,
+    step: 23,
+    product: "ERA AI — Autonomous Indian Market Intelligence and Options Analysis Platform",
+    version: VERSION,
+    runtimeMode,
+    productionReady,
+    readiness,
+    blockers,
+    liveBroker: { enabled: brokerLive, broker: BROKER_NAME },
+    counts: { executionLedger: ledgerSize, openPaperPositions: paperPositions },
+    policy: {
+      deterministicRiskGate: true,
+      aiCannotOverrideRisk: true,
+      existingAuthPreserved: true,
+      existingUiPreserved: true
+    },
+    checkedAt: nowISO()
+  };
+}
+
+app.get("/api/era-os", eraRateLimit({windowMs:60_000,max:30,keyPrefix:"era-os"}), (req,res) => {
+  try { res.json(buildEraTradingOSStatus(req)); }
+  catch(error) { res.status(500).json({ok:false,error:apiError(error)}); }
+});
+
+app.get("/api/system/status", eraRateLimit({windowMs:60_000,max:30,keyPrefix:"system-status"}), (req,res) => {
+  try {
+    const status = buildEraTradingOSStatus(req);
+    res.json({ ok:true, status:{version:status.version,runtimeMode:status.runtimeMode,productionReady:status.productionReady,blockers:status.blockers}, updatedAt:nowISO() });
+  } catch(error) { res.status(500).json({ok:false,error:apiError(error)}); }
+});
+
+app.get("/api/health", (req,res) => {
+  res.json({ ok:true, service:"era-ai", version:VERSION, engineRunning:Boolean(state.engineRunning), checkedAt:nowISO() });
+});
+
 // SERVER
 // ============================================================
 
+ensurePersistentDatabase().finally(() => {
 app.listen(
   PORT,
   "0.0.0.0",
@@ -7471,3 +8919,4 @@ app.listen(
     );
   }
 );
+});
