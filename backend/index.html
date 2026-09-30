@@ -144,7 +144,71 @@ function renderMarket(){const m=marketOf();if(!m)return;$('marketPrice').textCon
 function renderSignal(){const a=selected(),tr=a?.trades?.[0];$('signalType').textContent=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a?.suggestion||'WAIT');$('signalOptionName').textContent=tr?`${S.index} ${tr.optionType} • Strike ${fmt(tr.strike)} • Expiry ${a?.options?.expiry||'—'}`:'No option setup yet';$('signalConfidence').textContent=a?`${a.confidence}% CONFIDENCE`:'—';$('signalBar').style.width=`${Math.max(0,Math.min(100,Number(a?.confidence)||0))}%`;$('signalStrike').textContent=tr?fmt(tr.strike):'—';$('signalEntry').textContent=tr?fmt(tr.entry):'—';$('signalSL').textContent=tr?fmt(tr.stopLoss):'—';$('signalT1').textContent=tr?fmt(tr.targets?.[0]):'—';$('signalReasons').textContent=whyText(a);$('signalWait').textContent=waitText(a)}
 function renderPortfolio(){const rows=S.activeTrades||[];$('portfolioCount').textContent=rows.length;$('historyCount').textContent=S.history.length;$('portfolioEngine').textContent=S.settings?.engineRunning?'RUNNING':'—';$('portfolioScan').textContent=S.settings?.lastScan?new Date(S.settings.lastScan).toLocaleTimeString('en-IN'):'—';$('portfolioRows').innerHTML=rows.length?rows.slice(0,30).map(t=>`<tr><td>${esc(t.index)}</td><td>${esc(t.optionType)} ${esc(t.signal)}</td><td>${fmt(t.strike)}</td><td>${fmt(t.entry)}</td><td>${fmt(t.stopLoss)}</td><td>${fmt(t.targets?.[0])}</td><td>${esc(t.confidence)}%</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No active trades.</td></tr>'}
 function renderTrades(){const rows=S.activeTrades||[];$('tradesGrid').innerHTML=rows.length?rows.map(t=>`<div class="card trade-card"><div class="trade-head"><div><div class="trade-title">${esc(t.index)} ${esc(t.optionType)} • ${esc(t.signal)}</div><div class="trade-meta">${esc(t.status||'SETUP')} • ${esc(t.direction||'')} • ${esc(t.confidence)}% confidence</div></div><span class="pill">${fmt(t.strike)}</span></div><div class="trade-fields"><div>OPTION<b>${esc(t.optionType)}</b></div><div>STRIKE<b>${fmt(t.strike)}</b></div><div>EXPIRY<b>${esc(selected()?.options?.expiry||'—')}</b></div><div>ENTRY<b>${fmt(t.entry)}</b></div><div>STOP LOSS<b>${fmt(t.stopLoss)}</b></div><div>TARGET 1<b>${fmt(t.targets?.[0])}</b></div><div>TARGET 2<b>${fmt(t.targets?.[1])}</b></div><div>CONFIDENCE<b>${esc(t.confidence)}%</b></div></div><div style="margin-top:10px;color:var(--muted);font-size:10px">RR 1:${esc(t.rr)} • ${esc(t.invalidation||'Risk condition defined')}</div><button class="primary use-trade" data-trade='${esc(JSON.stringify(t))}'>Use in Paper Trading</button></div>`).join(''):'<div class="card trade-card">ERA has no validated trade setup right now. NO TRADE is a valid decision.</div>';document.querySelectorAll('.use-trade').forEach(b=>b.onclick=()=>{const t=JSON.parse(b.dataset.trade.replace(/&#039;/g,"'"));$('paperIndex').value=t.index||S.index;$('paperType').value=t.optionType||'';$('paperStrike').value=t.strike||'';$('paperPrice').value=t.entry||'';$('paperSL').value=t.stopLoss||'';$('paperTarget').value=t.targets?.[0]||'';setView('paper')})}
-async function loadAnalysis(){try{const d=await api('/api/analysis?index='+encodeURIComponent(S.index));S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};renderHome();renderMarket();renderSignal();renderPortfolio();renderTrades();$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('liveStatus').textContent=d.marketOpen?'ERA AI is LIVE • Market Intelligence Active':'ERA AI online • Market closed';}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
+async function loadAnalysis(){try{const d=await api('/api/analysis?index='+encodeURIComponent(S.index));S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};renderHome();renderMarket();renderSignal();renderPortfolio();renderTrades();$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
+
+// STEP 4 — LIVE MARKET SYNC
+// The backend already receives live ticks. This layer connects the existing UI
+// to that stream without redesigning the UI or replacing the existing scanner.
+let realtimeSource=null;
+let realtimeConnected=false;
+
+function realtimeStatusLabel(status){
+  if(status==='LIVE') return '🟢 LIVE • Market feed connected';
+  if(status==='RECONNECTING') return '🟡 RECONNECTING • Syncing market feed';
+  return '🔴 OFFLINE • Live feed unavailable';
+}
+
+function updateRealtimeStatusText(snapshot){
+  const status=snapshot?.status;
+  if(status){
+    realtimeConnected=status==='LIVE';
+    const marketOpen=typeof snapshot.marketOpen==='boolean'?snapshot.marketOpen:S.marketOpen;
+    $('liveStatus').textContent=marketOpen?realtimeStatusLabel(status):'ERA AI • Market closed';
+  }
+}
+
+function applyRealtimeSnapshot(snapshot){
+  if(!snapshot||!snapshot.indices)return;
+  for(const [index,tick] of Object.entries(snapshot.indices)){
+    if(!tick||!Number.isFinite(Number(tick.price)))continue;
+    const old=S.market[index]||{};
+    S.market[index]={...old,price:Number(tick.price),open:tick.open,high:tick.high,low:tick.low,close:tick.close,volume:tick.cumulativeVolume,oi:tick.oi,timestamp:tick.timestamp,stale:tick.stale,realtime:tick};
+  }
+  S.marketOpen=Boolean(snapshot.marketOpen);
+  updateRealtimeStatusText(snapshot);
+  const m=marketOf();
+  if(!m)return;
+  renderHome();
+  renderMarket();
+  $('marketUpdated').textContent=new Date(m.timestamp||snapshot.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+}
+
+function applyRealtimeTick(payload){
+  const index=payload?.index;
+  const tick=payload?.tick;
+  if(!index||!tick||!Number.isFinite(Number(tick.price)))return;
+  const old=S.market[index]||{};
+  S.market[index]={...old,price:Number(tick.price),open:tick.open,high:tick.high,low:tick.low,close:tick.close,volume:tick.cumulativeVolume,oi:tick.oi,timestamp:tick.timestamp,stale:false,realtime:tick};
+  if(index!==S.index)return;
+  renderHome();
+  renderMarket();
+  $('marketUpdated').textContent=new Date(tick.timestamp||payload.at||Date.now()).toLocaleTimeString('en-IN');
+}
+
+function connectRealtimeSync(){
+  if(!('EventSource' in window)){
+    $('liveStatus').textContent='🟡 LIVE SYNC • Browser stream unavailable';
+    return;
+  }
+  if(realtimeSource)realtimeSource.close();
+  realtimeSource=new EventSource(BACKEND+'/api/realtime/stream');
+  realtimeSource.addEventListener('snapshot',e=>{try{applyRealtimeSnapshot(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('tick',e=>{try{applyRealtimeTick(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.onopen=()=>{realtimeConnected=true;};
+  realtimeSource.onerror=()=>{realtimeConnected=false;updateRealtimeStatusText({status:'RECONNECTING',marketOpen:S.marketOpen});};
+}
+
 async function loadNews(){try{const d=await api('/api/news');$('newsUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('newsGrid').innerHTML=(d.news||[]).slice(0,20).map(n=>`<div class="card news-item"><a href="${esc(n.link||'#')}" target="_blank" rel="noopener">${esc(n.title)}</a><small>${esc(n.pubDate||'')}</small></div>`).join('')||'<div class="card news-item">No news available.</div>'}catch(e){toast('News: '+errorText(e.message))}}
 async function loadOptions(){try{const idx=S.optionIndex||'NIFTY';const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);let expiries=Array.isArray(ex.expiries)?ex.expiries:[];const current=$('expirySelect').value;const keep=expiries.includes(current)?current:(expiries[0]||'');$('expirySelect').innerHTML=expiries.length?expiries.map(x=>`<option value=\"${esc(x)}\">${esc(x)}</option>`).join(''):'<option value=\"\">Expiry unavailable</option>';if(keep)$('expirySelect').value=keep;await loadOptionChainForExpiry(keep)}catch(e){$('expirySelect').innerHTML='<option value=\"\">Expiry unavailable</option>';$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
 async function loadOptionChainForExpiry(expiry){try{const idx=S.optionIndex||'NIFTY';const q=expiry?`&expiry=${encodeURIComponent(expiry)}`:'';const d=await api(`/api/options/chain?index=${encodeURIComponent(idx)}${q}`);S.optionData=d;const rows=d.rows||d.data||[];$('optionSpot').textContent='Spot '+fmt(d.spot);$('optionUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('optionPCR').textContent=`PCR ${fmt(d.summary?.pcr)}`;$('optionSentiment').textContent=`Sentiment ${d.summary?.sentiment||'—'}`;if(d.expiry&&!Array.from($('expirySelect').options).some(o=>o.value===String(d.expiry))){const o=document.createElement('option');o.value=d.expiry;o.textContent=d.expiry;$('expirySelect').appendChild(o)}if(d.expiry)$('expirySelect').value=String(d.expiry);$('optionRows').innerHTML=rows.map((r,i)=>`<tr class=\"${i===Math.floor(rows.length/2)?'selected-row':''}\"><td>${fmt(r.call?.ltp)}</td><td>${fmt(r.call?.oi)}</td><td>${fmt(r.call?.changeOI)}</td><td><b>${fmt(r.strike)}</b></td><td>${fmt(r.put?.changeOI)}</td><td>${fmt(r.put?.oi)}</td><td>${fmt(r.put?.ltp)}</td></tr>`).join('')||'<tr><td colspan=\"7\" class=\"empty\">No option rows available.</td></tr>'}catch(e){$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
@@ -190,7 +254,7 @@ if(localStorage.getItem('eraUser'))showApp();else showAuth();
 const themes=[['Cyan','19e6ff','7657ff'],['Violet','9b5cff','ff4fd8'],['Electric Blue','3da5ff','315cff'],['Emerald','28e69b','00b894'],['Lime','b6f36b','20d66b'],['Amber','ffc857','ff7a45'],['Rose','ff5b8a','9b4dff'],['Ice','b8f4ff','5b8cff'],['Aqua','18f1d1','087cff'],['Neon Pink','ff3cac','784ba0'],['Solar','ffcf4a','ff5e5e'],['Royal','6f63ff','00d4ff']];function rgb(h){return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)].join(',')}function applyTheme(i){const t=themes[i]||themes[0];document.documentElement.style.setProperty('--accent','#'+t[1]);document.documentElement.style.setProperty('--accent2','#'+t[2]);document.documentElement.style.setProperty('--glow',`rgba(${rgb(t[1])},.25)`);localStorage.setItem('eraTheme',i);document.querySelectorAll('.color').forEach((x,n)=>x.classList.toggle('active',n===i))}themes.forEach((t,i)=>{const b=document.createElement('button');b.className='color';b.title=t[0];b.style.background=`linear-gradient(135deg,#${t[1]},#${t[2]})`;b.onclick=()=>applyTheme(i);$('colorOptions').appendChild(b)});applyTheme(Number(localStorage.getItem('eraTheme')||0));
 // Push registration is requested only from an explicit user gesture (welcome screen / notification panel).
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/service-worker.js').catch(e=>console.warn('Service worker:',e.message));}
-(async()=>{await loadAnalysis();await loadPaper();setInterval(loadAnalysis,15000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
+(async()=>{await loadAnalysis();await loadPaper();connectRealtimeSync();setInterval(loadAnalysis,15000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
 </script>
 </body>
 </html>
