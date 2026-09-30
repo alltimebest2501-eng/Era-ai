@@ -271,6 +271,11 @@ const state = {
 
   previousSignals: {},
 
+  // STEP 11 — SETUP MEMORY / ANTI-REPEAT
+  // Keeps the current setup lifecycle so the same trade is not emitted
+  // repeatedly while the market remains in the same setup.
+  setupMemory: {},
+
   notificationHistory: {},
 
   settings: {
@@ -690,6 +695,10 @@ function loadState() {
       state.notificationHistory = saved.notificationHistory;
     }
 
+    if (saved.setupMemory && typeof saved.setupMemory === "object") {
+      state.setupMemory = saved.setupMemory;
+    }
+
     if (saved.paper && typeof saved.paper === "object") {
       state.paper = { ...state.paper, ...saved.paper, positions: Array.isArray(saved.paper.positions) ? saved.paper.positions : [], orders: Array.isArray(saved.paper.orders) ? saved.paper.orders : [] };
     }
@@ -725,6 +734,9 @@ function saveState() {
 
           notificationHistory:
             state.notificationHistory,
+
+          setupMemory:
+            state.setupMemory,
 
           paper:
             state.paper,
@@ -3862,6 +3874,222 @@ function createOptionTrades(
 }
 
 // ============================================================
+// STEP 11 — SETUP MEMORY / ANTI-REPEAT ENGINE
+// Lifecycle: NO_SETUP → WATCH → CONFIRMING → TRADE → RUNNING
+// → TARGET/SL/INVALIDATED → COOLDOWN → NEW SETUP.
+// Step 11 owns only setup memory. It does not execute broker orders.
+// ============================================================
+
+const SETUP_MEMORY_CONFIG = {
+  requiredConfirmations: 2,
+  staleMemoryMs: 24 * 60 * 60 * 1000,
+  cooldownMs: 10 * 60 * 1000,
+  // Prevent repeated API/UI calls from counting as separate confirmations
+  // before the next scanner cycle has had time to produce a new observation.
+  minimumConfirmationGapMs: 45 * 1000
+};
+
+function setupFingerprint({ index, direction, optionType, strike, expiry }) {
+  return [
+    String(index || "").toUpperCase(),
+    String(direction || "").toUpperCase(),
+    String(optionType || "").toUpperCase(),
+    Number(strike) || 0,
+    String(expiry || "")
+  ].join("|");
+}
+
+function setupGroupFingerprint({ index, direction, optionType }) {
+  return [
+    String(index || "").toUpperCase(),
+    String(direction || "").toUpperCase(),
+    String(optionType || "").toUpperCase()
+  ].join("|");
+}
+
+function cleanupSetupMemory() {
+  const memory = state.setupMemory || {};
+  const cutoff = Date.now() - SETUP_MEMORY_CONFIG.staleMemoryMs;
+  let changed = false;
+
+  for (const [key, item] of Object.entries(memory)) {
+    const lastSeen = new Date(item?.lastSeenAt || 0).getTime();
+    if (!lastSeen || lastSeen < cutoff) {
+      delete memory[key];
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function getSetupMemory(candidate) {
+  if (!candidate) return null;
+  const key = setupFingerprint(candidate);
+  return { key, item: state.setupMemory?.[key] || null };
+}
+
+function evaluateSetupMemory(candidate, { marketPrice = null } = {}) {
+  if (!candidate) {
+    return {
+      allowed: false,
+      decision: "NO TRADE",
+      state: "NO_SETUP",
+      reason: "No candidate setup is available.",
+      fingerprint: null,
+      confirmations: 0
+    };
+  }
+
+  const changed = cleanupSetupMemory();
+  const key = setupFingerprint(candidate);
+  const groupKey = setupGroupFingerprint(candidate);
+  const now = Date.now();
+  const nowText = nowISO();
+  const existing = state.setupMemory[key];
+
+  // A new strike/expiry in the same directional setup replaces the old
+  // candidate rather than allowing several near-identical setups to fire.
+  for (const [otherKey, other] of Object.entries(state.setupMemory)) {
+    if (otherKey === key) continue;
+    if (other?.groupKey === groupKey && ["TRADE", "RUNNING", "CONFIRMING", "WATCH"].includes(other?.state)) {
+      other.state = "INVALIDATED";
+      other.invalidatedAt = nowText;
+      other.lastSeenAt = nowText;
+    }
+  }
+
+  let item = existing;
+  if (!item) {
+    item = {
+      fingerprint: key,
+      groupKey,
+      index: candidate.index,
+      direction: candidate.direction,
+      optionType: candidate.optionType,
+      strike: Number(candidate.strike),
+      expiry: candidate.expiry || null,
+      state: "WATCH",
+      confirmations: 0,
+      firstSeenAt: nowText,
+      lastSeenAt: nowText,
+      lastDecisionAt: null,
+      lastConfirmationAt: null,
+      lastEntry: Number(candidate.entry) || null,
+      lastUnderlyingPrice: Number.isFinite(Number(marketPrice)) ? Number(marketPrice) : null,
+      cooldownUntil: null,
+      invalidatedAt: null
+    };
+    state.setupMemory[key] = item;
+  } else {
+    item.lastSeenAt = nowText;
+    item.lastEntry = Number(candidate.entry) || item.lastEntry;
+    if (Number.isFinite(Number(marketPrice))) item.lastUnderlyingPrice = Number(marketPrice);
+  }
+
+  const cooldownUntilMs = item.cooldownUntil ? new Date(item.cooldownUntil).getTime() : 0;
+  if (item.state === "COOLDOWN" && cooldownUntilMs > now) {
+    if (changed) saveState();
+    return {
+      allowed: false,
+      decision: "WAIT",
+      state: "COOLDOWN",
+      reason: "Same setup is inside the anti-repeat cooldown.",
+      fingerprint: key,
+      confirmations: Number(item.confirmations || 0)
+    };
+  }
+
+  if (item.state === "COOLDOWN" && cooldownUntilMs <= now) {
+    item.state = "WATCH";
+    item.confirmations = 0;
+    item.lastConfirmationAt = null;
+    item.cooldownUntil = null;
+  }
+
+  // Once a setup has already produced a TRADE signal, do not emit it again
+  // until its fingerprint is invalidated by a new setup. This is the core
+  // anti-repeat rule.
+  if (item.state === "TRADE" || item.state === "RUNNING") {
+    if (changed) saveState();
+    return {
+      allowed: false,
+      decision: "WAIT",
+      state: item.state,
+      reason: "Same setup is already active; waiting for invalidation or a new setup.",
+      fingerprint: key,
+      confirmations: Number(item.confirmations || 0)
+    };
+  }
+
+  const lastConfirmationMs = item.lastConfirmationAt
+    ? new Date(item.lastConfirmationAt).getTime()
+    : 0;
+
+  // /api/analysis and AI Brain can both trigger fresh analysis. Do not let
+  // repeated requests within the same scanner window fake the required
+  // consecutive confirmation count.
+  if (lastConfirmationMs && now - lastConfirmationMs < SETUP_MEMORY_CONFIG.minimumConfirmationGapMs) {
+    if (changed) saveState();
+    return {
+      allowed: false,
+      decision: "WAIT",
+      state: item.state === "TRADE" ? "TRADE" : "CONFIRMING",
+      reason: "Waiting for the next distinct market observation before counting another confirmation.",
+      fingerprint: key,
+      confirmations: Number(item.confirmations || 0)
+    };
+  }
+
+  item.confirmations = Number(item.confirmations || 0) + 1;
+  item.lastConfirmationAt = nowText;
+
+  if (item.confirmations < SETUP_MEMORY_CONFIG.requiredConfirmations) {
+    item.state = "CONFIRMING";
+    if (changed || true) saveState();
+    return {
+      allowed: false,
+      decision: "WAIT",
+      state: "CONFIRMING",
+      reason: `Setup confirmation ${item.confirmations}/${SETUP_MEMORY_CONFIG.requiredConfirmations}; waiting for the next consistent scan.`,
+      fingerprint: key,
+      confirmations: item.confirmations
+    };
+  }
+
+  item.state = "TRADE";
+  item.lastDecisionAt = nowText;
+  item.invalidatedAt = null;
+  item.cooldownUntil = null;
+  saveState();
+
+  return {
+    allowed: true,
+    decision: "TRADE",
+    state: "TRADE",
+    reason: "Setup confirmed across consecutive scans and has not previously fired.",
+    fingerprint: key,
+    confirmations: item.confirmations
+  };
+}
+
+function invalidateSetupMemory({ index, direction, optionType, strike, expiry, reason = "Setup invalidated." }) {
+  const key = setupFingerprint({ index, direction, optionType, strike, expiry });
+  const item = state.setupMemory?.[key];
+  if (!item) return false;
+
+  item.state = "INVALIDATED";
+  item.invalidatedAt = nowISO();
+  item.lastSeenAt = nowISO();
+  item.invalidatedReason = reason;
+  item.lastConfirmationAt = null;
+  item.confirmations = 0;
+  item.cooldownUntil = new Date(Date.now() + SETUP_MEMORY_CONFIG.cooldownMs).toISOString();
+  saveState();
+  return true;
+}
+
+// ============================================================
 // STEP 10 — TRADE DECISION ENGINE
 // Final deterministic gate after technical, price action, regime,
 // options and exact-strike selection. The engine decides TRADE / WAIT /
@@ -4002,7 +4230,28 @@ function tradeDecisionEngine({
 
   const hardConflict =
     regimeDirection !== "NEUTRAL" && regimeDirection !== expectedRegimeDirection;
-  const finalTradeAllowed = blockers.length === 0 && !hardConflict && finalScore >= minConfidence;
+
+  let setupMemoryDecision = {
+    allowed: false,
+    decision: "NO TRADE",
+    state: "NO_SETUP",
+    reason: "No valid setup memory candidate.",
+    fingerprint: null,
+    confirmations: 0
+  };
+
+  if (selected && blockers.length === 0 && !hardConflict && finalScore >= minConfidence) {
+    setupMemoryDecision = evaluateSetupMemory(selected, { marketPrice: market?.price });
+    if (!setupMemoryDecision.allowed) {
+      blockers.push(setupMemoryDecision.reason);
+    }
+  }
+
+  const finalTradeAllowed =
+    blockers.length === 0 &&
+    !hardConflict &&
+    finalScore >= minConfidence &&
+    setupMemoryDecision.allowed;
 
   if (hardConflict && blockers.length === 0) {
     blockers.push("Market regime direction is materially against the proposed trade.");
@@ -4026,6 +4275,7 @@ function tradeDecisionEngine({
       decisionScore: finalScore,
       decisionReasons: reasons.slice(0, 8),
       decisionRisks: [...risks, ...blockers].slice(0, 10),
+      setupMemory: setupMemoryDecision,
       decisionAt: nowISO()
     };
   }
@@ -4039,6 +4289,7 @@ function tradeDecisionEngine({
     reasons: reasons.slice(0, 8),
     risks: [...risks, ...blockers].slice(0, 10),
     blockers,
+    setupMemory: setupMemoryDecision,
     context: {
       baseConfidence,
       minConfidence,
