@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.5.0-step7-price-action";
+const VERSION = "8.6.0-step8-regime-options";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -2852,6 +2852,28 @@ function normalizeOptionSide(
         0
       ),
 
+    bidPrice:
+      safeNumber(
+        marketData.bid_price ??
+        marketData.bidPrice ??
+        marketData.best_bid_price ??
+        marketData.bestBidPrice ??
+        side.bidPrice ??
+        side.bid_price ??
+        0
+      ),
+
+    askPrice:
+      safeNumber(
+        marketData.ask_price ??
+        marketData.askPrice ??
+        marketData.best_ask_price ??
+        marketData.bestAskPrice ??
+        side.askPrice ??
+        side.ask_price ??
+        0
+      ),
+
     oi:
       safeNumber(
         marketData.oi ??
@@ -3188,6 +3210,155 @@ function calculateOptionSummary(
     maxCallOI,
 
     maxPutOI
+  };
+}
+
+// ============================================================
+// STEP 8 — ADVANCED OPTIONS ANALYTICS
+// OI buildup, IV, Greeks, Max Pain, liquidity and expiry behavior.
+// ============================================================
+
+function calculateAdvancedOptionAnalytics(rows, spot, expiry = null) {
+  const data = Array.isArray(rows) ? rows : [];
+  const currentSpot = Number(spot);
+  const validSpot = Number.isFinite(currentSpot) && currentSpot > 0 ? currentSpot : null;
+  const sorted = data.filter(r => Number.isFinite(Number(r?.strike))).sort((a,b) => Math.abs(Number(a.strike) - (validSpot || 0)) - Math.abs(Number(b.strike) - (validSpot || 0)));
+  const atmRows = sorted.slice(0, 7);
+
+  let callOI = 0, putOI = 0, callVolume = 0, putVolume = 0, callChangeOI = 0, putChangeOI = 0;
+  let callIvWeighted = 0, putIvWeighted = 0, callIvWeight = 0, putIvWeight = 0;
+  let totalSpread = 0, spreadCount = 0;
+
+  for (const row of data) {
+    const ce = row?.call || {};
+    const pe = row?.put || {};
+    const ceOI = Math.max(0, Number(ce.oi) || 0);
+    const peOI = Math.max(0, Number(pe.oi) || 0);
+    const ceVol = Math.max(0, Number(ce.volume) || 0);
+    const peVol = Math.max(0, Number(pe.volume) || 0);
+    callOI += ceOI; putOI += peOI;
+    callVolume += ceVol; putVolume += peVol;
+    callChangeOI += Number(ce.changeOI) || 0;
+    putChangeOI += Number(pe.changeOI) || 0;
+    const ceIV = Number(ce.iv) || 0, peIV = Number(pe.iv) || 0;
+    if (ceIV > 0 && ceOI > 0) { callIvWeighted += ceIV * ceOI; callIvWeight += ceOI; }
+    if (peIV > 0 && peOI > 0) { putIvWeighted += peIV * peOI; putIvWeight += peOI; }
+    for (const side of [ce, pe]) {
+      const bid = Number(side.bidPrice) || 0, ask = Number(side.askPrice) || 0;
+      if (bid > 0 && ask >= bid) { totalSpread += ask - bid; spreadCount++; }
+    }
+  }
+
+  const pcrOI = callOI > 0 ? putOI / callOI : 0;
+  const pcrVolume = callVolume > 0 ? putVolume / callVolume : 0;
+  const avgCallIV = callIvWeight > 0 ? callIvWeighted / callIvWeight : null;
+  const avgPutIV = putIvWeight > 0 ? putIvWeighted / putIvWeight : null;
+  const atmIVs = atmRows.flatMap(r => [r?.call?.iv, r?.put?.iv]).map(Number).filter(v => Number.isFinite(v) && v > 0);
+  const atmIV = atmIVs.length ? atmIVs.reduce((a,b) => a+b, 0) / atmIVs.length : null;
+
+  // Max Pain: strike with the lowest aggregate intrinsic payout to option holders.
+  let maxPain = null, minPain = Infinity;
+  for (const candidate of data) {
+    const k = Number(candidate?.strike);
+    if (!Number.isFinite(k)) continue;
+    let pain = 0;
+    for (const row of data) {
+      const strike = Number(row?.strike);
+      if (!Number.isFinite(strike)) continue;
+      pain += Math.max(0, k - strike) * Math.max(0, Number(row?.call?.oi) || 0);
+      pain += Math.max(0, strike - k) * Math.max(0, Number(row?.put?.oi) || 0);
+    }
+    if (pain < minPain) { minPain = pain; maxPain = k; }
+  }
+
+  const callBuildup = callChangeOI > 0 ? (callChangeOI > Math.max(1, callOI * 0.01) ? "RISING" : "MILD_RISE") : callChangeOI < 0 ? "FALLING" : "FLAT";
+  const putBuildup = putChangeOI > 0 ? (putChangeOI > Math.max(1, putOI * 0.01) ? "RISING" : "MILD_RISE") : putChangeOI < 0 ? "FALLING" : "FLAT";
+  let oiBuildup = "NEUTRAL";
+  if (putChangeOI > 0 && callChangeOI < 0) oiBuildup = "PUT_BUILDUP";
+  else if (callChangeOI > 0 && putChangeOI < 0) oiBuildup = "CALL_BUILDUP";
+  else if (putChangeOI > 0 && callChangeOI > 0) oiBuildup = "TWO_SIDED_BUILDUP";
+  else if (putChangeOI < 0 && callChangeOI < 0) oiBuildup = "TWO_SIDED_UNWINDING";
+
+  const expiryText = expiry ? String(expiry).slice(0,10) : null;
+  let daysToExpiry = null, expiryBehavior = "UNKNOWN";
+  if (expiryText) {
+    const target = new Date(`${expiryText}T15:30:00+05:30`);
+    if (!Number.isNaN(target.getTime())) {
+      daysToExpiry = Math.max(0, Math.ceil((target.getTime() - Date.now()) / 86400000));
+      expiryBehavior = daysToExpiry <= 1 ? "EXPIRY_DAY" : daysToExpiry <= 7 ? "EXPIRY_WEEK" : "NORMAL";
+    }
+  }
+
+  const avgSpread = spreadCount ? totalSpread / spreadCount : null;
+  const totalVolume = callVolume + putVolume;
+  const totalOI = callOI + putOI;
+  const liquidity = totalVolume > 0 || totalOI > 0 ? (totalVolume > totalOI * 0.05 ? "HIGH" : "MODERATE") : "LOW";
+
+  return {
+    available: data.length > 0,
+    totalOI: Math.round(totalOI),
+    totalVolume: Math.round(totalVolume),
+    callOI: Math.round(callOI),
+    putOI: Math.round(putOI),
+    callVolume: Math.round(callVolume),
+    putVolume: Math.round(putVolume),
+    callChangeOI: Math.round(callChangeOI),
+    putChangeOI: Math.round(putChangeOI),
+    pcrOI: round(pcrOI, 3),
+    pcrVolume: round(pcrVolume, 3),
+    oiBuildup,
+    callBuildup,
+    putBuildup,
+    avgCallIV: avgCallIV !== null ? round(avgCallIV, 2) : null,
+    avgPutIV: avgPutIV !== null ? round(avgPutIV, 2) : null,
+    atmIV: atmIV !== null ? round(atmIV, 2) : null,
+    maxPain: maxPain !== null ? round(maxPain) : null,
+    liquidity,
+    averageSpread: avgSpread !== null ? round(avgSpread, 3) : null,
+    expiry: expiryText,
+    daysToExpiry,
+    expiryBehavior
+  };
+}
+
+// ============================================================
+// STEP 8 — MARKET REGIME ENGINE
+// ============================================================
+
+function calculateMarketRegime(technical, optionSummary, optionAdvanced) {
+  const t = technical || {};
+  const pa = t.priceAction || {};
+  const mtf = t.multiTimeframe || {};
+  const trend = String(t.trend || t.emaTrend || "SIDEWAYS").toUpperCase();
+  const momentum = String(t.momentum?.direction || "FLAT").toUpperCase();
+  const volatility = String(t.volatility?.state || "NORMAL").toUpperCase();
+  const rangeState = String(pa.range?.state || "NORMAL").toUpperCase();
+  const alignment = String(mtf.alignment || "NEUTRAL").toUpperCase();
+  const optionSentiment = String(optionSummary?.sentiment || "NEUTRAL").toUpperCase();
+
+  let direction = "NEUTRAL";
+  if (trend === "BULLISH" && (momentum === "UP" || alignment === "ALIGNED")) direction = "BULLISH";
+  else if (trend === "BEARISH" && (momentum === "DOWN" || alignment === "ALIGNED")) direction = "BEARISH";
+  else if (optionSentiment === "BULLISH" && trend !== "BEARISH") direction = "BULLISH";
+  else if (optionSentiment === "BEARISH" && trend !== "BULLISH") direction = "BEARISH";
+
+  let structure = "RANGE";
+  if (rangeState === "EXPANSION" || pa.breakout?.detected || pa.orb?.breakout) structure = "TRENDING";
+  else if (rangeState === "CONTRACTION" || trend === "SIDEWAYS") structure = "RANGE";
+  else if (trend === "BULLISH" || trend === "BEARISH") structure = "TRENDING";
+
+  const volState = volatility === "HIGH" ? "HIGH_VOLATILITY" : volatility === "LOW" ? "LOW_VOLATILITY" : "NORMAL_VOLATILITY";
+  const bias = direction === "NEUTRAL" ? optionSentiment === "NEUTRAL" ? "NEUTRAL" : optionSentiment : direction;
+
+  return {
+    structure,
+    direction,
+    bias,
+    volatility: volState,
+    timeframeAlignment: alignment,
+    optionBias: optionSentiment,
+    optionOIState: optionAdvanced?.oiBuildup || "NEUTRAL",
+    label: `${structure}_${direction}_${volState}`
   };
 }
 
@@ -3854,6 +4025,20 @@ async function analyzeIndex(
     optionSummary = null;
   }
 
+  const optionAdvanced =
+    calculateAdvancedOptionAnalytics(
+      optionRows,
+      market.price,
+      expiry
+    );
+
+  const marketRegime =
+    calculateMarketRegime(
+      technical,
+      optionSummary,
+      optionAdvanced
+    );
+
   const movement =
     movementFromPrevious(
       index,
@@ -3937,9 +4122,15 @@ async function analyzeIndex(
       summary:
         optionSummary,
 
+      advanced:
+        optionAdvanced,
+
       rows:
         optionRows
     },
+
+    regime:
+      marketRegime,
 
     signal,
 
@@ -4929,6 +5120,13 @@ app.get(
           spot
         );
 
+      const advanced =
+        calculateAdvancedOptionAnalytics(
+          rows,
+          spot,
+          chain.expiry
+        );
+
       res.json({
         ok: true,
 
@@ -4947,6 +5145,8 @@ app.get(
           rows,
 
         summary,
+
+        advanced,
 
         updatedAt:
           nowISO()
@@ -5123,14 +5323,11 @@ function buildAIBrainContext(index) {
         choch: technical.choch,
         multiTimeframe: technical.multiTimeframe
       },
+      regime: analysis.regime || null,
       options: {
         expiry: options.expiry,
-        pcr: options.pcr,
-        sentiment: options.sentiment,
-        callOI: options.callOI,
-        putOI: options.putOI,
-        maxCallOI: options.maxCallOI,
-        maxPutOI: options.maxPutOI
+        summary: options.summary || null,
+        advanced: options.advanced || null
       },
       trades
     },
@@ -5391,13 +5588,32 @@ Use the supplied market and analysis data as the source of truth.`;
           suggestion: a.suggestion, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
           risks: Array.isArray(a.risks) ? a.risks.slice(0, 5) : [],
           technical: {
-            emaTrend: t.emaTrend, rsi: t.rsi, vwap: t.vwap,
+            emaTrend: t.emaTrend,
+            ema9: t.ema9,
+            ema20: t.ema20,
+            ema50: t.ema50,
+            rsi: t.rsi,
+            vwap: t.vwap,
+            vwapSource: t.vwapSource,
+            atr: t.atr,
+            momentum: t.momentum || null,
+            volatility: t.volatility || null,
+            volumeProfile: t.volumeProfile || null,
+            support: t.support,
+            resistance: t.resistance,
+            levels: t.levels || null,
+            priceAction: t.priceAction || null,
             structure: t.structure?.label || t.structure,
-            bos: t.bos, choch: t.choch
+            structureDetails: t.structureDetails || null,
+            bos: t.bos,
+            choch: t.choch,
+            multiTimeframe: t.multiTimeframe || null
           },
+          regime: a.regime || null,
           options: {
-            pcr: o.pcr, sentiment: o.sentiment,
-            callOI: o.callOI, putOI: o.putOI
+            expiry: o.expiry || null,
+            summary: o.summary || null,
+            advanced: o.advanced || null
           },
           trades: compactTrades
         },
