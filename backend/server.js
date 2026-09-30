@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.3.0-step3-phase2";
+const VERSION = "8.3.1-step5-ai-brain";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -4605,6 +4605,257 @@ app.get(
     }
   }
 );
+
+// ERA AI BRAIN — STEP 5
+// Structured market context + AI reasoning + deterministic safety gate.
+// This module is additive: existing chat/auth/trading routes remain unchanged.
+// ============================================================
+
+function buildAIBrainContext(index) {
+  const safeIndex = INDICES[index] ? index : "NIFTY";
+  const market = state.market?.[safeIndex] || {};
+  const analysis = state.analysis?.[safeIndex] || {};
+  const technical = analysis.technical || {};
+  const options = analysis.options || {};
+  const trades = Array.isArray(analysis.trades)
+    ? analysis.trades.slice(0, 3).map(trade => ({
+        optionType: trade.optionType,
+        strike: trade.strike,
+        expiry: trade.expiry,
+        entry: trade.entry,
+        stopLoss: trade.stopLoss,
+        targets: Array.isArray(trade.targets) ? trade.targets.slice(0, 3) : [],
+        confidence: trade.confidence,
+        status: trade.status
+      }))
+    : [];
+
+  return {
+    index: safeIndex,
+    session: {
+      marketOpen: isMarketHours(),
+      generatedAt: nowISO(),
+      engineRunning: Boolean(state.engineRunning)
+    },
+    market: {
+      name: market.name,
+      price: market.price,
+      previousClose: market.previousClose,
+      change: market.change,
+      changePercent: market.changePercent,
+      open: market.open,
+      high: market.high,
+      low: market.low,
+      volume: market.volume,
+      timestamp: market.timestamp,
+      source: market.source,
+      stale: market.stale,
+      available: market.available
+    },
+    analysis: {
+      direction: analysis.direction,
+      movement: analysis.movement,
+      confidence: analysis.confidence,
+      suggestion: analysis.suggestion,
+      reasons: Array.isArray(analysis.reasons) ? analysis.reasons.slice(0, 8) : [],
+      risks: Array.isArray(analysis.risks) ? analysis.risks.slice(0, 8) : [],
+      technical: {
+        emaTrend: technical.emaTrend,
+        rsi: technical.rsi,
+        vwap: technical.vwap,
+        volume: technical.volume,
+        structure: technical.structure?.label || technical.structure,
+        bos: technical.bos,
+        choch: technical.choch
+      },
+      options: {
+        expiry: options.expiry,
+        pcr: options.pcr,
+        sentiment: options.sentiment,
+        callOI: options.callOI,
+        putOI: options.putOI,
+        maxCallOI: options.maxCallOI,
+        maxPutOI: options.maxPutOI
+      },
+      trades
+    },
+    safety: {
+      minConfidence: Number(state.settings?.minConfidence || 60),
+      killSwitch: Boolean(state.risk?.killSwitch),
+      maxPositions: Number(state.risk?.maxPositions || 0),
+      maxTradesPerDay: Number(state.risk?.maxTradesPerDay || 0)
+    }
+  };
+}
+
+function deterministicAIBrainGate(context) {
+  const reasons = [];
+  const market = context.market || {};
+  const analysis = context.analysis || {};
+  const safety = context.safety || {};
+  const confidence = Number(analysis.confidence);
+
+  if (!context.session?.engineRunning) reasons.push("ERA engine is stopped.");
+  if (!context.session?.marketOpen) reasons.push("Market session is closed.");
+  if (market.available === false) reasons.push("Live market data is unavailable.");
+  if (market.stale === true) reasons.push("Live market data is stale.");
+  if (!Number.isFinite(Number(market.price)) || Number(market.price) <= 0) reasons.push("Live price is unavailable.");
+  if (Number.isFinite(confidence) && confidence < Number(safety.minConfidence || 60)) {
+    reasons.push(`Confidence ${confidence}% is below ERA minimum ${safety.minConfidence}%.`);
+  }
+  if (safety.killSwitch) reasons.push("ERA risk kill switch is ON.");
+
+  const qualifiedTrades = Array.isArray(analysis.trades)
+    ? analysis.trades.filter(t =>
+        t &&
+        t.optionType &&
+        Number(t.strike) > 0 &&
+        Number(t.entry) > 0 &&
+        Number(t.stopLoss) > 0 &&
+        Array.isArray(t.targets) &&
+        t.targets.length > 0
+      )
+    : [];
+
+  if (!qualifiedTrades.length && analysis.suggestion && /BUY|SELL/i.test(String(analysis.suggestion))) {
+    reasons.push("A directional suggestion exists, but no complete option contract is available.");
+  }
+
+  return {
+    allowed: reasons.length === 0,
+    decision: reasons.length === 0 ? "ANALYZE" : "WAIT",
+    reasons
+  };
+}
+
+async function callAIBrain(context, userQuestion = "Analyze the current market state.") {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error("OPENROUTER_API_KEY is not configured");
+  }
+
+  const gate = deterministicAIBrainGate(context);
+  const systemPrompt = `
+You are ERA AI Brain, the reasoning layer of an Indian market intelligence platform.
+
+Your job is to reason over the supplied structured market state. Do not invent live data.
+The backend is the source of truth for prices, indicators, option contracts and risk limits.
+
+Rules:
+- If the safety gate says WAIT, do not override it with BUY or SELL. Explain the blocking reasons.
+- Treat confidence as a model score, not a probability of profit.
+- A trade response may name CE/PE, strike, expiry, entry, stop loss and targets only when those values are present in the supplied data.
+- If evidence is incomplete or contradictory, choose WAIT.
+- Never guarantee profit or certainty.
+- Separate observed facts from reasoning.
+- Keep the answer concise, clear and useful to an Indian trader.
+- Respond in simple Roman Hindi/Hinglish unless the user asks for another language.
+
+Return JSON with exactly these keys:
+"decision", "summary", "evidence", "risks", "tradePlan", "nextCheck".
+tradePlan must be null when there is no qualified trade.
+`;
+
+  const response = await axios.post(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      model: OPENROUTER_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: JSON.stringify({
+            safetyGate: gate,
+            marketState: context,
+            question: userQuestion
+          })
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 1800
+    },
+    {
+      timeout: 30000,
+      headers: {
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": BACKEND_URL,
+        "X-Title": "Era AI Brain"
+      }
+    }
+  );
+
+  const raw = response.data?.choices?.[0]?.message?.content;
+  const text = typeof raw === "string"
+    ? raw
+    : Array.isArray(raw)
+      ? raw.map(x => typeof x === "string" ? x : (x?.text || x?.content || "")).filter(Boolean).join("\n")
+      : (raw?.text || raw?.content || "");
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text.replace(/^```json\s*/i, "").replace(/\s*```$/i, "").trim());
+  } catch (_) {
+    parsed = {
+      decision: gate.allowed ? "ANALYZE" : "WAIT",
+      summary: text || "ERA Brain returned no readable response.",
+      evidence: [],
+      risks: gate.reasons,
+      tradePlan: null,
+      nextCheck: "Recheck fresh market data before acting."
+    };
+  }
+
+  if (!gate.allowed) {
+    parsed.decision = "WAIT";
+    parsed.tradePlan = null;
+    parsed.risks = [...new Set([...(Array.isArray(parsed.risks) ? parsed.risks : []), ...gate.reasons])];
+  }
+
+  return {
+    ok: true,
+    gate,
+    brain: parsed,
+    contextGeneratedAt: context.session?.generatedAt || nowISO()
+  };
+}
+
+app.post("/api/ai/brain", async (req, res) => {
+  try {
+    if (!OPENROUTER_API_KEY) {
+      return res.status(503).json({ ok: false, error: "OPENROUTER_API_KEY is not configured" });
+    }
+
+    const requested = String(req.body?.index || "NIFTY").toUpperCase();
+    const index = INDICES[requested] ? requested : "NIFTY";
+    const question = String(req.body?.question || "Analyze the current market state and tell me whether ERA should WAIT or consider a qualified setup.").trim();
+
+    // Refresh only the requested index so the brain works from fresh structured state.
+    await refreshMarketData();
+    state.analysis[index] = await analyzeIndex(index);
+    state.lastScan = nowISO();
+
+    const context = buildAIBrainContext(index);
+    const result = await callAIBrain(context, question);
+
+    state.history.unshift({
+      type: "ai_brain",
+      index,
+      question,
+      decision: result.brain?.decision || result.gate?.decision || "WAIT",
+      brain: result.brain,
+      gate: result.gate,
+      createdAt: nowISO()
+    });
+    state.history = state.history.slice(0, 500);
+    saveState();
+
+    res.json(result);
+  } catch (error) {
+    console.error("[ERA] AI Brain error:", error.response?.data || error.message);
+    res.status(500).json({ ok: false, error: apiError(error.response?.data || error.message) });
+  }
+});
+
 
 // ============================================================
 // AI CHAT
