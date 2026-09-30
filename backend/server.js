@@ -9,10 +9,18 @@ const webpush = require("web-push");
 const fs = require("fs");
 const path = require("path");
 
+// STEP 3 PHASE 2: Upstox V3 real-time market feed SDK
+let UpstoxClient = null;
+try {
+  UpstoxClient = require("upstox-js-sdk");
+} catch (error) {
+  console.warn("[ERA] upstox-js-sdk not installed. Real-time engine will remain OFFLINE until dependency is installed.");
+}
+
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.2.5";
+const VERSION = "8.3.0-step3-phase2";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -35,26 +43,6 @@ for (const asset of ["service-worker.js", "manifest.json", "icon-192.png", "icon
     res.status(404).end();
   });
 }
-// ============================================================
-// ANDROID APP LINKS / TWA VERIFICATION
-// ============================================================
-
-app.get("/.well-known/assetlinks.json", (req, res) => {
-  const assetLinksFile = path.join(
-    __dirname,
-    "..",
-    "public",
-    ".well-known",
-    "assetlinks.json"
-  );
-
-  if (!fs.existsSync(assetLinksFile)) {
-    return res.status(404).send("assetlinks.json not found");
-  }
-
-  res.type("application/json");
-  return res.sendFile(assetLinksFile);
-});
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -320,6 +308,319 @@ const state = {
     killSwitch: false
   }
 };
+
+// ============================================================
+// STEP 3 PHASE 2 — REAL-TIME TICK ENGINE
+// ============================================================
+// The existing REST scanner remains untouched. This layer adds a persistent
+// Upstox V3 MarketDataStreamerV3 connection and keeps the latest tick state
+// in memory. OpenAI is NOT called for every tick.
+const realtime = {
+  status: "OFFLINE",
+  connectedAt: null,
+  lastTickAt: null,
+  lastError: null,
+  reconnects: 0,
+  ticks: 0,
+  perIndex: {},
+  clients: new Set(),
+  streamer: null,
+  started: false,
+  reconnectTimer: null
+};
+
+for (const index of Object.keys(INDICES)) {
+  realtime.perIndex[index] = {
+    instrumentKey: INDICES[index].symbol,
+    price: null,
+    previousPrice: null,
+    tickChange: 0,
+    tickChangePct: 0,
+    tickVelocity: 0,
+    tickCount: 0,
+    lastTradeQty: 0,
+    cumulativeVolume: 0,
+    oi: 0,
+    bid: null,
+    ask: null,
+    spread: null,
+    spreadPct: null,
+    high: null,
+    low: null,
+    open: null,
+    close: null,
+    timestamp: null,
+    stale: true
+  };
+}
+
+function realtimeBroadcast(event, payload) {
+  const message = `event: ${event}\\ndata: ${JSON.stringify(payload)}\\n\\n`;
+  for (const client of realtime.clients) {
+    try { client.write(message); } catch (_) { realtime.clients.delete(client); }
+  }
+}
+
+function realtimeSnapshot() {
+  return {
+    ok: true,
+    version: VERSION,
+    status: realtime.status,
+    connectedAt: realtime.connectedAt,
+    lastTickAt: realtime.lastTickAt,
+    lastError: realtime.lastError,
+    reconnects: realtime.reconnects,
+    ticks: realtime.ticks,
+    marketOpen: isMarketHours(),
+    indices: realtime.perIndex,
+    updatedAt: nowISO()
+  };
+}
+
+function safeRealtimeNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function extractRealtimeFeed(message) {
+  if (!message) return null;
+  if (typeof message === "object" && !Buffer.isBuffer(message)) return message;
+  const buffer = Buffer.isBuffer(message) ? message : Buffer.from(String(message));
+  try { return JSON.parse(buffer.toString("utf8")); } catch (_) { return null; }
+}
+
+function findRealtimeFeed(feed, instrumentKey) {
+  const feeds = feed?.feeds || feed?.data?.feeds || feed?.data || {};
+  return feeds[instrumentKey] || feeds[instrumentKey.replace("|", ":")] || null;
+}
+
+function normalizeRealtimeTick(index, rawFeed) {
+  const key = INDICES[index].symbol;
+  const raw = rawFeed || {};
+  const ltpc = raw.ltpc || raw.LTPC || {};
+  const ohlc = raw.marketOHLC?.ohlc || raw.market_ohlc?.ohlc || [];
+  const day = Array.isArray(ohlc) ? (ohlc.find(x => x.interval === "1d") || ohlc[0] || {}) : {};
+  const depth = raw.fullFeed?.marketLevel?.bidAskQuote || raw.marketLevel?.bidAskQuote || raw.bidAskQuote || {};
+  const price = safeRealtimeNumber(ltpc.ltp ?? raw.ltp, null);
+  if (!Number.isFinite(price)) return null;
+
+  const now = Date.now();
+  const current = realtime.perIndex[index];
+  const previous = current.price;
+  const dt = current.timestamp ? Math.max(1, now - new Date(current.timestamp).getTime()) : 0;
+  const delta = previous == null ? 0 : price - previous;
+  const velocity = dt > 0 ? delta / (dt / 1000) : 0;
+  const bid = safeRealtimeNumber(depth.bidP ?? depth.bidPrice ?? depth.bid, null);
+  const ask = safeRealtimeNumber(depth.askP ?? depth.askPrice ?? depth.ask, null);
+  const spread = Number.isFinite(bid) && Number.isFinite(ask) ? ask - bid : null;
+  const spreadPct = spread !== null && price ? (spread / price) * 100 : null;
+  const volume = safeRealtimeNumber(ltpc.volume ?? raw.volume ?? day.vol ?? day.volume, current.cumulativeVolume || 0);
+  const oi = safeRealtimeNumber(raw.oi ?? raw.eFeedDetails?.oi ?? current.oi, current.oi || 0);
+  const tradeQty = safeRealtimeNumber(ltpc.ltq ?? raw.ltq, 0);
+  const timestampMs = safeRealtimeNumber(ltpc.ltt ?? feedTimestamp(rawFeed), now);
+
+  current.previousPrice = previous;
+  current.price = price;
+  current.tickChange = delta;
+  current.tickChangePct = previous ? (delta / previous) * 100 : 0;
+  current.tickVelocity = velocity;
+  current.tickCount += 1;
+  current.lastTradeQty = tradeQty;
+  current.cumulativeVolume = volume;
+  current.oi = oi;
+  current.bid = Number.isFinite(bid) ? bid : current.bid;
+  current.ask = Number.isFinite(ask) ? ask : current.ask;
+  current.spread = spread;
+  current.spreadPct = spreadPct;
+  current.high = safeRealtimeNumber(day.high ?? raw.high, current.high || price);
+  current.low = safeRealtimeNumber(day.low ?? raw.low, current.low || price);
+  current.open = safeRealtimeNumber(day.open ?? raw.open, current.open || price);
+  current.close = safeRealtimeNumber(day.close ?? raw.close ?? ltpc.cp, current.close || price);
+  current.timestamp = new Date(timestampMs).toISOString();
+  current.stale = false;
+
+  // Keep the existing public market object synchronized immediately.
+  state.market[index] = {
+    ...(state.market[index] || {}),
+    price,
+    volume,
+    oi,
+    open: current.open,
+    high: current.high,
+    low: current.low,
+    close: current.close,
+    timestamp: current.timestamp,
+    stale: false,
+    source: "upstox-v3-websocket",
+    realtime: {
+      tickChange: round(current.tickChange, 4),
+      tickChangePct: round(current.tickChangePct, 5),
+      tickVelocity: round(current.tickVelocity, 5),
+      bid: current.bid,
+      ask: current.ask,
+      spread: current.spread,
+      spreadPct: current.spreadPct,
+      lastTradeQty: current.lastTradeQty,
+      tickCount: current.tickCount
+    }
+  };
+
+  return current;
+}
+
+function feedTimestamp(rawFeed) {
+  return rawFeed?.currentTs || rawFeed?.current_ts || Date.now();
+}
+
+function handleRealtimeMessage(message) {
+  const feed = extractRealtimeFeed(message);
+  if (!feed) {
+    // Some SDK versions expose decoded feed objects; if this is an opaque
+    // protobuf buffer, the SDK/dependency must decode it before this handler.
+    return;
+  }
+
+  realtime.ticks += 1;
+  realtime.lastTickAt = nowISO();
+  realtime.lastError = null;
+
+  for (const index of Object.keys(INDICES)) {
+    const raw = findRealtimeFeed(feed, INDICES[index].symbol);
+    if (!raw) continue;
+    const tick = normalizeRealtimeTick(index, raw);
+    if (!tick) continue;
+    realtimeBroadcast("tick", {
+      index,
+      tick: {
+        ...tick,
+        price: round(tick.price, 2),
+        tickChange: round(tick.tickChange, 4),
+        tickChangePct: round(tick.tickChangePct, 5),
+        tickVelocity: round(tick.tickVelocity, 5)
+      },
+      at: realtime.lastTickAt
+    });
+  }
+}
+
+function markRealtimeStale() {
+  const last = realtime.lastTickAt ? Date.now() - new Date(realtime.lastTickAt).getTime() : Infinity;
+  const stale = last > 10000;
+  for (const index of Object.keys(realtime.perIndex)) {
+    realtime.perIndex[index].stale = stale;
+  }
+  if (stale && realtime.status === "LIVE") {
+    realtime.status = "RECONNECTING";
+    realtimeBroadcast("status", realtimeSnapshot());
+  }
+}
+
+function startRealtimeMarketFeed() {
+  if (realtime.started) return;
+  realtime.started = true;
+
+  if (!UPSTOX_ACCESS_TOKEN) {
+    realtime.status = "OFFLINE";
+    realtime.lastError = "UPSTOX_ACCESS_TOKEN is not configured.";
+    console.warn("[ERA] Real-time engine OFFLINE: UPSTOX_ACCESS_TOKEN missing.");
+    return;
+  }
+
+  if (!UpstoxClient?.MarketDataStreamerV3) {
+    realtime.status = "OFFLINE";
+    realtime.lastError = "upstox-js-sdk dependency is missing.";
+    console.warn("[ERA] Real-time engine OFFLINE: install upstox-js-sdk.");
+    return;
+  }
+
+  try {
+    const oauth = UpstoxClient.ApiClient.instance.authentications["OAUTH2"];
+    oauth.accessToken = UPSTOX_ACCESS_TOKEN;
+
+    const keys = Object.values(INDICES).map(x => x.symbol);
+    const streamer = new UpstoxClient.MarketDataStreamerV3(keys, "full");
+    realtime.streamer = streamer;
+
+    if (typeof streamer.autoReconnect === "function") {
+      streamer.autoReconnect(true, 5, 0);
+    }
+
+    streamer.on("open", () => {
+      realtime.status = "LIVE";
+      realtime.connectedAt = nowISO();
+      realtime.lastError = null;
+      realtimeBroadcast("status", realtimeSnapshot());
+      console.log("[ERA] Upstox V3 realtime LIVE");
+    });
+
+    streamer.on("message", handleRealtimeMessage);
+
+    streamer.on("reconnecting", () => {
+      realtime.status = "RECONNECTING";
+      realtime.reconnects += 1;
+      realtimeBroadcast("status", realtimeSnapshot());
+      console.warn("[ERA] Upstox realtime reconnecting...");
+    });
+
+    streamer.on("close", () => {
+      realtime.status = "RECONNECTING";
+      realtimeBroadcast("status", realtimeSnapshot());
+      console.warn("[ERA] Upstox realtime connection closed.");
+    });
+
+    streamer.on("error", error => {
+      realtime.status = "RECONNECTING";
+      realtime.lastError = apiError(error);
+      realtimeBroadcast("status", realtimeSnapshot());
+      console.error("[ERA] Upstox realtime error:", realtime.lastError);
+    });
+
+    streamer.on("autoReconnectStopped", data => {
+      realtime.status = "OFFLINE";
+      realtime.lastError = apiError(data);
+      realtimeBroadcast("status", realtimeSnapshot());
+    });
+
+    streamer.connect();
+  } catch (error) {
+    realtime.status = "OFFLINE";
+    realtime.lastError = apiError(error);
+    realtime.started = false;
+    console.error("[ERA] Realtime startup error:", realtime.lastError);
+  }
+}
+
+app.get("/api/realtime/status", (req, res) => {
+  res.json(realtimeSnapshot());
+});
+
+app.get("/api/realtime/ticks", (req, res) => {
+  res.json(realtimeSnapshot());
+});
+
+app.get("/api/realtime/stream", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  if (typeof res.flushHeaders === "function") res.flushHeaders();
+
+  const send = () => {
+    try { res.write(`event: snapshot\\ndata: ${JSON.stringify(realtimeSnapshot())}\\n\\n`); } catch (_) {}
+  };
+  realtime.clients.add(res);
+  send();
+  const heartbeat = setInterval(() => {
+    try { res.write(`: heartbeat ${Date.now()}\\n\\n`); } catch (_) {}
+  }, 15000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    realtime.clients.delete(res);
+  });
+});
+
+setInterval(markRealtimeStale, 2000);
 
 // ============================================================
 // FILE STORAGE
@@ -5137,6 +5438,9 @@ setInterval(
 // ============================================================
 // INITIALIZATION
 // ============================================================
+
+// Start the real-time market engine without changing the existing scanner.
+setTimeout(startRealtimeMarketFeed, 1500);
 
 (async () => {
   try {
