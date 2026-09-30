@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.3.1-step5-ai-brain";
+const VERSION = "8.4.0-step6-technical-engine";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -1459,14 +1459,18 @@ async function fetchExtraMarketData() {
 // REFRESH MARKET
 // ============================================================
 
-async function refreshMarketData() {
+async function refreshMarketData(requestedIndex = null) {
   const quotes =
     await fetchQuotes();
 
-  state.market = {
-    ...state.market,
-    ...quotes
-  };
+  if (requestedIndex && INDICES[requestedIndex]) {
+    state.market[requestedIndex] = quotes[requestedIndex];
+  } else {
+    state.market = {
+      ...state.market,
+      ...quotes
+    };
+  }
 
   const extra =
     await fetchExtraMarketData();
@@ -1899,6 +1903,140 @@ function calculateVWAP(
 }
 
 // ============================================================
+// STEP 6 — ADVANCED TECHNICAL ENGINE HELPERS
+// ============================================================
+
+function calculateATR(candles, period = 14) {
+  if (!Array.isArray(candles) || candles.length < period + 1) return null;
+
+  const trueRanges = [];
+  for (let i = 1; i < candles.length; i++) {
+    const high = Number(candles[i]?.[2]);
+    const low = Number(candles[i]?.[3]);
+    const previousClose = Number(candles[i - 1]?.[4]);
+    if (!Number.isFinite(high) || !Number.isFinite(low) || !Number.isFinite(previousClose)) continue;
+    trueRanges.push(Math.max(
+      high - low,
+      Math.abs(high - previousClose),
+      Math.abs(low - previousClose)
+    ));
+  }
+
+  if (trueRanges.length < period) return null;
+  const recent = trueRanges.slice(-period);
+  return recent.reduce((a, b) => a + b, 0) / recent.length;
+}
+
+function calculateMomentum(candles, lookback = 5) {
+  if (!Array.isArray(candles) || candles.length <= lookback) return null;
+  const current = Number(candles[candles.length - 1]?.[4]);
+  const previous = Number(candles[candles.length - 1 - lookback]?.[4]);
+  if (!Number.isFinite(current) || !Number.isFinite(previous) || previous === 0) return null;
+  return {
+    points: current - previous,
+    percent: ((current - previous) / previous) * 100,
+    direction: current > previous ? "UP" : current < previous ? "DOWN" : "FLAT",
+    lookback
+  };
+}
+
+function calculateVolatility(candles, period = 14) {
+  if (!Array.isArray(candles) || candles.length < period) return null;
+  const ranges = candles.slice(-period).map(c => {
+    const high = Number(c?.[2]);
+    const low = Number(c?.[3]);
+    return Number.isFinite(high) && Number.isFinite(low) && high >= low ? high - low : null;
+  }).filter(v => v !== null);
+
+  if (!ranges.length) return null;
+  const averageRange = ranges.reduce((a, b) => a + b, 0) / ranges.length;
+  const latest = ranges[ranges.length - 1];
+  const ratio = averageRange > 0 ? latest / averageRange : 1;
+
+  return {
+    averageRange,
+    latestRange: latest,
+    ratio,
+    state: ratio >= 1.5 ? "EXPANDING" : ratio <= 0.65 ? "CONTRACTING" : "NORMAL"
+  };
+}
+
+function calculateVolumeProfile(candles, period = 20) {
+  if (!Array.isArray(candles) || !candles.length) return null;
+  const recent = candles.slice(-period);
+  const volumes = recent.map(c => Number(c?.[5])).filter(v => Number.isFinite(v) && v > 0);
+  if (!volumes.length) return null;
+  const average = volumes.reduce((a, b) => a + b, 0) / volumes.length;
+  const latest = volumes[volumes.length - 1];
+  return {
+    average,
+    latest,
+    ratio: average > 0 ? latest / average : null,
+    state: latest >= average * 1.5 ? "HIGH" : latest <= average * 0.65 ? "LOW" : "NORMAL"
+  };
+}
+
+function calculateLevels(candles, price, lookback = 50) {
+  if (!Array.isArray(candles) || !candles.length || !Number.isFinite(Number(price))) {
+    return { support: null, resistance: null, rangeHigh: null, rangeLow: null };
+  }
+
+  const recent = candles.slice(-lookback);
+  const lows = recent.map(c => Number(c?.[3])).filter(Number.isFinite);
+  const highs = recent.map(c => Number(c?.[2])).filter(Number.isFinite);
+  if (!lows.length || !highs.length) return { support: null, resistance: null, rangeHigh: null, rangeLow: null };
+
+  const current = Number(price);
+  const supports = lows.filter(v => v <= current).sort((a, b) => b - a);
+  const resistances = highs.filter(v => v >= current).sort((a, b) => a - b);
+
+  return {
+    support: supports.length ? supports[0] : Math.min(...lows),
+    resistance: resistances.length ? resistances[0] : Math.max(...highs),
+    rangeHigh: Math.max(...highs),
+    rangeLow: Math.min(...lows)
+  };
+}
+
+function buildTimeframeTechnical(candles, price) {
+  if (!Array.isArray(candles) || !candles.length) {
+    return { available: false, candleCount: 0, trend: "UNKNOWN", ema20: null, ema50: null, rsi: null, atr: null, momentum: null };
+  }
+
+  const closes = candles.map(c => Number(c?.[4])).filter(Number.isFinite);
+  const ema20 = ema(closes, 20);
+  const ema50 = ema(closes, 50);
+  const rsi14 = rsi(closes, 14);
+  const current = Number(price);
+
+  let trend = "SIDEWAYS";
+  if (Number.isFinite(current) && ema20 !== null && ema50 !== null) {
+    if (current > ema20 && ema20 > ema50) trend = "BULLISH";
+    else if (current < ema20 && ema20 < ema50) trend = "BEARISH";
+  } else if (Number.isFinite(current) && ema20 !== null) {
+    if (current > ema20) trend = "BULLISH";
+    else if (current < ema20) trend = "BEARISH";
+  }
+
+  return {
+    available: true,
+    candleCount: candles.length,
+    trend,
+    ema20: ema20 !== null ? round(ema20) : null,
+    ema50: ema50 !== null ? round(ema50) : null,
+    rsi: rsi14 !== null ? round(rsi14, 2) : null,
+    atr: (() => { const v = calculateATR(candles, 14); return v !== null ? round(v) : null; })(),
+    momentum: calculateMomentum(candles, 3)
+      ? {
+          points: round(calculateMomentum(candles, 3).points),
+          percent: round(calculateMomentum(candles, 3).percent, 3),
+          direction: calculateMomentum(candles, 3).direction
+        }
+      : null
+  };
+}
+
+// ============================================================
 // MARKET STRUCTURE
 // ============================================================
 
@@ -2077,6 +2215,12 @@ function technicalAnalysis(
       candles
     );
 
+  const atr = calculateATR(candles, 14);
+  const momentum = calculateMomentum(candles, 5);
+  const volatility = calculateVolatility(candles, 14);
+  const volumeProfile = calculateVolumeProfile(candles, 20);
+  const levels = calculateLevels(candles, current, 50);
+
   const latestCandle =
     candles[candles.length - 1] || null;
 
@@ -2164,10 +2308,47 @@ function technicalAnalysis(
       volume !== null ? round(volume, 0) : null,
 
     support:
-      round(support),
+      levels.support !== null ? round(levels.support) : round(support),
 
     resistance:
-      round(resistance),
+      levels.resistance !== null ? round(levels.resistance) : round(resistance),
+
+    levels: {
+      support: levels.support !== null ? round(levels.support) : null,
+      resistance: levels.resistance !== null ? round(levels.resistance) : null,
+      rangeHigh: levels.rangeHigh !== null ? round(levels.rangeHigh) : null,
+      rangeLow: levels.rangeLow !== null ? round(levels.rangeLow) : null
+    },
+
+    atr:
+      atr !== null ? round(atr) : null,
+
+    momentum: momentum
+      ? {
+          points: round(momentum.points),
+          percent: round(momentum.percent, 3),
+          direction: momentum.direction,
+          lookback: momentum.lookback
+        }
+      : null,
+
+    volatility: volatility
+      ? {
+          averageRange: round(volatility.averageRange),
+          latestRange: round(volatility.latestRange),
+          ratio: round(volatility.ratio, 3),
+          state: volatility.state
+        }
+      : null,
+
+    volumeProfile: volumeProfile
+      ? {
+          average: round(volumeProfile.average, 0),
+          latest: round(volumeProfile.latest, 0),
+          ratio: volumeProfile.ratio !== null ? round(volumeProfile.ratio, 3) : null,
+          state: volumeProfile.state
+        }
+      : null,
 
     trend,
 
@@ -3306,8 +3487,44 @@ async function analyzeIndex(
   const technical =
     technicalAnalysis(
       candles,
-      market.price
+      market.price,
+      market
     );
+
+  // Multi-timeframe confirmation: 5m is the execution context and 15m is
+  // the higher-timeframe trend context. If 15m data is unavailable, the
+  // existing 5m analysis remains fully usable.
+  let higherTimeframeCandles = [];
+  try {
+    higherTimeframeCandles = await fetchIntradayCandles(index, 15);
+    if (!higherTimeframeCandles.length) {
+      higherTimeframeCandles = await fetchHistoricalCandles(index, 15);
+    }
+  } catch (error) {
+    console.warn(`[ERA] Higher timeframe analysis unavailable ${index}:`, error.message);
+  }
+
+  const higherTimeframe = buildTimeframeTechnical(
+    higherTimeframeCandles,
+    market.price
+  );
+
+  technical.multiTimeframe = {
+    execution: "5m",
+    higher: "15m",
+    alignment: technical.trend !== "SIDEWAYS" &&
+      higherTimeframe.trend === technical.trend
+      ? "ALIGNED"
+      : higherTimeframe.trend === "SIDEWAYS" || technical.trend === "SIDEWAYS"
+        ? "NEUTRAL"
+        : "CONFLICT",
+    fiveMinute: {
+      trend: technical.trend,
+      rsi: technical.rsi,
+      atr: technical.atr
+    },
+    fifteenMinute: higherTimeframe
+  };
 
   let optionRows = [];
   let optionSummary = null;
@@ -4661,12 +4878,25 @@ function buildAIBrainContext(index) {
       risks: Array.isArray(analysis.risks) ? analysis.risks.slice(0, 8) : [],
       technical: {
         emaTrend: technical.emaTrend,
+        ema9: technical.ema9,
+        ema20: technical.ema20,
+        ema50: technical.ema50,
         rsi: technical.rsi,
         vwap: technical.vwap,
+        vwapSource: technical.vwapSource,
         volume: technical.volume,
+        atr: technical.atr,
+        momentum: technical.momentum,
+        volatility: technical.volatility,
+        volumeProfile: technical.volumeProfile,
+        support: technical.support,
+        resistance: technical.resistance,
+        levels: technical.levels,
         structure: technical.structure?.label || technical.structure,
+        structureDetails: technical.structureDetails,
         bos: technical.bos,
-        choch: technical.choch
+        choch: technical.choch,
+        multiTimeframe: technical.multiTimeframe
       },
       options: {
         expiry: options.expiry,
@@ -4829,8 +5059,8 @@ app.post("/api/ai/brain", async (req, res) => {
     const index = INDICES[requested] ? requested : "NIFTY";
     const question = String(req.body?.question || "Analyze the current market state and tell me whether ERA should WAIT or consider a qualified setup.").trim();
 
-    // Refresh only the requested index so the brain works from fresh structured state.
-    await refreshMarketData();
+    // Refresh the requested index only; the AI Brain then analyzes that fresh state.
+    await refreshMarketData(index);
     state.analysis[index] = await analyzeIndex(index);
     state.lastScan = nowISO();
 
