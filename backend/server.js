@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "9.0.0-step9-exact-strike";
+const VERSION = "9.0.0-step13-trade-alerts";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -277,6 +277,9 @@ const state = {
   setupMemory: {},
 
   notificationHistory: {},
+
+  // STEP 13 — TRADE ALERT / POPUP ACTION STATE
+  tradeAlerts: [],
 
   settings: {
     movementThreshold: 20,
@@ -680,6 +683,10 @@ function loadState() {
         saved.alerts;
     }
 
+    if (Array.isArray(saved.tradeAlerts)) {
+      state.tradeAlerts = saved.tradeAlerts;
+    }
+
     if (saved.settings && typeof saved.settings === "object") {
       state.settings = {
         ...state.settings,
@@ -728,6 +735,9 @@ function saveState() {
 
           alerts:
             state.alerts,
+
+          tradeAlerts:
+            state.tradeAlerts,
 
           settings:
             state.settings,
@@ -4869,82 +4879,258 @@ async function sendPush(
 }
 
 // ============================================================
-// TRADE ALERT
+// STEP 13 — TRADE ALERT + POPUP
+// Creates a persistent, actionable alert only after Step 10/11 has
+// produced a qualified trade. The UI can consume this through REST or
+// the existing realtime SSE stream. No AI or UI action can bypass the
+// deterministic trade gate.
 // ============================================================
 
-async function notifyTrade(
-  trade
-) {
-  if (!state.settings.notifications?.tradeSetup) {
-    return;
-  }
+function tradeAlertId() {
+  return `TA${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
-  const fingerprint =
-    tradeFingerprint(
-      trade
-    );
+function normalizeTradeAlertTrade(trade) {
+  if (!trade || typeof trade !== "object") return null;
+  const required = {
+    index: trade.index,
+    optionType: trade.optionType,
+    strike: Number(trade.strike),
+    expiry: trade.expiry || null,
+    entry: Number(trade.entry),
+    stopLoss: Number(trade.stopLoss),
+    targets: Array.isArray(trade.targets) ? trade.targets.map(Number).filter(Number.isFinite).slice(0, 3) : [],
+    confidence: Number(trade.confidence),
+    signal: trade.signal || null,
+    decision: trade.decision || "TRADE",
+    decisionScore: Number(trade.decisionScore),
+    instrumentKey: trade.instrumentKey || null,
+    reason: trade.reason || null,
+    decisionReasons: Array.isArray(trade.decisionReasons) ? trade.decisionReasons.slice(0, 8) : [],
+    decisionRisks: Array.isArray(trade.decisionRisks) ? trade.decisionRisks.slice(0, 8) : [],
+    strikeSelection: trade.strikeSelection || null,
+    setupMemory: trade.setupMemory || null
+  };
 
-  const existing =
-    state.alerts.find(
-      alert =>
-        alert.fingerprint ===
-        fingerprint
-    );
+  if (!required.index || !required.optionType || !Number.isFinite(required.strike) || required.strike <= 0) return null;
+  if (!required.expiry || !Number.isFinite(required.entry) || required.entry <= 0) return null;
+  if (!Number.isFinite(required.stopLoss) || required.stopLoss <= 0 || required.stopLoss >= required.entry) return null;
+  if (!required.targets.length || required.targets.some(v => v <= required.entry)) return null;
+  if (!required.instrumentKey) return null;
+  return required;
+}
 
+function buildTradeAlert(trade) {
+  const normalized = normalizeTradeAlertTrade(trade);
+  if (!normalized) return null;
+  const fingerprint = tradeFingerprint(normalized);
+  return {
+    id: tradeAlertId(),
+    type: "TRADE_ALERT",
+    status: "NEW",
+    action: null,
+    fingerprint,
+    trade: normalized,
+    createdAt: nowISO(),
+    actedAt: null,
+    actedBy: null,
+    actionReason: null
+  };
+}
+
+async function notifyTrade(trade) {
+  if (!state.settings.notifications?.tradeSetup) return;
+
+  const normalized = normalizeTradeAlertTrade(trade);
+  if (!normalized) return;
+
+  const fingerprint = tradeFingerprint(normalized);
   const cooldownMs = Number(state.settings.notificationCooldownMs || 900000);
   const lastSent = Number(state.notificationHistory[`trade:${fingerprint}`] || 0);
-  if (lastSent && Date.now() - lastSent < cooldownMs) {
-    return;
-  }
+  if (lastSent && Date.now() - lastSent < cooldownMs) return;
 
-  if (existing && existing.confidence === trade.confidence && lastSent) {
-    return;
-  }
+  const activeExisting = state.tradeAlerts.find(item =>
+    item.fingerprint === fingerprint &&
+    ["NEW", "CONSIDER", "PAPER_TRADE"].includes(item.status)
+  );
+  if (activeExisting && lastSent) return;
 
   state.notificationHistory[`trade:${fingerprint}`] = Date.now();
 
-  const alert = {
-    id:
-      `${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`,
+  const alert = buildTradeAlert(normalized);
+  if (!alert) return;
 
-    type:
-      "TRADE",
+  state.tradeAlerts.unshift(alert);
+  state.tradeAlerts = state.tradeAlerts.slice(0, 200);
 
+  // Keep the legacy alert store populated for existing UI consumers.
+  state.alerts.unshift({
+    id: alert.id,
+    type: "TRADE",
     fingerprint,
-
-    trade,
-
-    confidence:
-      trade.confidence,
-
-    createdAt:
-      nowISO()
-  };
-
-  state.alerts.unshift(
-    alert
-  );
-
-  state.alerts =
-    state.alerts.slice(
-      0,
-      100
-    );
-
+    trade: normalized,
+    confidence: normalized.confidence,
+    status: alert.status,
+    action: alert.action,
+    createdAt: alert.createdAt
+  });
+  state.alerts = state.alerts.slice(0, 200);
   saveState();
 
-  await sendPush({
-    title:
-      `Era AI — ${trade.index}`,
-
-    body:
-      `${trade.optionType} ${trade.strike} | ${trade.signal} | Confidence ${trade.confidence}%`,
-
-    data:
-      trade
+  // Existing SSE channel becomes the popup/event transport. No UI rewrite is required.
+  realtimeBroadcast("trade-alert", {
+    ok: true,
+    alert
   });
+
+  await sendPush({
+    title: `Era AI — ${normalized.index} Trade Setup`,
+    body: `${normalized.optionType} ${normalized.strike} | ${normalized.signal || "TRADE"} | Entry ${normalized.entry} | Confidence ${normalized.confidence}%`,
+    data: {
+      type: "TRADE_ALERT",
+      alertId: alert.id,
+      alert
+    }
+  });
+}
+
+function findTradeAlert(alertId) {
+  return state.tradeAlerts.find(item => item.id === String(alertId || "")) || null;
+}
+
+function applyTradeAlertAction(alert, action, req) {
+  const normalizedAction = String(action || "").toUpperCase();
+  if (!alert) return { ok: false, status: 404, error: "Trade alert not found." };
+  if (!["CONSIDER", "REJECT", "PAPER_TRADE"].includes(normalizedAction)) {
+    return { ok: false, status: 400, error: "Action must be CONSIDER, REJECT or PAPER_TRADE." };
+  }
+  if (["REJECT", "PAPER_TRADE"].includes(normalizedAction) && alert.status === "REJECTED") {
+    return { ok: false, status: 409, error: "Trade alert is already rejected." };
+  }
+  if (alert.status === "PAPER_TRADE") {
+    return { ok: false, status: 409, error: "Paper trade has already been created for this alert." };
+  }
+
+  const userKey = currentUserKey(req);
+  const trade = alert.trade;
+
+  if (normalizedAction === "REJECT") {
+    alert.status = "REJECTED";
+    alert.action = "REJECT";
+    alert.actionReason = String(req.body?.reason || "User rejected the trade setup.").slice(0, 500);
+    alert.actedAt = nowISO();
+    alert.actedBy = userKey;
+    state.history.unshift({
+      type: "trade_alert_action",
+      alertId: alert.id,
+      action: "REJECT",
+      index: trade.index,
+      trade,
+      reason: alert.actionReason,
+      createdAt: alert.actedAt,
+      user: userKey
+    });
+    state.history = state.history.slice(0, 500);
+    saveState();
+    realtimeBroadcast("trade-alert-update", { ok: true, alert });
+    return { ok: true, alert, paper: state.paper };
+  }
+
+  if (normalizedAction === "CONSIDER") {
+    alert.status = "CONSIDER";
+    alert.action = "CONSIDER";
+    alert.actionReason = String(req.body?.reason || "User is tracking this setup without executing it.").slice(0, 500);
+    alert.actedAt = nowISO();
+    alert.actedBy = userKey;
+    state.history.unshift({
+      type: "trade_alert_action",
+      alertId: alert.id,
+      action: "CONSIDER",
+      index: trade.index,
+      trade,
+      reason: alert.actionReason,
+      createdAt: alert.actedAt,
+      user: userKey
+    });
+    state.history = state.history.slice(0, 500);
+    saveState();
+    realtimeBroadcast("trade-alert-update", { ok: true, alert });
+    return { ok: true, alert, paper: state.paper };
+  }
+
+  const risk = riskCheck(trade);
+  if (!risk.ok) return { ok: false, status: 403, error: risk.reason };
+
+  const qty = Math.max(1, Math.floor(Number(req.body?.quantity || INDICES[trade.index]?.lotSize || 1)));
+  const price = Number(trade.entry);
+  const value = price * qty;
+  if (value > Number(state.paper.cash || 0)) {
+    return { ok: false, status: 400, error: "Insufficient paper cash for this trade." };
+  }
+  if (state.paper.positions.some(p => p.instrumentKey === trade.instrumentKey && p.quantity > 0)) {
+    return { ok: false, status: 409, error: "A paper position for this exact contract is already open." };
+  }
+
+  const position = {
+    id: `P${Date.now()}`,
+    alertId: alert.id,
+    index: trade.index,
+    optionType: trade.optionType,
+    strike: trade.strike,
+    expiry: trade.expiry,
+    instrumentKey: trade.instrumentKey,
+    quantity: qty,
+    entry: price,
+    currentPrice: price,
+    stopLoss: trade.stopLoss,
+    targets: trade.targets,
+    target: trade.targets[0],
+    confidence: trade.confidence,
+    reasoning: trade.reason || trade.decisionReasons,
+    openedAt: nowISO(),
+    status: "OPEN",
+    source: "STEP13_TRADE_ALERT"
+  };
+
+  state.paper.cash -= value;
+  state.paper.positions.push(position);
+  state.paper.orders.unshift({
+    id: `O${Date.now()}`,
+    side: "BUY",
+    index: trade.index,
+    optionType: trade.optionType,
+    strike: trade.strike,
+    expiry: trade.expiry,
+    instrumentKey: trade.instrumentKey,
+    quantity: qty,
+    price,
+    source: "TRADE_ALERT",
+    alertId: alert.id,
+    createdAt: nowISO()
+  });
+  state.paper.orders = state.paper.orders.slice(0, 200);
+
+  alert.status = "PAPER_TRADE";
+  alert.action = "PAPER_TRADE";
+  alert.actionReason = "Paper position created from the qualified ERA trade alert.";
+  alert.actedAt = nowISO();
+  alert.actedBy = userKey;
+
+  state.history.unshift({
+    type: "trade_alert_action",
+    alertId: alert.id,
+    action: "PAPER_TRADE",
+    index: trade.index,
+    trade,
+    position,
+    createdAt: alert.actedAt,
+    user: userKey
+  });
+  state.history = state.history.slice(0, 500);
+  saveState();
+  realtimeBroadcast("trade-alert-update", { ok: true, alert, position });
+
+  return { ok: true, alert, position, paper: state.paper };
 }
 
 // ============================================================
@@ -6970,6 +7156,33 @@ app.post("/api/backtest", async (req,res)=>{
     const wins=trades.filter(t=>t.pnl>0), losses=trades.filter(t=>t.pnl<=0); const grossWin=wins.reduce((s,t)=>s+t.pnl,0), grossLoss=Math.abs(losses.reduce((s,t)=>s+t.pnl,0));
     res.json({ok:true,index,interval,capital:Number(req.body?.capital||100000),endingCapital:round(equity),netPnl:round(equity-Number(req.body?.capital||100000)),trades:trades.length,winRate:trades.length?round(wins.length/trades.length*100):0,maxDrawdown:round(maxDD),profitFactor:grossLoss?round(grossWin/grossLoss):null,history:trades.slice(-100),dataWindow:trades.length?{from:trades[0].time,to:trades[trades.length-1].time}:null,updatedAt:nowISO()});
   } catch(error){res.status(500).json({ok:false,error:apiError(error)});}
+});
+
+// ============================================================
+// STEP 13 — TRADE ALERT APIs
+// ============================================================
+app.get("/api/trade-alerts", (req,res)=>{
+  const index = req.query.index ? normalizeIndex(req.query.index) : null;
+  const alerts = state.tradeAlerts
+    .filter(item => !index || item.trade?.index === index)
+    .slice(0, 200);
+  res.json({ok:true,alerts,updatedAt:nowISO()});
+});
+
+app.get("/api/trade-alerts/:id", (req,res)=>{
+  const alert=findTradeAlert(req.params.id);
+  if(!alert) return res.status(404).json({ok:false,error:"Trade alert not found."});
+  res.json({ok:true,alert,updatedAt:nowISO()});
+});
+
+app.post("/api/trade-alerts/:id/action", (req,res)=>{
+  try {
+    const result=applyTradeAlertAction(findTradeAlert(req.params.id), req.body?.action, req);
+    return res.status(result.status || (result.ok ? 200 : 400)).json(result);
+  } catch(error) {
+    console.error("[ERA] Trade alert action:", error.message);
+    return res.status(500).json({ok:false,error:apiError(error)});
+  }
 });
 
 app.get("/api/alerts", (req,res)=>res.json({ok:true,alerts:state.alerts.slice(0,200),updatedAt:nowISO()}));
