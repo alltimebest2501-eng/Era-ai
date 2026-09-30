@@ -355,7 +355,7 @@ for (const index of Object.keys(INDICES)) {
 }
 
 function realtimeBroadcast(event, payload) {
-  const message = `event: ${event}\\ndata: ${JSON.stringify(payload)}\\n\\n`;
+  const message = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
   for (const client of realtime.clients) {
     try { client.write(message); } catch (_) { realtime.clients.delete(client); }
   }
@@ -606,7 +606,7 @@ app.get("/api/realtime/stream", (req, res) => {
   if (typeof res.flushHeaders === "function") res.flushHeaders();
 
   const send = () => {
-    try { res.write(`event: snapshot\\ndata: ${JSON.stringify(realtimeSnapshot())}\\n\\n`); } catch (_) {}
+    try { res.write(`event: snapshot\ndata: ${JSON.stringify(realtimeSnapshot())}\n\n`); } catch (_) {}
   };
   realtime.clients.add(res);
   send();
