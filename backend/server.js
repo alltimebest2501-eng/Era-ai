@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "8.4.0-step6-technical-engine";
+const VERSION = "8.5.0-step7-price-action";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -2106,6 +2106,227 @@ function detectStructure(candles) {
   };
 }
 
+
+// ============================================================
+// PRICE ACTION ENGINE — STEP 7
+// ============================================================
+
+function detectPriceAction(candles, price, market = null) {
+  const empty = {
+    available: false,
+    breakout: { detected: false, direction: null, level: null },
+    fakeBreakout: { detected: false, direction: null, level: null },
+    retest: { detected: false, direction: null, level: null },
+    rejection: { detected: false, direction: null, strength: null },
+    range: { state: "UNKNOWN", width: null, widthPercent: null },
+    gap: { detected: false, direction: null, percent: null },
+    orb: { available: false, openingHigh: null, openingLow: null, breakout: false, direction: null },
+    pdhPdl: { available: false, pdh: null, pdl: null, relation: null },
+    liquiditySweep: { detected: false, direction: null, level: null },
+    momentumConfirmation: { confirmed: false, direction: null, reason: null }
+  };
+
+  if (!Array.isArray(candles) || candles.length < 3) return empty;
+
+  const rows = candles.filter(c => Array.isArray(c) && c.length >= 5);
+  if (rows.length < 3) return empty;
+  const current = Number(price);
+  const latest = rows[rows.length - 1];
+  const open = Number(latest[1]);
+  const high = Number(latest[2]);
+  const low = Number(latest[3]);
+  const close = Number(latest[4]);
+  if (![open, high, low, close].every(Number.isFinite)) return empty;
+
+  const previous = rows[rows.length - 2];
+  const prevClose = Number(previous?.[4]);
+  const prior20 = rows.slice(Math.max(0, rows.length - 21), -1);
+  const priorHighs = prior20.map(c => Number(c[2])).filter(Number.isFinite);
+  const priorLows = prior20.map(c => Number(c[3])).filter(Number.isFinite);
+  const rangeHigh = priorHighs.length ? Math.max(...priorHighs) : null;
+  const rangeLow = priorLows.length ? Math.min(...priorLows) : null;
+  const atr = calculateATR(rows, 14);
+  const tolerance = Number.isFinite(atr) && atr > 0 ? atr * 0.25 : Math.max(Math.abs(close) * 0.001, 0.01);
+
+  const breakoutUp = Number.isFinite(rangeHigh) && close > rangeHigh;
+  const breakoutDown = Number.isFinite(rangeLow) && close < rangeLow;
+  const fakeUp = Number.isFinite(rangeHigh) && high > rangeHigh && close <= rangeHigh;
+  const fakeDown = Number.isFinite(rangeLow) && low < rangeLow && close >= rangeLow;
+
+  let retestDirection = null;
+  let retestLevel = null;
+  const recentForRetest = rows.slice(Math.max(0, rows.length - 4));
+  if (Number.isFinite(rangeHigh)) {
+    for (let i = 0; i < recentForRetest.length - 1; i++) {
+      const c = recentForRetest[i];
+      const cClose = Number(c[4]);
+      if (cClose > rangeHigh) {
+        const last = latest;
+        if (Number(last[3]) <= rangeHigh + tolerance && close >= rangeHigh) {
+          retestDirection = "UP"; retestLevel = rangeHigh; break;
+        }
+      }
+    }
+  }
+  if (!retestDirection && Number.isFinite(rangeLow)) {
+    for (let i = 0; i < recentForRetest.length - 1; i++) {
+      const c = recentForRetest[i];
+      const cClose = Number(c[4]);
+      if (cClose < rangeLow) {
+        const last = latest;
+        if (Number(last[2]) >= rangeLow - tolerance && close <= rangeLow) {
+          retestDirection = "DOWN"; retestLevel = rangeLow; break;
+        }
+      }
+    }
+  }
+
+  const candleRange = high - low;
+  const upperWick = Math.max(0, high - Math.max(open, close));
+  const lowerWick = Math.max(0, Math.min(open, close) - low);
+  const body = Math.abs(close - open);
+  const rejectionUp = candleRange > 0 && upperWick / candleRange >= 0.55 && close < open;
+  const rejectionDown = candleRange > 0 && lowerWick / candleRange >= 0.55 && close > open;
+
+  let rangeState = "NORMAL";
+  let rangeWidth = null;
+  let rangeWidthPercent = null;
+  if (Number.isFinite(rangeHigh) && Number.isFinite(rangeLow) && rangeHigh >= rangeLow) {
+    rangeWidth = rangeHigh - rangeLow;
+    rangeWidthPercent = close > 0 ? (rangeWidth / close) * 100 : null;
+    const recentRanges = rows.slice(-14).map(c => Number(c[2]) - Number(c[3])).filter(v => Number.isFinite(v) && v >= 0);
+    if (recentRanges.length >= 5) {
+      const avg = recentRanges.reduce((a, b) => a + b, 0) / recentRanges.length;
+      const latestRange = candleRange;
+      if (avg > 0 && latestRange >= avg * 1.5) rangeState = "EXPANSION";
+      else if (avg > 0 && latestRange <= avg * 0.65) rangeState = "CONTRACTION";
+    }
+  }
+
+  let gapDetected = false;
+  let gapDirection = null;
+  let gapPercent = null;
+  const referenceClose = Number(market?.previousClose);
+  const firstOpen = Number(rows[0]?.[1]);
+  if (Number.isFinite(referenceClose) && referenceClose > 0 && Number.isFinite(firstOpen)) {
+    gapPercent = ((firstOpen - referenceClose) / referenceClose) * 100;
+    if (Math.abs(gapPercent) >= 0.20) {
+      gapDetected = true;
+      gapDirection = gapPercent > 0 ? "UP" : "DOWN";
+    }
+  }
+
+  // Opening Range Breakout: first 3 five-minute candles = first 15 minutes.
+  const orbRows = rows.slice(0, Math.min(3, rows.length));
+  const orbHighs = orbRows.map(c => Number(c[2])).filter(Number.isFinite);
+  const orbLows = orbRows.map(c => Number(c[3])).filter(Number.isFinite);
+  const openingHigh = orbHighs.length ? Math.max(...orbHighs) : null;
+  const openingLow = orbLows.length ? Math.min(...orbLows) : null;
+  const orbUp = Number.isFinite(openingHigh) && close > openingHigh;
+  const orbDown = Number.isFinite(openingLow) && close < openingLow;
+
+  // Previous-day high/low from available candle dates. If only one session is present,
+  // the engine reports unavailable instead of treating today's range as PDH/PDL.
+  let pdh = null, pdl = null, previousDate = null;
+  const dateBuckets = new Map();
+  for (const c of rows) {
+    const d = new Date(c[0]);
+    if (!Number.isNaN(d.getTime())) {
+      const key = d.toISOString().slice(0, 10);
+      if (!dateBuckets.has(key)) dateBuckets.set(key, []);
+      dateBuckets.get(key).push(c);
+    }
+  }
+  const dates = [...dateBuckets.keys()].sort();
+  if (dates.length >= 2) {
+    previousDate = dates[dates.length - 2];
+    const prevDayRows = dateBuckets.get(previousDate) || [];
+    const highs = prevDayRows.map(c => Number(c[2])).filter(Number.isFinite);
+    const lows = prevDayRows.map(c => Number(c[3])).filter(Number.isFinite);
+    if (highs.length && lows.length) { pdh = Math.max(...highs); pdl = Math.min(...lows); }
+  }
+
+  let relation = null;
+  if (Number.isFinite(pdh) && Number.isFinite(pdl)) {
+    relation = close > pdh ? "ABOVE_PDH" : close < pdl ? "BELOW_PDL" : "INSIDE_PDH_PDL";
+  }
+
+  let sweepDirection = null, sweepLevel = null;
+  if (Number.isFinite(rangeHigh) && high > rangeHigh && close <= rangeHigh) {
+    sweepDirection = "UP"; sweepLevel = rangeHigh;
+  } else if (Number.isFinite(rangeLow) && low < rangeLow && close >= rangeLow) {
+    sweepDirection = "DOWN"; sweepLevel = rangeLow;
+  }
+
+  const lastMomentum = calculateMomentum(rows, 3);
+  let momentumConfirmed = false;
+  let momentumDirection = null;
+  let momentumReason = null;
+  if (lastMomentum && Number.isFinite(lastMomentum.percent)) {
+    if (breakoutUp && lastMomentum.direction === "UP") {
+      momentumConfirmed = true; momentumDirection = "UP"; momentumReason = "Breakout and 3-candle momentum agree.";
+    } else if (breakoutDown && lastMomentum.direction === "DOWN") {
+      momentumConfirmed = true; momentumDirection = "DOWN"; momentumReason = "Breakdown and 3-candle momentum agree.";
+    } else if ((orbUp || orbDown) && ((orbUp && lastMomentum.direction === "UP") || (orbDown && lastMomentum.direction === "DOWN"))) {
+      momentumConfirmed = true; momentumDirection = orbUp ? "UP" : "DOWN"; momentumReason = "ORB direction agrees with 3-candle momentum.";
+    }
+  }
+
+  return {
+    available: true,
+    breakout: {
+      detected: breakoutUp || breakoutDown,
+      direction: breakoutUp ? "UP" : breakoutDown ? "DOWN" : null,
+      level: breakoutUp ? round(rangeHigh) : breakoutDown ? round(rangeLow) : null
+    },
+    fakeBreakout: {
+      detected: fakeUp || fakeDown,
+      direction: fakeUp ? "UP" : fakeDown ? "DOWN" : null,
+      level: fakeUp ? round(rangeHigh) : fakeDown ? round(rangeLow) : null
+    },
+    retest: {
+      detected: Boolean(retestDirection), direction: retestDirection, level: retestLevel !== null ? round(retestLevel) : null
+    },
+    rejection: {
+      detected: rejectionUp || rejectionDown,
+      direction: rejectionUp ? "UP_REJECTION" : rejectionDown ? "DOWN_REJECTION" : null,
+      strength: rejectionUp || rejectionDown ? round(Math.max(upperWick, lowerWick) / Math.max(candleRange, 0.000001), 2) : null
+    },
+    range: {
+      state: rangeState,
+      width: rangeWidth !== null ? round(rangeWidth) : null,
+      widthPercent: rangeWidthPercent !== null ? round(rangeWidthPercent, 3) : null
+    },
+    gap: {
+      detected: gapDetected,
+      direction: gapDirection,
+      percent: gapPercent !== null ? round(gapPercent, 3) : null
+    },
+    orb: {
+      available: orbRows.length >= 3,
+      openingHigh: openingHigh !== null ? round(openingHigh) : null,
+      openingLow: openingLow !== null ? round(openingLow) : null,
+      breakout: orbUp || orbDown,
+      direction: orbUp ? "UP" : orbDown ? "DOWN" : null
+    },
+    pdhPdl: {
+      available: Number.isFinite(pdh) && Number.isFinite(pdl),
+      pdh: pdh !== null ? round(pdh) : null,
+      pdl: pdl !== null ? round(pdl) : null,
+      relation,
+      sourceDate: previousDate
+    },
+    liquiditySweep: {
+      detected: Boolean(sweepDirection), direction: sweepDirection, level: sweepLevel !== null ? round(sweepLevel) : null
+    },
+    momentumConfirmation: {
+      confirmed: momentumConfirmed,
+      direction: momentumDirection,
+      reason: momentumReason
+    }
+  };
+}
+
 // ============================================================
 // TECHNICAL ANALYSIS
 // ============================================================
@@ -2220,6 +2441,7 @@ function technicalAnalysis(
   const volatility = calculateVolatility(candles, 14);
   const volumeProfile = calculateVolumeProfile(candles, 20);
   const levels = calculateLevels(candles, current, 50);
+  const priceAction = detectPriceAction(candles, current, market);
 
   const latestCandle =
     candles[candles.length - 1] || null;
@@ -2349,6 +2571,8 @@ function technicalAnalysis(
           state: volumeProfile.state
         }
       : null,
+
+    priceAction,
 
     trend,
 
@@ -4889,6 +5113,7 @@ function buildAIBrainContext(index) {
         momentum: technical.momentum,
         volatility: technical.volatility,
         volumeProfile: technical.volumeProfile,
+        priceAction: technical.priceAction || null,
         support: technical.support,
         resistance: technical.resistance,
         levels: technical.levels,
