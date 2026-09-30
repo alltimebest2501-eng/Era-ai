@@ -20,7 +20,7 @@ try {
 const app = express();
 
 const PORT = process.env.PORT || 10000;
-const VERSION = "9.1.1-step3-14-risk-ledger";
+const VERSION = "9.1.0-step14-paper-trading";
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
@@ -714,10 +714,6 @@ function loadState() {
 
     if (Array.isArray(saved.journal)) state.journal = saved.journal;
     if (saved.risk && typeof saved.risk === "object") state.risk = { ...state.risk, ...saved.risk };
-
-    // ERA trade decisions must never operate below the production 65% floor,
-    // even when an older state file contains minConfidence < 65.
-    state.settings.minConfidence = Math.max(65, Number(state.settings.minConfidence || 65));
 
   } catch (error) {
     console.error(
@@ -4113,8 +4109,8 @@ function invalidateSetupMemory({ index, direction, optionType, strike, expiry, r
 // ============================================================
 
 function countTradesToday() {
-  // STEP 10 unified execution ledger for the current paper-trading stage.
-  // Count actual executed BUY orders, not generated/considered trade setups.
+  // Step 10 and Step 14 use the same execution ledger: paper BUY orders.
+  // Generated opportunities in state.history are not executions.
   return paperTradesToday();
 }
 
@@ -5057,14 +5053,13 @@ function applyTradeAlertAction(alert, action, req) {
     return { ok: true, alert, paper: state.paper };
   }
 
-  const qty = Math.max(1, Math.floor(Number(req.body?.quantity || INDICES[trade.index]?.lotSize || 1)));
-  const risk = riskCheck(trade, qty);
+  const requestedQuantity = req.body?.quantity !== undefined ? req.body.quantity : null;
+  const risk = riskCheck(trade, requestedQuantity);
   if (!risk.ok) return { ok: false, status: 403, error: risk.reason };
+
+  const qty = risk.qty;
   const price = Number(trade.entry);
   const value = price * qty;
-  if (value > Number(state.paper.cash || 0)) {
-    return { ok: false, status: 400, error: "Insufficient paper cash for this trade." };
-  }
   if (state.paper.positions.some(p => p.instrumentKey === trade.instrumentKey && p.quantity > 0)) {
     return { ok: false, status: 409, error: "A paper position for this exact contract is already open." };
   }
@@ -6173,7 +6168,7 @@ function deterministicAIBrainGate(context) {
   if (market.available === false) reasons.push("Live market data is unavailable.");
   if (market.stale === true) reasons.push("Live market data is stale.");
   if (!Number.isFinite(Number(market.price)) || Number(market.price) <= 0) reasons.push("Live price is unavailable.");
-  if (Number.isFinite(confidence) && confidence < Math.max(65, Number(safety.minConfidence || 65))) {
+  if (Number.isFinite(confidence) && confidence < Number(safety.minConfidence || 60)) {
     reasons.push(`Confidence ${confidence}% is below ERA minimum ${safety.minConfidence}%.`);
   }
   if (safety.killSwitch) reasons.push("ERA risk kill switch is ON.");
@@ -6631,7 +6626,7 @@ app.post(
 
         if (
           Number.isFinite(value) &&
-          value >= 65 &&
+          value >= 1 &&
           value <= 100
         ) {
           state.settings
@@ -6989,80 +6984,98 @@ function currentUserKey(req) {
   return raw.slice(0, 180) || "guest";
 }
 
-function riskCheck(trade, quantityOverride = null) {
+function calculateRiskSizing(trade, requestedQuantity = null) {
+  const r = state.risk || {};
+  const startingCapital = Number(state.paper?.startingCapital || 100000);
+  const maxRiskAmount = startingCapital * (Number(r.maxTradeLoss || 1) / 100);
+  const entry = Number(trade.entry || 0);
+  const stop = Number(trade.stopLoss || 0);
+  const perUnitRisk = entry - stop;
+  const lotSize = Math.max(1, Math.floor(Number(INDICES[trade.index]?.lotSize || 1)));
+
+  if (!(entry > 0) || !(stop > 0) || !(perUnitRisk > 0)) {
+    return { ok: false, reason: "Invalid entry/stop values." };
+  }
+
+  const maxRiskQtyRaw = Math.floor(maxRiskAmount / perUnitRisk);
+  const maxRiskQty = Math.floor(maxRiskQtyRaw / lotSize) * lotSize;
+  if (maxRiskQty < lotSize) {
+    return { ok: false, reason: `Minimum lot size ${lotSize} exceeds the configured maximum account risk of ₹${maxRiskAmount.toFixed(2)}.` };
+  }
+
+  const explicitQty = requestedQuantity !== null && requestedQuantity !== undefined;
+  const requestedQty = explicitQty
+    ? Math.max(1, Math.floor(Number(requestedQuantity)))
+    : lotSize;
+
+  if (explicitQty && requestedQty % lotSize !== 0) {
+    return { ok: false, reason: `Quantity must be in lot-size multiples of ${lotSize}.` };
+  }
+
+  const qty = explicitQty ? requestedQty : Math.min(lotSize, maxRiskQty);
+  if (qty > maxRiskQty) {
+    return { ok: false, reason: `Requested quantity ${qty} exceeds the account-risk limit. Maximum allowed is ${maxRiskQty}.` };
+  }
+
+  return {
+    ok: true,
+    qty,
+    lotSize,
+    entry,
+    stop,
+    perUnitRisk,
+    maxRiskAmount,
+    totalTradeRisk: perUnitRisk * qty
+  };
+}
+
+function riskCheck(trade, requestedQuantity = null) {
   const r = state.risk || {};
   if (r.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
   if ((state.paper.positions || []).length >= Number(r.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
-  if (countTradesToday() >= Number(r.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
+  if (paperTradesToday() >= Number(r.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
 
-  const entry = Number(trade.entry || 0);
-  const stop = Number(trade.stopLoss || 0);
-  if (!entry || !stop || entry <= stop) return { ok: false, reason: "Invalid entry/stop values." };
+  const sizing = calculateRiskSizing(trade, requestedQuantity);
+  if (!sizing.ok) return sizing;
 
   const startingCapital = Number(state.paper?.startingCapital || 100000);
-  const maxTradeRiskPct = Number(r.maxTradeLoss || 1);
-  const maxTradeRiskAmount = startingCapital * (maxTradeRiskPct / 100);
-  const qty = Math.max(1, Math.floor(Number(quantityOverride ?? trade.quantity ?? INDICES[trade.index]?.lotSize ?? 1)));
-  const perUnitRisk = entry - stop;
-  const totalTradeRisk = perUnitRisk * qty;
-
-  // Step 9 SL is intentionally based on option-premium behaviour (normally
-  // 10–35% of premium). Step 13/14 therefore validate the ACCOUNT risk
-  // created by that SL instead of comparing the premium SL percentage to 1%.
-  if (totalTradeRisk > maxTradeRiskAmount) {
-    return {
-      ok: false,
-      reason: `Account risk ₹${totalTradeRisk.toFixed(2)} exceeds configured maximum ₹${maxTradeRiskAmount.toFixed(2)} (${maxTradeRiskPct}% of paper capital).`,
-      quantity: qty,
-      perUnitRisk,
-      totalTradeRisk,
-      maxTradeRiskAmount
-    };
-  }
-
   const realized = paperRealizedPnlToday();
   const unrealized = Number(state.paper?.unrealizedPnl || 0);
   const dailyLossLimit = startingCapital * (Number(r.maxDailyLoss || 2) / 100);
   if (realized + unrealized <= -dailyLossLimit) return { ok: false, reason: "Maximum daily paper loss limit reached." };
 
   const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
-  const proposedExposure = exposure + entry * qty;
+  const proposedExposure = exposure + sizing.entry * sizing.qty;
   const maxExposureValue = startingCapital * (Number(r.maxExposure || 50) / 100);
   if (proposedExposure > maxExposureValue) return { ok: false, reason: "Maximum paper exposure limit reached." };
 
-  return {
-    ok: true,
-    reason: "Risk checks passed.",
-    quantity: qty,
-    perUnitRisk,
-    totalTradeRisk,
-    maxTradeRiskAmount,
-    riskPercentOfCapital: startingCapital > 0 ? (totalTradeRisk / startingCapital) * 100 : 0
-  };
+  const cash = Number(state.paper?.cash || 0);
+  const orderValue = sizing.entry * sizing.qty;
+  if (orderValue > cash) return { ok: false, reason: "Insufficient paper cash for this trade." };
+
+  return { ...sizing, ok: true, reason: "Risk checks passed." };
 }
 
 function validateManualPaperBuy(b) {
-  const qty = Math.max(1, Math.floor(Number(b.quantity || 1)));
   const price = Number(b.price || b.entry || 0);
   if (!(price > 0)) return { ok: false, reason: "Valid order price is required." };
   if (state.risk.killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
   if ((state.paper.positions || []).length >= Number(state.risk.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
   if (paperTradesToday() >= Number(state.risk.maxTradesPerDay || 5)) return { ok: false, reason: "Maximum paper trades for today reached." };
 
+  if (!b.index || !b.optionType || !(Number(b.strike) > 0) || !b.instrumentKey) return { ok: false, reason: "Exact index, CE/PE, strike and instrument are required." };
+
   const stop = Number(b.stopLoss || 0);
   if (!(stop > 0) || price <= stop) return { ok: false, reason: "Valid stop loss below entry price is required." };
-  const startingCapital = Number(state.paper.startingCapital || 100000);
-  const maxTradeRiskPct = Number(state.risk.maxTradeLoss || 1);
-  const maxTradeRiskAmount = startingCapital * (maxTradeRiskPct / 100);
-  const totalTradeRisk = (price - stop) * qty;
-  if (totalTradeRisk > maxTradeRiskAmount) {
-    return { ok: false, reason: `Account risk ₹${totalTradeRisk.toFixed(2)} exceeds configured maximum ₹${maxTradeRiskAmount.toFixed(2)} (${maxTradeRiskPct}% of paper capital).` };
-  }
 
+  const sizing = calculateRiskSizing({ ...b, entry: price, stopLoss: stop }, b.quantity);
+  if (!sizing.ok) return sizing;
+
+  const startingCapital = Number(state.paper.startingCapital || 100000);
   const currentPnl = paperRealizedPnlToday() + Number(state.paper.unrealizedPnl || 0);
   if (currentPnl <= -(startingCapital * Number(state.risk.maxDailyLoss || 2) / 100)) return { ok: false, reason: "Maximum daily paper loss limit reached." };
 
-  const value = price * qty;
+  const value = price * sizing.qty;
   if (value > Number(state.paper.cash || 0)) return { ok: false, reason: "Insufficient paper cash." };
   const exposure = (state.paper.positions || []).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
   const maxExposureValue = startingCapital * Number(state.risk.maxExposure || 50) / 100;
@@ -7070,11 +7083,9 @@ function validateManualPaperBuy(b) {
 
   const positionKey = [b.index, b.optionType, b.strike, b.instrumentKey].join("|");
   if ((state.paper.positions || []).some(p => [p.index, p.optionType, p.strike, p.instrumentKey].join("|") === positionKey)) return { ok: false, reason: "A paper position for this exact contract is already open." };
-  if (!b.index || !b.optionType || !(Number(b.strike) > 0) || !b.instrumentKey) return { ok: false, reason: "Exact index, CE/PE, strike and instrument are required." };
 
-  return { ok: true, qty, price, value };
+  return { ...sizing, ok: true, qty: sizing.qty, price, value };
 }
-
 app.get("/api/candles", async (req, res) => {
   try {
     const index = normalizeIndex(req.query.index || "NIFTY");
