@@ -739,29 +739,72 @@ function findRealtimeFeed(feed, instrumentKey) {
 }
 
 function normalizeRealtimeTick(index, rawFeed) {
-  const key = INDICES[index].symbol;
   const raw = rawFeed || {};
-  const ltpc = raw.ltpc || raw.LTPC || {};
-  const ohlc = raw.marketOHLC?.ohlc || raw.market_ohlc?.ohlc || [];
-  const day = Array.isArray(ohlc) ? (ohlc.find(x => x.interval === "1d") || ohlc[0] || {}) : {};
-  const depth = raw.fullFeed?.marketLevel?.bidAskQuote || raw.marketLevel?.bidAskQuote || raw.bidAskQuote || {};
+
+  // Upstox V3 full-mode index payload:
+  // feeds[INSTRUMENT].fullFeed.indexFF.ltpc
+  // feeds[INSTRUMENT].fullFeed.indexFF.marketOHLC
+  const indexFF =
+    raw.fullFeed?.indexFF ||
+    raw.ff?.indexFF ||
+    raw.indexFF ||
+    raw.full_feed?.indexFF ||
+    {};
+
+  const ltpc = indexFF.ltpc || raw.ltpc || raw.LTPC || {};
+  const ohlc = indexFF.marketOHLC?.ohlc ||
+    raw.marketOHLC?.ohlc ||
+    raw.market_ohlc?.ohlc ||
+    [];
+
+  const day = Array.isArray(ohlc)
+    ? (ohlc.find(x => x?.interval === "1d") || ohlc[0] || {})
+    : {};
+
+  const depth =
+    indexFF.marketLevel?.bidAskQuote ||
+    raw.fullFeed?.marketLevel?.bidAskQuote ||
+    raw.marketLevel?.bidAskQuote ||
+    raw.bidAskQuote ||
+    {};
+
   const price = safeRealtimeNumber(ltpc.ltp ?? raw.ltp, null);
   if (!Number.isFinite(price)) return null;
 
   const now = Date.now();
   const current = realtime.perIndex[index];
   const previous = current.price;
-  const dt = current.timestamp ? Math.max(1, now - new Date(current.timestamp).getTime()) : 0;
+  const dt = current.timestamp
+    ? Math.max(1, now - new Date(current.timestamp).getTime())
+    : 0;
+
   const delta = previous == null ? 0 : price - previous;
   const velocity = dt > 0 ? delta / (dt / 1000) : 0;
+
   const bid = safeRealtimeNumber(depth.bidP ?? depth.bidPrice ?? depth.bid, null);
   const ask = safeRealtimeNumber(depth.askP ?? depth.askPrice ?? depth.ask, null);
   const spread = Number.isFinite(bid) && Number.isFinite(ask) ? ask - bid : null;
   const spreadPct = spread !== null && price ? (spread / price) * 100 : null;
-  const volume = safeRealtimeNumber(ltpc.volume ?? raw.volume ?? day.vol ?? day.volume, current.cumulativeVolume || 0);
-  const oi = safeRealtimeNumber(raw.oi ?? raw.eFeedDetails?.oi ?? current.oi, current.oi || 0);
-  const tradeQty = safeRealtimeNumber(ltpc.ltq ?? raw.ltq, 0);
-  const timestampMs = safeRealtimeNumber(ltpc.ltt ?? feedTimestamp(rawFeed), now);
+
+  const volume = safeRealtimeNumber(
+    ltpc.volume ?? indexFF.volume ?? raw.volume ?? day.vol ?? day.volume,
+    current.cumulativeVolume || 0
+  );
+
+  const oi = safeRealtimeNumber(
+    indexFF.oi ?? raw.oi ?? raw.eFeedDetails?.oi ?? current.oi,
+    current.oi || 0
+  );
+
+  const tradeQty = safeRealtimeNumber(
+    ltpc.ltq ?? ltpc.ltqQty ?? raw.ltq ?? raw.ltqQty,
+    0
+  );
+
+  const timestampMs = safeRealtimeNumber(
+    ltpc.ltt ?? feedTimestamp(rawFeed),
+    now
+  );
 
   current.previousPrice = previous;
   current.price = price;
@@ -779,11 +822,13 @@ function normalizeRealtimeTick(index, rawFeed) {
   current.high = safeRealtimeNumber(day.high ?? raw.high, current.high || price);
   current.low = safeRealtimeNumber(day.low ?? raw.low, current.low || price);
   current.open = safeRealtimeNumber(day.open ?? raw.open, current.open || price);
-  current.close = safeRealtimeNumber(day.close ?? raw.close ?? ltpc.cp, current.close || price);
+  current.close = safeRealtimeNumber(
+    day.close ?? raw.close ?? ltpc.cp,
+    current.close || price
+  );
   current.timestamp = new Date(timestampMs).toISOString();
   current.stale = false;
 
-  // Keep the existing public market object synchronized immediately.
   state.market[index] = {
     ...(state.market[index] || {}),
     price,
@@ -816,64 +861,8 @@ function feedTimestamp(rawFeed) {
   return rawFeed?.currentTs || rawFeed?.current_ts || Date.now();
 }
 
-let realtimeDiagnosticV2Logged = false;
-
-function realtimeDiagnosticV2Safe(value) {
-  const seen = new WeakSet();
-  try {
-    return JSON.stringify(value, (key, current) => {
-      if (typeof current === "bigint") return current.toString();
-      if (current && typeof current === "object") {
-        if (seen.has(current)) return "[Circular]";
-        seen.add(current);
-      }
-      return current;
-    });
-  } catch (error) {
-    return "[unserializable:" + String(error?.message || error) + "]";
-  }
-}
-
 function handleRealtimeMessage(message) {
-  if (!realtimeDiagnosticV2Logged) {
-    realtimeDiagnosticV2Logged = true;
-    try {
-      const messageInfo = {
-        constructor: message?.constructor?.name || typeof message,
-        isBuffer: Buffer.isBuffer(message),
-        isArrayBufferView: ArrayBuffer.isView(message),
-        byteLength: message?.byteLength ?? null,
-        keys: message && typeof message === "object" ? Object.keys(message).slice(0, 30) : [],
-        preview: typeof message === "string"
-          ? message.slice(0, 300)
-          : (Buffer.isBuffer(message) ? "[Buffer:" + message.length + "]" : realtimeDiagnosticV2Safe(message))
-      };
-      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] message=" + realtimeDiagnosticV2Safe(messageInfo));
-    } catch (diagnosticError) {
-      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] message_error=" + String(diagnosticError?.message || diagnosticError));
-    }
-  }
-
   const feed = extractRealtimeFeed(message);
-
-  if (feed && feed.type !== "market_info") {
-    try {
-      const feeds = feed?.feeds || feed?.data?.feeds || feed?.data || {};
-      const feedKeys = feeds && typeof feeds === "object" ? Object.keys(feeds).slice(0, 20) : [];
-      const firstKey = feedKeys[0] || null;
-      const firstFeed = firstKey ? feeds[firstKey] : null;
-      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] data=" + realtimeDiagnosticV2Safe({
-        type: feed?.type || null,
-        topKeys: Object.keys(feed || {}).slice(0, 30),
-        feedKeys,
-        firstKey,
-        firstFeed
-      }));
-      realtimeDiagnosticV2Logged = true;
-    } catch (diagnosticError) {
-      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] data_error=" + String(diagnosticError?.message || diagnosticError));
-    }
-  }
 
   if (!feed) {
     // Some SDK versions expose decoded feed objects; if this is an opaque
