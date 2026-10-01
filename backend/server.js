@@ -816,17 +816,65 @@ function feedTimestamp(rawFeed) {
   return rawFeed?.currentTs || rawFeed?.current_ts || Date.now();
 }
 
+let realtimeDiagnosticV2Logged = false;
+
+function realtimeDiagnosticV2Safe(value) {
+  const seen = new WeakSet();
+  try {
+    return JSON.stringify(value, (key, current) => {
+      if (typeof current === "bigint") return current.toString();
+      if (current && typeof current === "object") {
+        if (seen.has(current)) return "[Circular]";
+        seen.add(current);
+      }
+      return current;
+    });
+  } catch (error) {
+    return "[unserializable:" + String(error?.message || error) + "]";
+  }
+}
+
 function handleRealtimeMessage(message) {
-  if (!globalThis.__eraRealtimeDiagnosticLogged) {
-    globalThis.__eraRealtimeDiagnosticLogged = true;
+  if (!realtimeDiagnosticV2Logged) {
+    realtimeDiagnosticV2Logged = true;
     try {
-      const diagnostic = Buffer.isBuffer(message) ? message.toString("base64") : JSON.stringify(message);
-      console.log("[ERA][REALTIME_DIAGNOSTIC] first_message=" + diagnostic.slice(0, 12000));
-    } catch (error) {
-      console.log("[ERA][REALTIME_DIAGNOSTIC] first_message_unserializable=" + String(error?.message || error));
+      const messageInfo = {
+        constructor: message?.constructor?.name || typeof message,
+        isBuffer: Buffer.isBuffer(message),
+        isArrayBufferView: ArrayBuffer.isView(message),
+        byteLength: message?.byteLength ?? null,
+        keys: message && typeof message === "object" ? Object.keys(message).slice(0, 30) : [],
+        preview: typeof message === "string"
+          ? message.slice(0, 300)
+          : (Buffer.isBuffer(message) ? "[Buffer:" + message.length + "]" : realtimeDiagnosticV2Safe(message))
+      };
+      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] message=" + realtimeDiagnosticV2Safe(messageInfo));
+    } catch (diagnosticError) {
+      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] message_error=" + String(diagnosticError?.message || diagnosticError));
     }
   }
+
   const feed = extractRealtimeFeed(message);
+
+  if (feed && feed.type !== "market_info") {
+    try {
+      const feeds = feed?.feeds || feed?.data?.feeds || feed?.data || {};
+      const feedKeys = feeds && typeof feeds === "object" ? Object.keys(feeds).slice(0, 20) : [];
+      const firstKey = feedKeys[0] || null;
+      const firstFeed = firstKey ? feeds[firstKey] : null;
+      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] data=" + realtimeDiagnosticV2Safe({
+        type: feed?.type || null,
+        topKeys: Object.keys(feed || {}).slice(0, 30),
+        feedKeys,
+        firstKey,
+        firstFeed
+      }));
+      realtimeDiagnosticV2Logged = true;
+    } catch (diagnosticError) {
+      console.log("[ERA][REALTIME_DIAGNOSTIC_V2] data_error=" + String(diagnosticError?.message || diagnosticError));
+    }
+  }
+
   if (!feed) {
     // Some SDK versions expose decoded feed objects; if this is an opaque
     // protobuf buffer, the SDK/dependency must decode it before this handler.
