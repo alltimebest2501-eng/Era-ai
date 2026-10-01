@@ -8896,7 +8896,7 @@ function buildEraTradingOSStatus(req) {
     aiSelfAudit: typeof buildAISelfAudit === "function",
     backtesting: typeof runBacktest === "function",
     globalIntelligence: typeof getGlobalIntelligence === "function" || typeof buildGlobalIntelligence === "function",
-    realtime: typeof realtimeState === "object",
+    realtime: Boolean(realtime && typeof realtime === "object" && realtime.status === "LIVE" && realtime.lastTickAt),
     securityHardening: Boolean(typeof requireAuth === "function" && typeof createAuthSession === "function"),
     brokerExecution: !brokerLive || (BROKER_NAME === "upstox" && Boolean(process.env.UPSTOX_ACCESS_TOKEN)),
     liveBrokerDisabledByDefault: !brokerLive,
