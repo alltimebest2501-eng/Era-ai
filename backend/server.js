@@ -741,192 +741,49 @@ function findRealtimeFeed(feed, instrumentKey) {
 function normalizeRealtimeTick(index, rawFeed) {
   const key = INDICES[index].symbol;
   const raw = rawFeed || {};
-
-  // Upstox V3 Full Feed:
-  // Index => ff.indexFF
-  // Other instruments may use ff.marketFF
-  const fullFeed =
-    raw.ff?.indexFF ||
-    raw.ff?.marketFF ||
-    raw.fullFeed ||
-    raw;
-
-  const ltpc =
-    fullFeed?.ltpc ||
-    raw.ltpc ||
-    raw.LTPC ||
-    {};
-
-  const ohlc =
-    fullFeed?.marketOHLC?.ohlc ||
-    raw.marketOHLC?.ohlc ||
-    raw.market_ohlc?.ohlc ||
-    [];
-
-  const day =
-    Array.isArray(ohlc)
-      ? (
-          ohlc.find(x => x.interval === "1d") ||
-          ohlc[0] ||
-          {}
-        )
-      : {};
-
-  const depth =
-    fullFeed?.marketLevel?.bidAskQuote ||
-    raw.fullFeed?.marketLevel?.bidAskQuote ||
-    raw.marketLevel?.bidAskQuote ||
-    raw.bidAskQuote ||
-    [];
-
-  const firstDepth =
-    Array.isArray(depth)
-      ? (depth[0] || {})
-      : depth || {};
-
-  const price = safeRealtimeNumber(
-    ltpc.ltp ??
-    raw.ltp,
-    null
-  );
-
-  if (!Number.isFinite(price)) {
-    return null;
-  }
+  const ltpc = raw.ltpc || raw.LTPC || {};
+  const ohlc = raw.marketOHLC?.ohlc || raw.market_ohlc?.ohlc || [];
+  const day = Array.isArray(ohlc) ? (ohlc.find(x => x.interval === "1d") || ohlc[0] || {}) : {};
+  const depth = raw.fullFeed?.marketLevel?.bidAskQuote || raw.marketLevel?.bidAskQuote || raw.bidAskQuote || {};
+  const price = safeRealtimeNumber(ltpc.ltp ?? raw.ltp, null);
+  if (!Number.isFinite(price)) return null;
 
   const now = Date.now();
   const current = realtime.perIndex[index];
   const previous = current.price;
-
-  const previousTimestamp =
-    current.timestamp
-      ? new Date(current.timestamp).getTime()
-      : 0;
-
-  const dt =
-    previousTimestamp
-      ? Math.max(1, now - previousTimestamp)
-      : 0;
-
-  const delta =
-    previous == null
-      ? 0
-      : price - previous;
-
-  const velocity =
-    dt > 0
-      ? delta / (dt / 1000)
-      : 0;
-
-  const bid = safeRealtimeNumber(
-    firstDepth.bidP ??
-    firstDepth.bidPrice ??
-    firstDepth.bid,
-    null
-  );
-
-  const ask = safeRealtimeNumber(
-    firstDepth.askP ??
-    firstDepth.askPrice ??
-    firstDepth.ask,
-    null
-  );
-
-  const spread =
-    Number.isFinite(bid) &&
-    Number.isFinite(ask)
-      ? ask - bid
-      : null;
-
-  const spreadPct =
-    spread !== null && price
-      ? (spread / price) * 100
-      : null;
-
-  const volume = safeRealtimeNumber(
-    fullFeed?.vtt ??
-    fullFeed?.volume ??
-    ltpc.volume ??
-    raw.vtt ??
-    raw.volume ??
-    day.vol ??
-    day.volume,
-    current.cumulativeVolume || 0
-  );
-
-  const oi = safeRealtimeNumber(
-    fullFeed?.oi ??
-    raw.oi ??
-    raw.eFeedDetails?.oi ??
-    current.oi,
-    current.oi || 0
-  );
-
-  const tradeQty = safeRealtimeNumber(
-    ltpc.ltq ??
-    raw.ltq,
-    0
-  );
-
-  const timestampMs = safeRealtimeNumber(
-    ltpc.ltt ??
-    raw.currentTs ??
-    raw.current_ts ??
-    feedTimestamp(rawFeed),
-    now
-  );
+  const dt = current.timestamp ? Math.max(1, now - new Date(current.timestamp).getTime()) : 0;
+  const delta = previous == null ? 0 : price - previous;
+  const velocity = dt > 0 ? delta / (dt / 1000) : 0;
+  const bid = safeRealtimeNumber(depth.bidP ?? depth.bidPrice ?? depth.bid, null);
+  const ask = safeRealtimeNumber(depth.askP ?? depth.askPrice ?? depth.ask, null);
+  const spread = Number.isFinite(bid) && Number.isFinite(ask) ? ask - bid : null;
+  const spreadPct = spread !== null && price ? (spread / price) * 100 : null;
+  const volume = safeRealtimeNumber(ltpc.volume ?? raw.volume ?? day.vol ?? day.volume, current.cumulativeVolume || 0);
+  const oi = safeRealtimeNumber(raw.oi ?? raw.eFeedDetails?.oi ?? current.oi, current.oi || 0);
+  const tradeQty = safeRealtimeNumber(ltpc.ltq ?? raw.ltq, 0);
+  const timestampMs = safeRealtimeNumber(ltpc.ltt ?? feedTimestamp(rawFeed), now);
 
   current.previousPrice = previous;
   current.price = price;
   current.tickChange = delta;
-  current.tickChangePct =
-    previous
-      ? (delta / previous) * 100
-      : 0;
+  current.tickChangePct = previous ? (delta / previous) * 100 : 0;
   current.tickVelocity = velocity;
   current.tickCount += 1;
   current.lastTradeQty = tradeQty;
   current.cumulativeVolume = volume;
   current.oi = oi;
-
-  if (Number.isFinite(bid)) {
-    current.bid = bid;
-  }
-
-  if (Number.isFinite(ask)) {
-    current.ask = ask;
-  }
-
+  current.bid = Number.isFinite(bid) ? bid : current.bid;
+  current.ask = Number.isFinite(ask) ? ask : current.ask;
   current.spread = spread;
   current.spreadPct = spreadPct;
-
-  current.high = safeRealtimeNumber(
-    day.high ?? raw.high,
-    current.high || price
-  );
-
-  current.low = safeRealtimeNumber(
-    day.low ?? raw.low,
-    current.low || price
-  );
-
-  current.open = safeRealtimeNumber(
-    day.open ?? raw.open,
-    current.open || price
-  );
-
-  current.close = safeRealtimeNumber(
-    day.close ??
-    raw.close ??
-    ltpc.cp,
-    current.close || price
-  );
-
-  current.timestamp =
-    new Date(timestampMs).toISOString();
-
+  current.high = safeRealtimeNumber(day.high ?? raw.high, current.high || price);
+  current.low = safeRealtimeNumber(day.low ?? raw.low, current.low || price);
+  current.open = safeRealtimeNumber(day.open ?? raw.open, current.open || price);
+  current.close = safeRealtimeNumber(day.close ?? raw.close ?? ltpc.cp, current.close || price);
+  current.timestamp = new Date(timestampMs).toISOString();
   current.stale = false;
 
+  // Keep the existing public market object synchronized immediately.
   state.market[index] = {
     ...(state.market[index] || {}),
     price,
@@ -954,11 +811,21 @@ function normalizeRealtimeTick(index, rawFeed) {
 
   return current;
 }
+
 function feedTimestamp(rawFeed) {
   return rawFeed?.currentTs || rawFeed?.current_ts || Date.now();
 }
 
 function handleRealtimeMessage(message) {
+  if (!globalThis.__eraRealtimeDiagnosticLogged) {
+    globalThis.__eraRealtimeDiagnosticLogged = true;
+    try {
+      const diagnostic = Buffer.isBuffer(message) ? message.toString("base64") : JSON.stringify(message);
+      console.log("[ERA][REALTIME_DIAGNOSTIC] first_message=" + diagnostic.slice(0, 12000));
+    } catch (error) {
+      console.log("[ERA][REALTIME_DIAGNOSTIC] first_message_unserializable=" + String(error?.message || error));
+    }
+  }
   const feed = extractRealtimeFeed(message);
   if (!feed) {
     // Some SDK versions expose decoded feed objects; if this is an opaque
