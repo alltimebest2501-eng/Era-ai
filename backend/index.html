@@ -587,6 +587,36 @@ $('tradeAlertConsider').onclick=()=>tradeAlertAction('CONSIDER');
 $('tradeAlertReject').onclick=()=>tradeAlertAction('REJECT');
 $('tradeAlertPaper').onclick=()=>tradeAlertAction('PAPER_TRADE');
 
+function applyRealtimeOptionTick(payload){
+  const key=payload?.instrumentKey;
+  const tick=payload?.tick;
+  if(!key||!tick||!S.optionData)return;
+  const rows=S.optionData.rows||S.optionData.data||[];
+  let changed=false;
+  for(const row of rows){
+    for(const sideName of ['call','put']){
+      const side=row?.[sideName];
+      if(side?.instrumentKey!==key)continue;
+      const prevLtp=Number(side.ltp);
+      const prevOi=Number(side.oi);
+      if(Number.isFinite(Number(tick.ltp))){side.changeLtp=Number(tick.ltp)-(Number.isFinite(Number(tick.closePrice))?Number(tick.closePrice):(Number.isFinite(Number(side.closePrice))?Number(side.closePrice):Number(tick.ltp)));side.ltp=Number(tick.ltp);}
+      if(Number.isFinite(Number(tick.oi))){side.changeOI=Number.isFinite(Number(tick.changeOI))?Number(tick.changeOI):side.changeOI;side.oi=Number(tick.oi);}
+      if(Number.isFinite(Number(tick.volume)))side.volume=Number(tick.volume);
+      if(Number.isFinite(Number(tick.iv)))side.iv=Number(tick.iv);
+      if(Number.isFinite(Number(tick.bidPrice)))side.bidPrice=Number(tick.bidPrice);
+      if(Number.isFinite(Number(tick.askPrice)))side.askPrice=Number(tick.askPrice);
+      if(Number.isFinite(prevLtp)&&Number.isFinite(Number(tick.ltp))&&prevLtp!==Number(tick.ltp))changed=true;
+      else if(Number.isFinite(prevOi)&&Number.isFinite(Number(tick.oi))&&prevOi!==Number(tick.oi))changed=true;
+      else if(Number.isFinite(Number(tick.volume))||Number.isFinite(Number(tick.iv)))changed=true;
+    }
+  }
+  if(changed){
+    S.optionData.updatedAt=payload.at||Date.now();
+    renderOptionMarket(S.optionData);
+    renderOptionRows();
+  }
+}
+
 function connectRealtimeSync(){
   if(!('EventSource' in window)){
     $('liveStatus').textContent='🟡 LIVE SYNC • Browser stream unavailable';
@@ -596,6 +626,7 @@ function connectRealtimeSync(){
   realtimeSource=new EventSource(BACKEND+'/api/realtime/stream');
   realtimeSource.addEventListener('snapshot',e=>{try{applyRealtimeSnapshot(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('tick',e=>{try{applyRealtimeTick(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('option-tick',e=>{try{applyRealtimeOptionTick(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('trade-alert',e=>{try{const d=JSON.parse(e.data);if(d?.alert)renderTradeAlertPopup(d.alert,true)}catch(_){}});
   realtimeSource.addEventListener('trade-alert-update',e=>{try{const d=JSON.parse(e.data);if(d?.alert&&currentTradeAlert?.id===d.alert.id)renderTradeAlertPopup(d.alert,true)}catch(_){}});
@@ -652,9 +683,10 @@ function optionRowsForDisplay(rows,spot){
   const atm=optionNearestIndex(data,spot);
   const mode=S.optionFilter||'ATM';
   if(mode==='ATM'){
-    const before=5, after=5;
-    const from=Math.max(0,Math.min(Math.max(0,data.length-11),atm-before));
-    return data.slice(from,from+11);
+    const before=10, after=10;
+    const windowSize=21;
+    const from=Math.max(0,Math.min(Math.max(0,data.length-windowSize),atm-before));
+    return data.slice(from,from+windowSize);
   }
   const sideKey=S.optionMode==='PUT'?'put':S.optionMode==='CALL'?'call':null;
   const score=(r)=>{
