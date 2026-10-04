@@ -185,7 +185,7 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
 .option-chain-title:active,.option-side-btn:active{transform:scale(.98)}
 .option-arrow{font-size:31px;line-height:1;font-weight:400}
 .option-chain-mode-note{text-align:center;color:#746d88;font-size:8px;font-weight:700;padding:5px 0 2px;letter-spacing:.2px}
-.option-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.option-table-wrap{overflow-x:auto;overflow-y:auto;max-height:min(560px,62dvh);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin}
 .option-chain-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
 .option-chain-table th{height:50px;padding:5px 6px;background:#fff;color:#746d88;border-bottom:1px solid rgba(78,66,120,.10);font-size:9px;font-weight:700;text-align:center;vertical-align:middle}
 .option-chain-table th small{display:block;font-size:8px;color:#918aa3;font-weight:500;margin-top:3px}
@@ -683,10 +683,7 @@ function optionRowsForDisplay(rows,spot){
   const atm=optionNearestIndex(data,spot);
   const mode=S.optionFilter||'ATM';
   if(mode==='ATM'){
-    const before=10, after=10;
-    const windowSize=21;
-    const from=Math.max(0,Math.min(Math.max(0,data.length-windowSize),atm-before));
-    return data.slice(from,from+windowSize);
+    return data;
   }
   const sideKey=S.optionMode==='PUT'?'put':S.optionMode==='CALL'?'call':null;
   const score=(r)=>{
@@ -747,7 +744,7 @@ function renderOptionRows(){
     const ce=r.call||{},pe=r.put||{};
     const coichg=optionOIChange(ce), poichg=optionOIChange(pe); const cltpchg=optionLtpChange(ce), pltpchg=optionLtpChange(pe);
     if(mode==='BOTH'){
-      return `<tr class="${isAtm?'atm-row':''}">
+      return `<tr class="${isAtm?'atm-row':''}" data-strike-row="${Number(r.strike)}">
         <td><span class="option-cell-main">${optionQty(ce.oi)}</span><span class="option-cell-sub ${coichg.up?'':'down'}">${esc(coichg.text)}</span></td>
         <td><span class="option-cell-main">${fmt(ce.ltp)}</span><span class="option-cell-sub ${cltpchg.up?'':'down'}">${esc(cltpchg.text)}</span></td>
         <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
@@ -758,7 +755,7 @@ function renderOptionRows(){
     const side=mode==='CALL'?ce:pe;
     const ch=optionOIChange(side); const ltpCh=optionLtpChange(side);
     const iv=Number(side.iv);
-    return `<tr class="${isAtm?'atm-row':''}">
+    return `<tr class="${isAtm?'atm-row':''}" data-strike-row="${Number(r.strike)}">
       <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
       <td><span class="option-cell-main">${fmt(side.ltp)}</span><span class="option-cell-sub ${ltpCh.up?'':'down'}">${esc(ltpCh.text)}</span></td>
       <td><span class="option-cell-main">${optionQty(side.oi)}</span><span class="option-cell-sub ${ch.up?'':'down'}">${esc(ch.text)}</span></td>
@@ -766,8 +763,15 @@ function renderOptionRows(){
       <td><span class="option-cell-main">${Number.isFinite(iv)&&iv>0?iv.toFixed(2):'—'}</span><span class="option-cell-sub">${Number.isFinite(iv)&&iv>0?'IV':'—'}</span></td>
     </tr>`;
   }).join('');
-  const atmRow=document.querySelector('#optionRows .atm-row');
-  if(atmRow)atmRow.scrollIntoView({block:'nearest'});
+  if((S.optionFilter||'ATM')==='ATM') {
+    const wrap=document.querySelector('.option-table-wrap');
+    const atmRow=wrap?.querySelector('#optionRows .atm-row');
+    if(wrap&&atmRow) {
+      requestAnimationFrame(()=>{
+        wrap.scrollTop=Math.max(0,atmRow.offsetTop-(wrap.clientHeight/2)+(atmRow.offsetHeight/2));
+      });
+    }
+  }
 }
 function optionExpiryLabel(value){
   const s=String(value||'');
