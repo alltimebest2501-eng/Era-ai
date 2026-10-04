@@ -1923,6 +1923,38 @@ async function refreshMarketData(requestedIndex = null) {
     };
   }
 
+  // Fresh Upstox V3 ticks remain authoritative over the REST quote snapshot.
+  // The REST scanner runs periodically and must not overwrite a live tick.
+  for (const index of Object.keys(INDICES)) {
+    const rt = realtime.perIndex[index];
+    if (rt && Number.isFinite(Number(rt.price)) && rt.stale === false) {
+      state.market[index] = {
+        ...(state.market[index] || {}),
+        price: Number(rt.price),
+        open: rt.open,
+        high: rt.high,
+        low: rt.low,
+        close: rt.close,
+        volume: rt.cumulativeVolume,
+        oi: rt.oi,
+        timestamp: rt.timestamp,
+        stale: false,
+        source: "upstox-v3-websocket",
+        realtime: {
+          tickChange: round(rt.tickChange, 4),
+          tickChangePct: round(rt.tickChangePct, 5),
+          tickVelocity: round(rt.tickVelocity, 5),
+          bid: rt.bid,
+          ask: rt.ask,
+          spread: rt.spread,
+          spreadPct: rt.spreadPct,
+          lastTradeQty: rt.lastTradeQty,
+          tickCount: rt.tickCount
+        }
+      };
+    }
+  }
+
   const extra =
     await fetchExtraMarketData();
 
