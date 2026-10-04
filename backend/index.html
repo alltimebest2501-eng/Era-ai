@@ -272,6 +272,9 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
 .paper-edit-actions{display:flex;gap:8px;margin-top:12px}
 .paper-edit-actions button{flex:1}
 @media(max-width:650px){.paper-entry-grid{grid-template-columns:1fr}.paper-position-grid{grid-template-columns:1fr 1fr}.paper-detail-grid{grid-template-columns:1fr}}
+
+.paper-order-hint{color:var(--text)!important;background:var(--card)!important;border:1px solid var(--line)!important;}
+.paper-order-hint *{color:var(--text)!important;}
 </style>
 
 <style>
@@ -471,7 +474,7 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
     </section>
     <section class="section" id="paperTradeSection">
       <div class="card panel">
-        <div class="panel-head"><h3>Place Paper Trade</h3><div class="paper-trade-nav"><button class="active" type="button" data-paper-jump="trade">Trade</button><button type="button" data-paper-jump="positions">Positions</button><button type="button" data-paper-jump="performance">Performance</button></div></div>
+        <div class="panel-head"><h3>Place Paper Trade</h3><div class="paper-trade-nav"><button class="active" type="button" data-paper-jump="trade">Trade</button><button type="button" data-view="paper-positions">Positions</button><button type="button" data-view="paper-performance">Performance</button></div></div>
         <div class="paper-side">
           <button id="paperBuySide" class="active-buy" type="button">BUY</button>
           <button id="paperSellSide" type="button">SELL</button>
@@ -498,19 +501,17 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
           <input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target">
         </div>
         <button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ PLACE PAPER BUY</button>
-        <div class="result-box" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
+        <div class="result-box paper-order-hint" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
         <div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div>
       </div>
     </section>
-    <section class="section" id="paperPositionsSection">
+div>
+
+  <div id="view-paper-positions" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Positions</h3><span>Open paper trades • tick-by-tick P&L</span></div><button class="pill" data-view="paper">← Paper Trade</button></div>
       <div class="card panel">
-        <div class="paper-performance-head"><div><h3 style="margin:0">Positions</h3><small style="color:var(--muted)">Open paper trades • tick-by-tick P&L</small></div><button class="pill" type="button" data-paper-jump="trade">← Paper Trade</button></div>
         <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
-      </div>
-    </section>
-    <section class="section" id="paperPerformanceSection">
-      <div class="card panel">
-        <div class="paper-performance-head"><div><h3 style="margin:0">Performance</h3><small style="color:var(--muted)">All paper trades, open + closed</small></div><button class="primary" style="width:auto;margin:0" data-view="paper-performance">View all</button></div>
       </div>
     </section>
   </div>
@@ -597,7 +598,7 @@ function safeAnswer(value){if(typeof value==='string')return value;if(Array.isAr
 function errorText(value){if(typeof value==='string')return value;if(value?.message)return String(value.message);if(value?.error?.message)return String(value.error.message);try{return JSON.stringify(value)}catch{return String(value)}}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=errorText(msg);$('toastContainer').appendChild(d);setTimeout(()=>d.remove(),3500)}
 async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
-function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-performance'){loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
+function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-positions'){loadPaper();loadPaperPerformance();}if(view==='paper-performance'){loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>setView(b.dataset.feature));
 function selected(){return S.analysis[S.index]||null} function marketOf(){return S.market[S.index]||selected()?.market||null}
@@ -1289,10 +1290,7 @@ document.querySelectorAll('[data-paper-jump]').forEach(btn=>{
   btn.onclick=()=>{
     const target=btn.dataset.paperJump;
     document.querySelectorAll('[data-paper-jump]').forEach(b=>b.classList.toggle('active',b===btn));
-    if(target==='performance'){setView('paper-performance');return;}
-    const map={trade:'paperTradeSection',positions:'paperPositionsSection'};
-    const el=$(map[target]);
-    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
+    if(target==='trade')setView('paper');
   };
 });
 $('paperBuySide').onclick=()=>setPaperSide('BUY');$('paperSellSide').onclick=()=>setPaperSide('SELL');$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;
