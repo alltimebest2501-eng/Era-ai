@@ -334,7 +334,17 @@ function renderAllAISignals(){const data=S.homeAnalyses||{};['NIFTY','BANKNIFTY'
 function renderSignal(){const a=selected(),tr=a?.trades?.[0];$('signalType').textContent=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a?.suggestion||'WAIT');$('signalOptionName').textContent=tr?`${S.index} ${tr.optionType} • Strike ${fmt(tr.strike)} • Expiry ${a?.options?.expiry||'—'}`:'No option setup yet';$('signalConfidence').textContent=a?`${a.confidence}% CONFIDENCE`:'—';$('signalBar').style.width=`${Math.max(0,Math.min(100,Number(a?.confidence)||0))}%`;$('signalStrike').textContent=tr?fmt(tr.strike):'—';$('signalEntry').textContent=tr?fmt(tr.entry):'—';$('signalSL').textContent=tr?fmt(tr.stopLoss):'—';$('signalT1').textContent=tr?fmt(tr.targets?.[0]):'—';$('signalReasons').textContent=whyText(a);$('signalWait').textContent=waitText(a)}
 function renderPortfolio(){const rows=S.activeTrades||[];$('portfolioCount').textContent=rows.length;$('historyCount').textContent=S.history.length;$('portfolioEngine').textContent=S.settings?.engineRunning?'RUNNING':'—';$('portfolioScan').textContent=S.settings?.lastScan?new Date(S.settings.lastScan).toLocaleTimeString('en-IN'):'—';$('portfolioRows').innerHTML=rows.length?rows.slice(0,30).map(t=>`<tr><td>${esc(t.index)}</td><td>${esc(t.optionType)} ${esc(t.signal)}</td><td>${fmt(t.strike)}</td><td>${fmt(t.entry)}</td><td>${fmt(t.stopLoss)}</td><td>${fmt(t.targets?.[0])}</td><td>${esc(t.confidence)}%</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No active trades.</td></tr>'}
 function renderTrades(){const rows=S.activeTrades||[];$('tradesGrid').innerHTML=rows.length?rows.map(t=>`<div class="card trade-card"><div class="trade-head"><div><div class="trade-title">${esc(t.index)} ${esc(t.optionType)} • ${esc(t.signal)}</div><div class="trade-meta">${esc(t.status||'SETUP')} • ${esc(t.direction||'')} • ${esc(t.confidence)}% confidence</div></div><span class="pill">${fmt(t.strike)}</span></div><div class="trade-fields"><div>OPTION<b>${esc(t.optionType)}</b></div><div>STRIKE<b>${fmt(t.strike)}</b></div><div>EXPIRY<b>${esc(selected()?.options?.expiry||'—')}</b></div><div>ENTRY<b>${fmt(t.entry)}</b></div><div>STOP LOSS<b>${fmt(t.stopLoss)}</b></div><div>TARGET 1<b>${fmt(t.targets?.[0])}</b></div><div>TARGET 2<b>${fmt(t.targets?.[1])}</b></div><div>CONFIDENCE<b>${esc(t.confidence)}%</b></div></div><div style="margin-top:10px;color:var(--muted);font-size:10px">RR 1:${esc(t.rr)} • ${esc(t.invalidation||'Risk condition defined')}</div><button class="primary use-trade" data-trade='${esc(JSON.stringify(t))}'>Use in Paper Trading</button></div>`).join(''):'<div class="card trade-card">ERA has no validated trade setup right now. NO TRADE is a valid decision.</div>';document.querySelectorAll('.use-trade').forEach(b=>b.onclick=()=>{const t=JSON.parse(b.dataset.trade.replace(/&#039;/g,"'"));$('paperIndex').value=t.index||S.index;$('paperType').value=t.optionType||'';$('paperStrike').value=t.strike||'';$('paperPrice').value=t.entry||'';$('paperSL').value=t.stopLoss||'';$('paperTarget').value=t.targets?.[0]||'';setView('paper')})}
-async function loadAnalysis(){try{const indexes=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];const results=await Promise.all(indexes.map(index=>api('/api/analysis?index='+encodeURIComponent(index)).then(d=>({index,d})).catch(error=>({index,error}))));const selectedResult=results.find(x=>x.index===S.index);const d=selectedResult?.d||results.find(x=>x.d)?.d;if(!d)throw new Error('Market analysis unavailable');S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};S.homeAnalyses={};results.forEach(x=>{if(x.d)S.homeAnalyses[x.index]=x.d});renderHome();renderHomeIndexCards();renderAllAISignals();renderMarket();renderSignal();renderPortfolio();renderTrades();if($('marketUpdated'))$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
+async function loadAnalysis(){try{const indexes=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];const results=await Promise.all(indexes.map(index=>api('/api/analysis?index='+encodeURIComponent(index)).then(d=>({index,d})).catch(error=>({index,error}))));const selectedResult=results.find(x=>x.index===S.index);const d=selectedResult?.d||results.find(x=>x.d)?.d;if(!d)throw new Error('Market analysis unavailable');S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};S.homeAnalyses={};results.forEach(x=>{if(x.d)S.homeAnalyses[x.index]=x.d});
+const safeRender=(fn)=>{try{fn()}catch(renderErr){console.warn('[ERA UI] render skipped:',renderErr?.message||renderErr)}};
+safeRender(renderHome);
+safeRender(renderHomeIndexCards);
+safeRender(renderAllAISignals);
+safeRender(renderMarket);
+safeRender(renderSignal);
+safeRender(renderPortfolio);
+safeRender(renderTrades);
+if($('marketUpdated'))$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
 
 // STEP 4 — LIVE MARKET SYNC
 // The backend already receives live ticks. This layer connects the existing UI
@@ -482,20 +492,79 @@ function closeEraChat(){
 }
 function bindEraChatFullscreen(){
   const card=$('.era-chat-card'),board=$('chatBoard');
-  if(!card||!board)return;
-  const openIfNeeded=()=>{if(!chatFullscreen)openEraChat()};
+  if(!card||!board||card.dataset.chatFullscreenBound==='1')return;
+  card.dataset.chatFullscreenBound='1';
+
+  const openIfNeeded=(e)=>{
+    if(chatFullscreen)return;
+    const t=e?.target;
+    if(t&&t.closest&&t.closest('.chat-compose,.era-chat-chips,.chat-photo-preview'))return;
+    openEraChat();
+  };
+
+  card.addEventListener('pointerup',openIfNeeded,{passive:true});
   card.addEventListener('click',openIfNeeded);
-  board.addEventListener('touchstart',e=>{if(!chatFullscreen)return;chatTouchStartY=e.touches[0]?.clientY||0;chatTouchLastY=chatTouchStartY},{passive:true});
-  board.addEventListener('touchmove',e=>{if(!chatFullscreen)return;chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;},{passive:true});
-  board.addEventListener('touchend',()=>{if(!chatFullscreen)return;const delta=chatTouchLastY-chatTouchStartY;if(delta>90&&board.scrollTop<=4)closeEraChat();chatTouchStartY=0;chatTouchLastY=0;});
-  card.addEventListener('touchstart',e=>{if(!chatFullscreen)return;chatTouchStartY=e.touches[0]?.clientY||0;chatTouchLastY=chatTouchStartY},{passive:true});
-  card.addEventListener('touchmove',e=>{if(!chatFullscreen)return;chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;},{passive:true});
-  card.addEventListener('touchend',()=>{if(!chatFullscreen)return;const delta=chatTouchLastY-chatTouchStartY;if(delta>110)closeEraChat();chatTouchStartY=0;chatTouchLastY=0;});
+
+  board.addEventListener('touchstart',e=>{
+    if(!chatFullscreen)return;
+    chatTouchStartY=e.touches[0]?.clientY||0;
+    chatTouchLastY=chatTouchStartY;
+  },{passive:true});
+
+  board.addEventListener('touchmove',e=>{
+    if(!chatFullscreen)return;
+    chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;
+  },{passive:true});
+
+  board.addEventListener('touchend',()=>{
+    if(!chatFullscreen)return;
+    const delta=chatTouchLastY-chatTouchStartY;
+    if(delta>90&&board.scrollTop<=8)closeEraChat();
+    chatTouchStartY=0;chatTouchLastY=0;
+  },{passive:true});
+
+  card.addEventListener('touchstart',e=>{
+    if(!chatFullscreen)return;
+    chatTouchStartY=e.touches[0]?.clientY||0;
+    chatTouchLastY=chatTouchStartY;
+  },{passive:true});
+
+  card.addEventListener('touchmove',e=>{
+    if(!chatFullscreen)return;
+    chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;
+  },{passive:true});
+
+  card.addEventListener('touchend',()=>{
+    if(!chatFullscreen)return;
+    const delta=chatTouchLastY-chatTouchStartY;
+    if(delta>110)closeEraChat();
+    chatTouchStartY=0;chatTouchLastY=0;
+  },{passive:true});
 }
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&chatFullscreen)closeEraChat()});
 
 let selectedImageData='';function addChatBubble(role,text,typing=false){const board=$('chatBoard');if(!board)return null;const b=document.createElement('div');b.className=`bubble ${role}${typing?' typing':''}`;b.textContent=safeAnswer(text);board.appendChild(b);board.scrollTop=board.scrollHeight;return b}function clearChatPhoto(){selectedImageData='';$('chatFile').value='';$('chatPhotoPreview').style.display='none';$('chatPhotoImg').removeAttribute('src')}
-async function askEra(){const input=$('homeChat'),q=input.value.trim();if(!q&&!selectedImageData)return;const visibleQuestion=q||'Analyze this screenshot';addChatBubble('user',selectedImageData?`${visibleQuestion} [Screenshot attached]`:visibleQuestion);input.value='';const typing=addChatBubble('era','ERA is checking the market…',true);try{const body={message:q,index:S.index};if(selectedImageData)body.image=selectedImageData;const d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});typing.textContent=safeAnswer(d.answer)||'No response';typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
+async function askEra(){const input=$('homeChat'),q=input.value.trim();if(!q&&!selectedImageData)return;const visibleQuestion=q||'Analyze this screenshot';addChatBubble('user',selectedImageData?`${visibleQuestion} [Screenshot attached]`:visibleQuestion);input.value='';const typing=addChatBubble('era','ERA is checking the market…',true);try{const body={message:q,index:S.index};if(selectedImageData)body.image=selectedImageData;let d;
+try{
+  d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});
+  typing.textContent=safeAnswer(d.answer)||'No response';
+}catch(chatErr){
+  const msg=String(chatErr?.message||'');
+  if(/more credits|max_tokens|can only afford|tokens/i.test(msg)){
+    const brain=await api('/api/ai/brain',{method:'POST',body:JSON.stringify({index:S.index,question:q||visibleQuestion})});
+    const b=brain?.brain||{};
+    const parts=[];
+    if(b.decision)parts.push(`Decision: ${b.decision}`);
+    if(b.summary)parts.push(b.summary);
+    if(Array.isArray(b.evidence)&&b.evidence.length)parts.push('Evidence:\n• '+b.evidence.slice(0,4).map(x=>typeof x==='string'?x:(x?.text||x?.reason||JSON.stringify(x))).join('\n• '));
+    if(Array.isArray(b.risks)&&b.risks.length)parts.push('Risk:\n• '+b.risks.slice(0,4).join('\n• '));
+    if(b.tradePlan)parts.push('Trade Plan:\n'+(typeof b.tradePlan==='string'?b.tradePlan:JSON.stringify(b.tradePlan,null,2)));
+    typing.textContent=safeAnswer(parts.join('\n\n')||'ERA could not generate a readable response.');
+  }else{
+    throw chatErr;
+  }
+}
+typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
 function selectIndex(k){S.index=k;localStorage.setItem('eraSelectedIndex',k);document.querySelectorAll('[data-index]').forEach(x=>x.classList.toggle('active',x.dataset.index===k));renderHome();renderMarket();renderSignal()}
 async function loadChart(){try{const index=$('chartIndex').value||S.index,interval=$('chartInterval').value||5;const d=await api(`/api/candles?index=${index}&interval=${interval}`);const c=d.candles||[];drawChart(c);$('chartUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');const closes=c.map(x=>Number(x[4]));const calcEma=(v,p)=>{if(v.length<p)return null;let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)e=(v[i]*(2/(p+1)))+e*(1-2/(p+1));return e};const rsiCalc=v=>{if(v.length<15)return null;let g=0,l=0;for(let i=1;i<15;i++){const z=v[i]-v[i-1];if(z>0)g+=z;else l-=z}let ag=g/14,al=l/14;for(let i=15;i<v.length;i++){const z=v[i]-v[i-1];ag=(ag*13+Math.max(z,0))/14;al=(al*13+Math.max(-z,0))/14}return al?100-(100/(1+ag/al)):100};$('chartEma9').textContent=fmt(calcEma(closes,9));$('chartEma20').textContent=fmt(calcEma(closes,20));$('chartRsi').textContent=fmt(rsiCalc(closes));const volSum=c.reduce((s,x)=>s+Math.max(0,Number(x[5]||0)),0);const weighted=volSum>0?c.reduce((s,x)=>s+(Number(x[4]||0)*Math.max(0,Number(x[5]||0))),0)/volSum:(closes.length?c.reduce((s,x)=>s+((Number(x[2]||0)+Number(x[3]||0)+Number(x[4]||0))/3),0)/closes.length:null);$('chartVwap').textContent=fmt(weighted);if($('chartVolume'))$('chartVolume').textContent=fmt(c.length?Number(c[c.length-1][5]||0):null)}catch(e){toast('Chart: '+errorText(e.message))}}
 function drawChart(c){const canvas=$('chartCanvas'),ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1,w=canvas.clientWidth||1200,h=330;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);if(!c.length){ctx.fillStyle='#8196b2';ctx.fillText('No candle data available.',20,30);return}const highs=c.map(x=>Number(x[2])),lows=c.map(x=>Number(x[3])),max=Math.max(...highs),min=Math.min(...lows),range=max-min||1;ctx.strokeStyle='rgba(24,48,76,.8)';for(let y=30;y<h;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const step=w/Math.max(1,c.length-1);ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();ctx.lineWidth=2;ctx.beginPath();c.forEach((x,i)=>{const y=20+(max-Number(x[4]))/range*(h-40);if(i===0)ctx.moveTo(i*step,y);else ctx.lineTo(i*step,y)});ctx.stroke();c.slice(-80).forEach((x,i)=>{const px=(i/(Math.max(1,Math.min(80,c.length)-1)))*w;const y=20+(max-Number(x[4]))/range*(h-40);ctx.fillStyle=Number(x[4])>=Number(x[1])?'#27e69b':'#ff527c';ctx.fillRect(px-1,y-1,3,3)})}
