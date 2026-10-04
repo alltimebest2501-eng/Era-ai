@@ -502,8 +502,8 @@ function bindEraChatFullscreen(){
     openEraChat();
   };
 
-  card.addEventListener('pointerup',openIfNeeded,{passive:true});
-  card.addEventListener('click',openIfNeeded);
+  board.addEventListener('pointerup',openIfNeeded,{passive:true});
+  board.addEventListener('click',openIfNeeded);
 
   board.addEventListener('touchstart',e=>{
     if(!chatFullscreen)return;
