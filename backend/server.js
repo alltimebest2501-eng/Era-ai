@@ -667,9 +667,6 @@ const realtime = {
   reconnects: 0,
   ticks: 0,
   perIndex: {},
-  optionTicks: new Map(),
-  optionKeys: new Set(),
-  optionMeta: new Map(),
   clients: new Set(),
   streamer: null,
   started: false,
@@ -720,10 +717,6 @@ function realtimeSnapshot() {
     ticks: realtime.ticks,
     marketOpen: isMarketHours(),
     indices: realtime.perIndex,
-    optionRealtime: {
-      subscribed: realtime.optionKeys.size,
-      ticks: realtime.optionTicks.size
-    },
     updatedAt: nowISO()
   };
 }
@@ -864,186 +857,8 @@ function normalizeRealtimeTick(index, rawFeed) {
   return current;
 }
 
-function optionRealtimeNumber(value, fallback = null) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : fallback;
-}
-
-function normalizeRealtimeOptionTick(instrumentKey, rawFeed) {
-  const raw = rawFeed || {};
-  const fullFeed = raw.fullFeed || raw.full_feed || {};
-  const marketFF =
-    fullFeed.marketFF ||
-    fullFeed.marketFf ||
-    raw.marketFF ||
-    raw.marketFf ||
-    {};
-  const firstLevel =
-    marketFF.firstLevelWithGreeks ||
-    raw.firstLevelWithGreeks ||
-    fullFeed.firstLevelWithGreeks ||
-    {};
-  const ltpc =
-    marketFF.ltpc ||
-    firstLevel.ltpc ||
-    fullFeed.ltpc ||
-    raw.ltpc ||
-    {};
-  const greeks =
-    marketFF.optionGreeks ||
-    firstLevel.optionGreeks ||
-    fullFeed.optionGreeks ||
-    raw.optionGreeks ||
-    {};
-  const price = optionRealtimeNumber(ltpc.ltp ?? raw.ltp, null);
-  if (!Number.isFinite(price)) return null;
-
-  const current = realtime.optionTicks.get(instrumentKey) || {
-    instrumentKey,
-    ltp: null,
-    previousLtp: null,
-    tickChange: 0,
-    tickChangePct: 0,
-    oi: null,
-    previousOi: null,
-    volume: null,
-    iv: null,
-    bidPrice: null,
-    askPrice: null,
-    closePrice: null,
-    tickCount: 0,
-    timestamp: null,
-    stale: true
-  };
-  const previousLtp = current.ltp;
-  const previousOi = current.oi;
-  const closePrice = optionRealtimeNumber(ltpc.cp ?? marketFF.closePrice ?? raw.closePrice, current.closePrice);
-  const oi = optionRealtimeNumber(marketFF.oi ?? raw.oi ?? firstLevel.oi, current.oi);
-  const volume = optionRealtimeNumber(marketFF.vtt ?? marketFF.volume ?? raw.vtt ?? raw.volume, current.volume);
-  const iv = optionRealtimeNumber(greeks.iv ?? greeks.impliedVolatility ?? marketFF.iv ?? raw.iv, current.iv);
-  const bidPrice = optionRealtimeNumber(firstLevel.bidP ?? marketFF.bidPrice ?? raw.bidPrice, current.bidPrice);
-  const askPrice = optionRealtimeNumber(firstLevel.askP ?? marketFF.askPrice ?? raw.askPrice, current.askPrice);
-  const timestampMs = optionRealtimeNumber(ltpc.ltt ?? raw.currentTs ?? feedTimestamp(rawFeed), Date.now());
-
-  current.previousLtp = previousLtp;
-  current.ltp = price;
-  current.tickChange = previousLtp == null ? 0 : price - previousLtp;
-  current.tickChangePct = previousLtp ? ((price - previousLtp) / previousLtp) * 100 : 0;
-  current.previousOi = previousOi;
-  current.oi = oi;
-  current.volume = volume;
-  current.iv = iv;
-  current.bidPrice = bidPrice;
-  current.askPrice = askPrice;
-  current.closePrice = closePrice;
-  current.tickCount += 1;
-  current.timestamp = new Date(timestampMs).toISOString();
-  current.stale = false;
-  realtime.optionTicks.set(instrumentKey, current);
-  return current;
-}
-
-function subscribeOptionRealtime(index, expiry, rows) {
-  const keys = [];
-  for (const row of rows || []) {
-    for (const sideName of ["call", "put"]) {
-      const key = row?.[sideName]?.instrumentKey;
-      if (!key) continue;
-      realtime.optionMeta.set(key, {
-        index,
-        expiry: expiry || row?.expiry || null,
-        strike: Number(row.strike),
-        side: sideName
-      });
-      keys.push(key);
-    }
-  }
-  const unique = [...new Set(keys)];
-  const fresh = unique.filter(key => !realtime.optionKeys.has(key));
-  const maxOptionKeys = 1400;
-  const available = Math.max(0, maxOptionKeys - realtime.optionKeys.size);
-  const toSubscribe = fresh.slice(0, available);
-  toSubscribe.forEach(key => realtime.optionKeys.add(key));
-
-  if (!toSubscribe.length) return;
-  if (realtime.streamer && realtime.status === "LIVE" && typeof realtime.streamer.subscribe === "function") {
-    try {
-      realtime.streamer.subscribe(toSubscribe, "full");
-      console.log(`[ERA] Option realtime subscribed: ${toSubscribe.length} (${index} ${expiry || "nearest"})`);
-    } catch (error) {
-      console.error("[ERA] Option realtime subscribe error:", apiError(error));
-    }
-  }
-}
-
-function subscribePaperPositionRealtime(position) {
-  const key = position?.instrumentKey;
-  if (!key) return;
-  realtime.optionMeta.set(key, {
-    index: position.index,
-    expiry: position.expiry || null,
-    strike: Number(position.strike),
-    side: paperSide(position).toLowerCase()
-  });
-  const already = realtime.optionKeys.has(key);
-  realtime.optionKeys.add(key);
-  if (!already && realtime.streamer && realtime.status === "LIVE" && typeof realtime.streamer.subscribe === "function") {
-    try {
-      realtime.streamer.subscribe([key], "full");
-      console.log(`[ERA] Paper realtime subscribed: ${key}`);
-    } catch (error) {
-      console.error("[ERA] Paper realtime subscribe error:", apiError(error));
-    }
-  }
-}
-
 function feedTimestamp(rawFeed) {
   return rawFeed?.currentTs || rawFeed?.current_ts || Date.now();
-}
-
-function applyPaperRealtimeTick(instrumentKey, optionTick) {
-  if (!instrumentKey || !optionTick || !Number.isFinite(Number(optionTick.ltp))) return;
-  const current = Number(optionTick.ltp);
-  const positions = (state.paper?.positions || []).filter(p => p.instrumentKey === instrumentKey);
-  if (!positions.length) return;
-
-  const livePositions = [];
-  const closedPositions = [];
-  for (const position of positions) {
-    position.currentPrice = current;
-    position.unrealizedPnl = paperUnrealizedPnl(position, current);
-    position.pnlPercent = paperPnlPercent(position, current);
-    position.lastTickAt = optionTick.timestamp || nowISO();
-
-    const expiryMs = position.expiry ? new Date(`${String(position.expiry).slice(0,10)}T15:30:00+05:30`).getTime() : NaN;
-    const trigger = Number.isFinite(expiryMs) && Date.now() >= expiryMs ? "EXPIRY" : paperTrigger(position, current);
-    if (trigger) {
-      const closed = settlePaperPosition(position, current, trigger);
-      if (closed) {
-        closedPositions.push(closed);
-        try {
-          sendPush({
-            type:"paper-trade",
-            title:`ERA Paper ${trigger.replace(/_/g," ")}`,
-            body:`${closed.index} ${closed.optionType} ${closed.strike} • Exit ₹${Number(closed.exit).toFixed(2)} • P&L ₹${Number(closed.pnl).toFixed(2)}`,
-            data:closed
-          }).catch(()=>{});
-        } catch (_) {}
-      }
-    } else {
-      livePositions.push(position);
-    }
-  }
-
-  state.paper.unrealizedPnl = (state.paper.positions || []).reduce((sum,p)=>sum+Number(p.unrealizedPnl||0),0);
-  const updatedAt = nowISO();
-  for (const position of livePositions) {
-    realtimeBroadcast("paper-position-update", { type:"MARK", position, paper:{unrealizedPnl:state.paper.unrealizedPnl}, updatedAt });
-  }
-  for (const closed of closedPositions) {
-    realtimeBroadcast("paper-position-update", { type:"CLOSED", position:closed, paper:state.paper, updatedAt });
-  }
-  if (closedPositions.length) saveState();
 }
 
 function handleRealtimeMessage(message) {
@@ -1072,33 +887,6 @@ function handleRealtimeMessage(message) {
         tickChange: round(tick.tickChange, 4),
         tickChangePct: round(tick.tickChangePct, 5),
         tickVelocity: round(tick.tickVelocity, 5)
-      },
-      at: realtime.lastTickAt
-    });
-  }
-
-  const feeds = feed?.feeds || feed?.data?.feeds || feed?.data || {};
-  for (const [instrumentKey, raw] of Object.entries(feeds)) {
-    if (!realtime.optionKeys.has(instrumentKey)) continue;
-    const optionTick = normalizeRealtimeOptionTick(instrumentKey, raw);
-    if (!optionTick) continue;
-    applyPaperRealtimeTick(instrumentKey, optionTick);
-    const meta = realtime.optionMeta.get(instrumentKey) || {};
-    realtimeBroadcast("option-tick", {
-      instrumentKey,
-      ...meta,
-      tick: {
-        ltp: round(optionTick.ltp, 4),
-        closePrice: optionTick.closePrice == null ? null : round(optionTick.closePrice, 4),
-        changeLtp: optionTick.closePrice == null ? null : round(optionTick.ltp - optionTick.closePrice, 4),
-        tickChange: round(optionTick.tickChange, 4),
-        tickChangePct: round(optionTick.tickChangePct, 5),
-        oi: optionTick.oi == null ? null : Math.round(optionTick.oi),
-        volume: optionTick.volume == null ? null : Math.round(optionTick.volume),
-        iv: optionTick.iv == null ? null : round(optionTick.iv, 4),
-        bidPrice: optionTick.bidPrice == null ? null : round(optionTick.bidPrice, 4),
-        askPrice: optionTick.askPrice == null ? null : round(optionTick.askPrice, 4),
-        timestamp: optionTick.timestamp
       },
       at: realtime.lastTickAt
     });
@@ -1152,15 +940,6 @@ function startRealtimeMarketFeed() {
       realtime.connectedAt = nowISO();
       realtime.lastError = null;
       realtimeBroadcast("status", realtimeSnapshot());
-      if (realtime.optionKeys.size && typeof streamer.subscribe === "function") {
-        try {
-          streamer.subscribe([...realtime.optionKeys], "full");
-          console.log(`[ERA] Option realtime resubscribed: ${realtime.optionKeys.size}`);
-        } catch (error) {
-          realtime.lastError = apiError(error);
-          console.error("[ERA] Option realtime resubscribe error:", realtime.lastError);
-        }
-      }
       console.log("[ERA] Upstox V3 realtime LIVE");
     });
 
@@ -3554,23 +3333,6 @@ function normalizeOptionSide(
         marketData.lastPrice ??
         side.ltp ??
         0
-      ),
-
-    closePrice:
-      safeNumber(
-        marketData.close_price ??
-        marketData.closePrice ??
-        side.close_price ??
-        side.closePrice ??
-        0
-      ),
-
-    changeLtp:
-      safeNumber(
-        marketData.ltp != null && marketData.close_price != null
-          ? Number(marketData.ltp) - Number(marketData.close_price)
-          : side.changeLtp ??
-            0
       ),
 
     bidPrice:
@@ -6719,25 +6481,6 @@ app.get(
           greeks
         );
 
-      subscribeOptionRealtime(index, chain.expiry || expiry, rows);
-
-      // Overlay the freshest websocket marks so a newly opened chain does not
-      // wait for another REST refresh before showing the latest option prices.
-      for (const row of rows) {
-        for (const sideName of ["call", "put"]) {
-          const side = row?.[sideName];
-          const live = side?.instrumentKey ? realtime.optionTicks.get(side.instrumentKey) : null;
-          if (!side || !live) continue;
-          if (Number.isFinite(Number(live.ltp))) {
-            side.changeLtp = live.closePrice == null ? 0 : Number(live.ltp) - Number(live.closePrice);
-            side.ltp = Number(live.ltp);
-          }
-          if (Number.isFinite(Number(live.oi))) side.oi = Number(live.oi);
-          if (Number.isFinite(Number(live.volume))) side.volume = Number(live.volume);
-          if (Number.isFinite(Number(live.iv))) side.iv = Number(live.iv);
-        }
-      }
-
       const summary =
         calculateOptionSummary(
           rows,
@@ -8120,48 +7863,12 @@ function paperOpenExposure() {
 function paperOpenRisk() {
   return (state.paper?.positions || []).reduce((sum, p) => {
     const entry = Number(p.entry || 0), stop = Number(p.stopLoss || 0), qty = Number(p.quantity || 0);
-    const riskPerUnit = paperSide(p) === "SELL" ? stop - entry : entry - stop;
-    return sum + (riskPerUnit > 0 && qty > 0 ? riskPerUnit * qty : 0);
+    return sum + (entry > stop && qty > 0 ? (entry - stop) * qty : 0);
   }, 0);
 }
 
 function paperIndexExposure(index) {
   return (state.paper?.positions || []).filter(p => String(p.index || '') === String(index || '')).reduce((sum, p) => sum + Number(p.entry || 0) * Number(p.quantity || 0), 0);
-}
-
-function paperSide(value = {}) {
-  return String(value.side || "BUY").toUpperCase() === "SELL" ? "SELL" : "BUY";
-}
-
-function paperUnrealizedPnl(position, currentPrice) {
-  const entry = Number(position?.entry || 0);
-  const current = Number(currentPrice || 0);
-  const qty = Number(position?.quantity || 0);
-  if (!(entry > 0) || !(current > 0) || !(qty > 0)) return 0;
-  return paperSide(position) === "SELL"
-    ? (entry - current) * qty
-    : (current - entry) * qty;
-}
-
-function paperPnlPercent(position, currentPrice) {
-  const entry = Number(position?.entry || 0);
-  if (!(entry > 0)) return 0;
-  return (paperUnrealizedPnl(position, currentPrice) / (entry * Math.max(1, Number(position?.quantity || 0)))) * 100;
-}
-
-function paperTrigger(position, currentPrice) {
-  const current = Number(currentPrice || 0);
-  const stop = Number(position?.stopLoss || 0);
-  const target = Number(position?.target || 0);
-  if (!(current > 0)) return null;
-  if (paperSide(position) === "SELL") {
-    if (stop > 0 && current >= stop) return "SL_HIT";
-    if (target > 0 && current <= target) return "TARGET_HIT";
-  } else {
-    if (stop > 0 && current <= stop) return "SL_HIT";
-    if (target > 0 && current >= target) return "TARGET_HIT";
-  }
-  return null;
 }
 
 function riskSnapshot(trade = null, requestedQuantity = null) {
@@ -8212,12 +7919,11 @@ function calculateRiskSizing(trade, requestedQuantity = null) {
   const maxRiskAmount = startingCapital * (allowedTradeRiskPct / 100);
   const entry = Number(trade.entry || 0);
   const stop = Number(trade.stopLoss || 0);
-  const side = paperSide(trade);
-  const perUnitRisk = side === "SELL" ? stop - entry : entry - stop;
+  const perUnitRisk = entry - stop;
   const lotSize = Math.max(1, Math.floor(Number(INDICES[trade.index]?.lotSize || 1)));
 
   if (!(entry > 0) || !(stop > 0) || !(perUnitRisk > 0)) {
-    return { ok: false, reason: side === "SELL" ? "Invalid entry/stop values for a SELL paper trade." : "Invalid entry/stop values." };
+    return { ok: false, reason: "Invalid entry/stop values." };
   }
 
   const maxRiskQtyRaw = Math.floor(maxRiskAmount / perUnitRisk);
@@ -8242,7 +7948,6 @@ function calculateRiskSizing(trade, requestedQuantity = null) {
 
   return {
     ok: true,
-    side,
     qty,
     lotSize,
     entry,
@@ -8274,9 +7979,8 @@ function riskCheck(trade, requestedQuantity = null) {
   if (orderValue > cash) return { ok: false, reason: "Insufficient paper cash for this trade.", code:"CASH", risk:snapshot };
   return { ...sizing, ok: true, reason: "All deterministic risk checks passed.", code:"PASS", risk:snapshot };
 }
-function validateManualPaperOrder(b) {
+function validateManualPaperBuy(b) {
   const price = Number(b.price || b.entry || 0);
-  const side = paperSide(b);
   if (!(price > 0)) return { ok: false, reason: "Valid order price is required." };
   if (riskConfig().killSwitch) return { ok: false, reason: "ERA risk kill switch is ON." };
   if ((state.paper.positions || []).length >= Number(state.risk.maxPositions || 3)) return { ok: false, reason: "Maximum open paper positions reached." };
@@ -8285,16 +7989,9 @@ function validateManualPaperOrder(b) {
   if (!b.index || !b.optionType || !(Number(b.strike) > 0) || !b.instrumentKey) return { ok: false, reason: "Exact index, CE/PE, strike and instrument are required." };
 
   const stop = Number(b.stopLoss || 0);
-  const target = Number(b.target || b.targets?.[0] || 0);
-  if (!(stop > 0)) return { ok: false, reason: "Valid stop loss is required." };
-  if (side === "BUY" && !(price > stop)) return { ok: false, reason: "For BUY, stop loss must be below entry price." };
-  if (side === "SELL" && !(stop > price)) return { ok: false, reason: "For SELL, stop loss must be above entry price." };
-  if (target > 0) {
-    if (side === "BUY" && !(target > price)) return { ok: false, reason: "For BUY, target must be above entry price." };
-    if (side === "SELL" && !(target < price)) return { ok: false, reason: "For SELL, target must be below entry price." };
-  }
+  if (!(stop > 0) || price <= stop) return { ok: false, reason: "Valid stop loss below entry price is required." };
 
-  const sizing = calculateRiskSizing({ ...b, entry: price, stopLoss: stop, side }, b.quantity);
+  const sizing = calculateRiskSizing({ ...b, entry: price, stopLoss: stop }, b.quantity);
   if (!sizing.ok) return sizing;
 
   const startingCapital = Number(state.paper.startingCapital || 100000);
@@ -8315,10 +8012,10 @@ function validateManualPaperOrder(b) {
   const indexExposureLimit = startingCapital * riskConfig().maxSingleIndexExposure / 100;
   if (indexExposure > indexExposureLimit) return { ok: false, reason: "Maximum single-index exposure limit reached." };
 
-  const positionKey = [b.index, b.optionType, b.strike, b.instrumentKey, side].join("|");
-  if ((state.paper.positions || []).some(p => [p.index, p.optionType, p.strike, p.instrumentKey, paperSide(p)].join("|") === positionKey)) return { ok: false, reason: `A paper ${side} position for this exact contract is already open.` };
+  const positionKey = [b.index, b.optionType, b.strike, b.instrumentKey].join("|");
+  if ((state.paper.positions || []).some(p => [p.index, p.optionType, p.strike, p.instrumentKey].join("|") === positionKey)) return { ok: false, reason: "A paper position for this exact contract is already open." };
 
-  return { ...sizing, ok: true, qty: sizing.qty, price, value, side, target };
+  return { ...sizing, ok: true, qty: sizing.qty, price, value };
 }
 app.get("/api/candles", async (req, res) => {
   try {
@@ -8377,7 +8074,6 @@ function appendExecutionEvent(event = {}) {
     eventType: String(event.eventType || "OPEN").toUpperCase(),
     executionType: String(event.executionType || "PAPER").toUpperCase(),
     side: String(event.side || "BUY").toUpperCase(),
-    positionSide: event.positionSide ? paperSide({side:event.positionSide}) : (event.metadata?.positionSide ? paperSide({side:event.metadata.positionSide}) : null),
     index: event.index || null,
     optionType: event.optionType || null,
     strike: Number.isFinite(Number(event.strike)) ? Number(event.strike) : null,
@@ -8416,7 +8112,6 @@ function buildPermanentTradeHistory(filters = {}) {
     if (!trade) {
       trade = {
         tradeId: event.tradeId, executionType: event.executionType || "PAPER", index: event.index,
-        side: event.positionSide || (event.metadata?.positionSide ? paperSide({side:event.metadata.positionSide}) : "BUY"),
         optionType: event.optionType, strike: event.strike, expiry: event.expiry, instrumentKey: event.instrumentKey,
         quantity: 0, entry: null, exit: null, stopLoss: event.stopLoss || null, targets: event.targets || [],
         pnl: 0, pnlPercent: null, result: null, reasoning: event.reasoning || null, confidence: event.confidence ?? null,
@@ -8429,7 +8124,6 @@ function buildPermanentTradeHistory(filters = {}) {
       trade.entry = event.price; trade.openedAt = event.executedAt; trade.quantity = event.quantity;
       trade.stopLoss = event.stopLoss || trade.stopLoss; trade.targets = event.targets?.length ? event.targets : trade.targets;
       trade.reasoning = event.reasoning || trade.reasoning; trade.confidence = event.confidence ?? trade.confidence;
-      trade.side = event.positionSide || trade.side || "BUY";
       trade.status = "OPEN";
     } else if (event.eventType === "PARTIAL_EXIT" || event.eventType === "CLOSE") {
       trade.exit = event.price; trade.closedAt = event.executedAt; trade.pnl += Number(event.pnl || 0);
@@ -8494,16 +8188,13 @@ function settlePaperPosition(position, exitPrice, reason="MANUAL_EXIT"){
   const exit=Number(exitPrice||0);
   if(!qty || !Number.isFinite(exit) || exit<=0) return null;
   const entry=Number(position.entry||0);
-  const side=paperSide(position);
-  const pnl=side==="SELL" ? (entry-exit)*qty : (exit-entry)*qty;
+  const pnl=(exit-entry)*qty;
   const closedAt=nowISO();
   const closed={
     id:`C${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
     positionId:position.id,
-    tradeId:position.tradeId||null,
     alertId:position.alertId||null,
     index:position.index,
-    side,
     optionType:position.optionType,
     strike:position.strike,
     expiry:position.expiry||null,
@@ -8513,31 +8204,27 @@ function settlePaperPosition(position, exitPrice, reason="MANUAL_EXIT"){
     exit,
     stopLoss:Number(position.stopLoss||0),
     targets:Array.isArray(position.targets)?position.targets.slice(0,3):[],
-    target:Number(position.target||0),
     pnl,
     pnlPercent:entry>0?(pnl/(entry*qty))*100:0,
     reason,
     openedAt:position.openedAt||null,
     closedAt,
     confidence:position.confidence??null,
-    reasoning:position.reasoning||null,
-    marginUsed:Number(position.marginUsed||entry*qty)
+    reasoning:position.reasoning||null
   };
-  if(side==="SELL") state.paper.cash -= exit*qty;
-  else state.paper.cash += exit*qty;
+  state.paper.cash += exit*qty;
   state.paper.realizedPnl += pnl;
   state.paper.closedTrades=Array.isArray(state.paper.closedTrades)?state.paper.closedTrades:[];
   state.paper.closedTrades.unshift(closed);
   state.paper.closedTrades=state.paper.closedTrades.slice(0,500);
   state.paper.positions=state.paper.positions.filter(p=>p.id!==position.id);
-  state.paper.orders.unshift({id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"SELL",positionSide:side,index:closed.index,optionType:closed.optionType,strike:closed.strike,expiry:closed.expiry,instrumentKey:closed.instrumentKey,quantity:qty,price:exit,positionId:closed.positionId,reason,createdAt:closedAt});
+  state.paper.orders.unshift({id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"SELL",index:closed.index,optionType:closed.optionType,strike:closed.strike,expiry:closed.expiry,instrumentKey:closed.instrumentKey,quantity:qty,price:exit,positionId:closed.positionId,reason,createdAt:closedAt});
   state.paper.orders=state.paper.orders.slice(0,500);
   appendExecutionEvent({
-    tradeId:position.tradeId || `T${position.id}`, eventType:"CLOSE", executionType:"PAPER", side:"SELL", positionSide:side, index:closed.index,
+    tradeId:position.tradeId || `T${position.id}`, eventType:"CLOSE", executionType:"PAPER", side:"SELL", index:closed.index,
     optionType:closed.optionType, strike:closed.strike, expiry:closed.expiry, instrumentKey:closed.instrumentKey, quantity:qty,
     price:exit, stopLoss:closed.stopLoss, targets:closed.targets, pnl:closed.pnl, pnlPercent:closed.pnlPercent,
-    reason, result:reason, confidence:closed.confidence, reasoning:closed.reasoning, source:"PAPER", alertId:closed.alertId, positionId:closed.positionId,
-    metadata:{positionSide:side}
+    reason, result:reason, confidence:closed.confidence, reasoning:closed.reasoning, source:"PAPER", alertId:closed.alertId, positionId:closed.positionId
   });
   return closed;
 }
@@ -8561,12 +8248,13 @@ async function refreshPaperPositions(priceOverrides={}){
       if(ltp>0) current=ltp;
     }
     p.currentPrice=current;
-    p.unrealizedPnl=paperUnrealizedPnl(p,current);
-    p.pnlPercent=paperPnlPercent(p,current);
+    p.unrealizedPnl=(current-Number(p.entry||0))*Number(p.quantity||0);
+    p.pnlPercent=Number(p.entry)>0?((current-Number(p.entry))/Number(p.entry))*100:0;
     const expiryMs=p.expiry?new Date(`${String(p.expiry).slice(0,10)}T15:30:00+05:30`).getTime():NaN;
     let trigger=null;
     if(Number.isFinite(expiryMs) && Date.now()>=expiryMs) trigger="EXPIRY";
-    else trigger=paperTrigger(p,current);
+    else if(Number(p.stopLoss)>0 && current<=Number(p.stopLoss)) trigger="SL_HIT";
+    else if(Number(p.target)>0 && current>=Number(p.target)) trigger="TARGET_HIT";
     if(trigger){
       const c=settlePaperPosition(p,current,trigger);
       if(c){
@@ -8621,15 +8309,15 @@ app.post("/api/paper/order", requireAuth, (req,res)=>{
       const closeQty=Math.min(qty,Number(pos.quantity||0));
       if(closeQty<=0) return res.status(400).json({ok:false,error:"Paper position has no open quantity."});
       if(closeQty<Number(pos.quantity||0)){
-        const entry=Number(pos.entry||0), positionSide=paperSide(pos), pnl=positionSide==="SELL"?(entry-price)*closeQty:(price-entry)*closeQty;
+        const entry=Number(pos.entry||0), pnl=(price-entry)*closeQty;
         const partialAt=nowISO();
         const remainingQuantity=Number(pos.quantity||0)-closeQty;
-        if(positionSide==="SELL") state.paper.cash-=price*closeQty; else state.paper.cash+=price*closeQty; state.paper.realizedPnl+=pnl; pos.quantity=remainingQuantity;
+        state.paper.cash+=price*closeQty; state.paper.realizedPnl+=pnl; pos.quantity=remainingQuantity;
         const partialClosed={id:`C${Date.now()}-${Math.random().toString(36).slice(2,7)}`,positionId:pos.id,alertId:pos.alertId||null,index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry||null,instrumentKey:pos.instrumentKey||null,quantity:closeQty,entry,exit:price,stopLoss:Number(pos.stopLoss||0),targets:Array.isArray(pos.targets)?pos.targets.slice(0,3):[],pnl,pnlPercent:entry>0?(pnl/(entry*closeQty))*100:0,reason:"PARTIAL_EXIT",openedAt:pos.openedAt||null,closedAt:partialAt,remainingQuantity,confidence:pos.confidence??null,reasoning:pos.reasoning||null};
         state.paper.closedTrades=Array.isArray(state.paper.closedTrades)?state.paper.closedTrades:[];
         state.paper.closedTrades.unshift(partialClosed); state.paper.closedTrades=state.paper.closedTrades.slice(0,500);
         appendExecutionEvent({tradeId:pos.tradeId || `T${pos.id}`,eventType:"PARTIAL_EXIT",executionType:"PAPER",side:"SELL",index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,stopLoss:pos.stopLoss,targets:pos.targets,pnl,pnlPercent:entry>0?(pnl/(entry*closeQty))*100:0,reason:"PARTIAL_EXIT",result:"PARTIAL_EXIT",confidence:pos.confidence,reasoning:pos.reasoning,source:"PAPER",alertId:pos.alertId,positionId:pos.id});
-        state.paper.orders.unshift({id:`O${Date.now()}`,side:"SELL",positionSide, index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,positionId:pos.id,reason:"PARTIAL_EXIT",createdAt:partialAt});
+        state.paper.orders.unshift({id:`O${Date.now()}`,side:"SELL",index:pos.index,optionType:pos.optionType,strike:pos.strike,expiry:pos.expiry,instrumentKey:pos.instrumentKey,quantity:closeQty,price,positionId:pos.id,reason:"PARTIAL_EXIT",createdAt:partialAt});
         realtimeBroadcast("paper-position-update", { type:"PARTIAL_EXIT", position:partialClosed, paper:state.paper, updatedAt:partialAt });
       } else {
         const closed=settlePaperPosition(pos,price,String(b.reason||"MANUAL_EXIT"));
@@ -8641,47 +8329,16 @@ app.post("/api/paper/order", requireAuth, (req,res)=>{
       return res.json({ok:true,order:state.paper.orders[0],paper:state.paper});
     }
 
-    const validation=validateManualPaperOrder(b);
+    const validation=validateManualPaperBuy(b);
     if(!validation.ok) return res.status(403).json({ok:false,error:validation.reason});
     const openedAt=nowISO();
     const tradeId=`T${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
-    const position={id:`P${Date.now()}-${Math.random().toString(36).slice(2,7)}`,tradeId,index:b.index||"NIFTY",side,optionType:b.optionType||"",strike:Number(b.strike||0),expiry:b.expiry||null,instrumentKey:b.instrumentKey||null,quantity:validation.qty,entry:validation.price,currentPrice:validation.price,unrealizedPnl:0,pnlPercent:0,stopLoss:Number(b.stopLoss||0),targets:Array.isArray(b.targets)?b.targets.map(Number).filter(Number.isFinite).slice(0,3):[],target:Number(b.target||b.targets?.[0]||0),confidence:b.confidence??null,reasoning:b.reasoning||null,openedAt,status:"RUNNING",entryMode:b.entryMode||"market",source:b.source||"MANUAL_PAPER",marginUsed:validation.value,lastTickAt:openedAt};
-    if(side==="SELL") state.paper.cash+=validation.value;
-    else state.paper.cash-=validation.value;
-    state.paper.positions.push(position);
-    const order={id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side,positionSide:side,index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,positionId:position.id,source:position.source,createdAt:openedAt};
+    const position={id:`P${Date.now()}-${Math.random().toString(36).slice(2,7)}`,tradeId,index:b.index||"NIFTY",optionType:b.optionType||"",strike:Number(b.strike||0),expiry:b.expiry||null,instrumentKey:b.instrumentKey||null,quantity:validation.qty,entry:validation.price,currentPrice:price,unrealizedPnl:0,pnlPercent:0,stopLoss:Number(b.stopLoss||0),targets:Array.isArray(b.targets)?b.targets.map(Number).filter(Number.isFinite).slice(0,3):[],target:Number(b.target||b.targets?.[0]||0),confidence:b.confidence??null,reasoning:b.reasoning||null,openedAt,status:"RUNNING",entryMode:b.entryMode||"market",source:b.source||"MANUAL_PAPER"};
+    state.paper.cash-=validation.value; state.paper.positions.push(position);
+    const order={id:`O${Date.now()}-${Math.random().toString(36).slice(2,6)}`,side:"BUY",index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,positionId:position.id,source:position.source,createdAt:openedAt};
     state.paper.orders.unshift(order); state.paper.orders=state.paper.orders.slice(0,500);
-    appendExecutionEvent({tradeId,eventType:"OPEN",executionType:"PAPER",side,positionSide:side,index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,stopLoss:position.stopLoss,targets:position.targets,confidence:position.confidence,reasoning:position.reasoning,source:position.source,positionId:position.id,metadata:{positionSide:side}});
-    subscribePaperPositionRealtime(position);
-    saveState();
+    appendExecutionEvent({tradeId,eventType:"OPEN",executionType:"PAPER",side:"BUY",index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:validation.qty,price:validation.price,stopLoss:position.stopLoss,targets:position.targets,confidence:position.confidence,reasoning:position.reasoning,source:position.source,positionId:position.id});
     res.json({ok:true,order,position,paper:state.paper});
-  } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
-});
-
-app.post("/api/paper/edit", requireAuth, (req,res)=>{
-  try {
-    const positionId=String(req.body?.positionId||"");
-    const position=(state.paper.positions||[]).find(p=>p.id===positionId);
-    if(!position) return res.status(404).json({ok:false,error:"Paper position not found."});
-    const side=paperSide(position);
-    const entry=Number(position.entry||0);
-    const stop=req.body?.stopLoss===undefined ? Number(position.stopLoss||0) : Number(req.body.stopLoss||0);
-    const target=req.body?.target===undefined ? Number(position.target||0) : Number(req.body.target||0);
-    if(!(stop>0)) return res.status(400).json({ok:false,error:"Valid stop loss is required."});
-    if(side==="BUY" && !(stop<entry)) return res.status(400).json({ok:false,error:"For BUY, stop loss must be below entry price."});
-    if(side==="SELL" && !(stop>entry)) return res.status(400).json({ok:false,error:"For SELL, stop loss must be above entry price."});
-    if(target>0){
-      if(side==="BUY" && !(target>entry)) return res.status(400).json({ok:false,error:"For BUY, target must be above entry price."});
-      if(side==="SELL" && !(target<entry)) return res.status(400).json({ok:false,error:"For SELL, target must be below entry price."});
-    }
-    position.stopLoss=stop;
-    position.target=target;
-    position.targets=[target].filter(v=>v>0);
-    position.lastEditedAt=nowISO();
-    appendExecutionEvent({tradeId:position.tradeId,eventType:"MODIFY",executionType:"PAPER",side:"BUY",positionSide:side,index:position.index,optionType:position.optionType,strike:position.strike,expiry:position.expiry,instrumentKey:position.instrumentKey,quantity:position.quantity,price:position.entry,stopLoss:stop,targets:position.targets,reason:"MANUAL_EDIT",result:"MODIFIED",source:"PAPER",positionId:position.id,metadata:{positionSide:side}});
-    saveState();
-    realtimeBroadcast("paper-position-update",{type:"MODIFIED",position,paper:state.paper,updatedAt:nowISO()});
-    res.json({ok:true,position,paper:state.paper,updatedAt:nowISO()});
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
@@ -8709,7 +8366,7 @@ app.post("/api/paper/mark", requireAuth, async (req,res)=>{
   } catch(error){res.status(400).json({ok:false,error:apiError(error)});}
 });
 
-app.get("/api/journal", requireAuth, (req,res)=>{ const tradeId=String(req.query.tradeId||"").trim(); const journal=tradeId?state.journal.filter(x=>String(x.tradeId||"")===tradeId):state.journal; res.json({ok:true,journal:journal.slice(0,500)}); });
+app.get("/api/journal", requireAuth, (req,res)=>res.json({ok:true,journal:state.journal.slice(0,500)}));
 app.post("/api/journal", requireAuth, (req,res)=>{
   try {
     const b=req.body||{}; const record={id:b.id||`J${Date.now()}`,createdAt:b.createdAt||nowISO(),...b};
