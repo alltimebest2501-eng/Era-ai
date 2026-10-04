@@ -152,6 +152,77 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
   .toast{width:100%!important}
 }
 
+
+/* ============================================================
+   ERA OPTION CHAIN — broker-style mobile option-chain UI
+   ============================================================ */
+.option-chain-section{max-width:980px;margin:0 auto}
+.option-market-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 15px;margin-bottom:10px}
+.option-market-name{font-size:17px;font-weight:800}
+.option-market-price-row{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.option-market-price-row strong{font-size:31px;letter-spacing:-.7px}
+.option-market-price-row span{font-size:13px;font-weight:700}
+.option-market-status{font-size:9px;color:#746d88;margin-top:5px;font-weight:700}
+.option-pcr-box{min-width:78px;text-align:right}
+.option-pcr-box small{display:block;color:#746d88;font-size:9px}
+.option-pcr-box strong{display:block;font-size:20px;margin-top:2px}
+.option-pcr-box span{display:block;color:#7357e8;font-size:9px;font-weight:800;margin-top:2px}
+.option-index-tabs{display:flex;gap:7px;overflow:auto;padding:0 2px 10px}
+.option-index-tabs .option-index{border:1px solid rgba(78,66,120,.14);color:#4d4762;background:#fff;border-radius:11px;padding:9px 14px;white-space:nowrap;font-size:11px;font-weight:800}
+.option-index-tabs .option-index.active{color:#7357e8;border-color:#7357e8;background:#f0eafd}
+.option-expiry-wrap{overflow:hidden;margin-bottom:10px}
+.option-expiry-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 7px;scrollbar-width:none}
+.option-expiry-tabs::-webkit-scrollbar{display:none}
+.option-expiry-tabs button{flex:0 0 auto;border:1px solid rgba(78,66,120,.16);background:#fff;color:#4d4762;border-radius:11px;padding:10px 17px;font-size:12px;font-weight:800}
+.option-expiry-tabs button.active{color:#d99516;border-color:#d99516;background:#fff8ea;box-shadow:0 3px 10px rgba(217,149,22,.08)}
+.option-expiry-placeholder{color:#918aa3!important}
+.option-chain-card{padding:0!important;overflow:hidden}
+.option-chain-head{height:64px;display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;border-bottom:1px solid rgba(78,66,120,.12);background:#fff}
+.option-side-btn,.option-chain-title{height:100%;border:0;background:transparent;font-weight:800}
+.option-side-btn{display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:0 13px;color:#d99516;font-size:15px}.option-side-btn.active{background:#fff8ea;color:#d99516}.option-put-btn.active{background:#f3efff;color:#8a72d9}.option-chain-title.active{background:#f0eafd;color:#7357e8}
+.option-put-btn{justify-content:flex-end;color:#8a72d9}
+.option-chain-title{color:#282542;font-size:16px}
+.option-chain-title:active,.option-side-btn:active{transform:scale(.98)}
+.option-arrow{font-size:31px;line-height:1;font-weight:400}
+.option-chain-mode-note{text-align:center;color:#746d88;font-size:8px;font-weight:700;padding:5px 0 2px;letter-spacing:.2px}
+.option-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.option-chain-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.option-chain-table th{height:50px;padding:5px 6px;background:#fff;color:#746d88;border-bottom:1px solid rgba(78,66,120,.10);font-size:9px;font-weight:700;text-align:center;vertical-align:middle}
+.option-chain-table th small{display:block;font-size:8px;color:#918aa3;font-weight:500;margin-top:3px}
+.option-chain-table td{height:72px;padding:7px 5px;border-bottom:1px solid rgba(78,66,120,.08);font-size:13px;text-align:center;color:#282542;vertical-align:middle;background:#fff}
+.option-chain-table td b{font-size:14px}
+.option-chain-table tr.atm-row td{background:#f6f1ff}
+.option-chain-table tr.atm-row td.strike-cell{position:relative}
+.option-chain-table tr.atm-row td.strike-cell b{display:inline-flex;align-items:center;justify-content:center;background:#1c936d;color:#fff;border-radius:8px;padding:7px 9px;min-width:68px}
+.option-chain-table td.change-up,.option-chain-table td.change-down{font-size:10px;font-weight:700;padding-top:0}
+.option-chain-table td.change-up{color:#4f9227}
+.option-chain-table td.change-down{color:#d05c68}
+.option-chain-table .empty{height:120px;color:#918aa3}
+.option-chain-table th:first-child,.option-chain-table td:first-child{border-left:0}
+.option-cell-main{display:block;font-size:14px;font-weight:650}
+.option-cell-sub{display:block;font-size:10px;line-height:1.25;margin-top:4px;color:#4f9227}
+.option-cell-sub.down{color:#d05c68}
+.option-chain-table .strike-cell{background:linear-gradient(90deg,#fbfaff,#fff,#fbfaff)}
+.option-chain-table tr.atm-row .strike-cell{background:#f0eafd}
+.option-filter-bar{display:flex;gap:10px;overflow-x:auto;padding:13px 12px 12px;background:#faf8fd;border-top:1px solid rgba(78,66,120,.08);scrollbar-width:none}
+.option-filter-bar::-webkit-scrollbar{display:none}
+.option-filter-bar button{flex:0 0 auto;min-width:76px;height:40px;padding:0 12px;border:1px solid rgba(78,66,120,.14);background:#fff;color:#4d4762;border-radius:12px;font-size:11px;font-weight:800;box-shadow:0 4px 12px rgba(76,62,112,.06)}
+.option-filter-bar button.active{color:#7357e8;border-color:#7357e8;background:#f0eafd}
+.option-chain-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 11px;color:#918aa3;font-size:9px;background:#fff}
+.option-chain-footer #optionSpot{font-weight:800;color:#4d4762}
+@media(max-width:650px){
+  .option-chain-section{margin:0 -2px}
+  .option-market-head{border-radius:18px;padding:15px 15px 13px}
+  .option-market-price-row strong{font-size:29px}
+  .option-chain-head{height:62px}
+  .option-side-btn{font-size:14px;padding:0 10px}
+  .option-chain-title{font-size:15px}
+  .option-chain-table th{font-size:8px;height:48px}
+  .option-chain-table td{height:67px;font-size:12px}
+  .option-cell-main{font-size:13px}
+  .option-cell-sub{font-size:9px}
+  .option-chain-table td b{font-size:13px}
+}
 </style>
 
 <style>
@@ -261,7 +332,74 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
  <div class="ai-reason" id="ais-reason-SENSEX">Waiting for analysis…</div>
  <div class="confidence-bar"><span id="ais-bar-SENSEX" style="width:0"></span></div>
 </article></div></section></div>
-  <div id="view-options" class="view"><section class="section"><div class="section-title"><h3>Option Chain</h3><span id="optionUpdated">—</span></div><div class="subtabs"><button class="active option-index" data-index="NIFTY">NIFTY</button><button class="option-index" data-index="BANKNIFTY">BANKNIFTY</button><button class="option-index" data-index="FINNIFTY">FINNIFTY</button><button class="option-index" data-index="SENSEX">SENSEX</button></div><div class="card panel"><div class="two"><select class="select" id="expirySelect"><option value="">Loading expiries…</option></select><div class="pill" id="optionSpot">Spot —</div></div><div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>CE LTP</th><th>CE OI</th><th>CE ΔOI</th><th>STRIKE</th><th>PE ΔOI</th><th>PE OI</th><th>PE LTP</th></tr></thead><tbody id="optionRows"><tr><td colspan="7" class="empty">Load option chain to view data.</td></tr></tbody></table></div><div class="two" style="margin-top:12px"><div class="pill" id="optionPCR">PCR —</div><div class="pill" id="optionSentiment">Sentiment —</div></div></div></section></div>
+  <div id="view-options" class="view">
+    <section class="section option-chain-section">
+      <div class="option-market-head card">
+        <div class="option-market-main">
+          <div class="option-market-name" id="optionMarketName">NIFTY 50</div>
+          <div class="option-market-price-row">
+            <strong id="optionMarketPrice">—</strong>
+            <span id="optionMarketChange">—</span>
+          </div>
+          <div class="option-market-status" id="optionMarketStatus">● MARKET —</div>
+        </div>
+        <div class="option-pcr-box">
+          <small>PCR</small>
+          <strong id="optionPCR">—</strong>
+          <span id="optionSentiment">—</span>
+        </div>
+      </div>
+
+      <div class="option-index-tabs">
+        <button class="active option-index" data-index="NIFTY">NIFTY</button>
+        <button class="option-index" data-index="BANKNIFTY">BANKNIFTY</button>
+        <button class="option-index" data-index="FINNIFTY">FINNIFTY</button>
+        <button class="option-index" data-index="SENSEX">SENSEX</button>
+      </div>
+
+      <div class="option-expiry-wrap">
+        <div class="option-expiry-tabs" id="optionExpiryTabs">
+          <button class="option-expiry-placeholder" disabled>Loading expiries…</button>
+        </div>
+      </div>
+
+      <div class="option-chain-card card">
+        <div class="option-chain-head">
+          <button class="option-side-btn" id="optionCallsBtn" type="button" aria-label="Show Calls">
+            <span class="option-arrow">‹</span><span>Calls</span>
+          </button>
+          <button class="option-chain-title" id="optionBothBtn" type="button">Option Chain</button>
+          <button class="option-side-btn option-put-btn" id="optionPutsBtn" type="button" aria-label="Show Puts">
+            <span>Puts</span><span class="option-arrow">›</span>
+          </button>
+        </div>
+
+        <div class="option-chain-mode-note" id="optionModeNote">Calls + Puts</div>
+
+        <div class="option-table-wrap">
+          <table class="option-chain-table">
+            <thead id="optionHead"></thead>
+            <tbody id="optionRows">
+              <tr><td colspan="7" class="empty">Load option chain to view data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="option-filter-bar" id="optionFilterBar">
+          <button type="button" data-option-filter="OI_HIGH">O = H</button>
+          <button type="button" data-option-filter="OI_LOW">O = L</button>
+          <button type="button" data-option-filter="HIGH_OI">High OI</button>
+          <button type="button" data-option-filter="HIGH_VOL">High Vol</button>
+          <button type="button" data-option-filter="HIGH_IV">High IV</button>
+        </div>
+
+        <div class="option-chain-footer">
+          <span id="optionSpot">Spot —</span>
+          <span id="optionUpdated">—</span>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <div id="view-portfolio" class="view"><section class="section"><div class="section-title"><h3>Portfolio</h3><span>Local journal</span></div><div class="stats-grid"><div class="card stat"><small>OPEN POSITIONS</small><strong id="portfolioCount">0</strong></div><div class="card stat"><small>RECENT RECORDS</small><strong id="historyCount">0</strong></div><div class="card stat"><small>ENGINE</small><strong id="portfolioEngine">—</strong></div><div class="card stat"><small>LAST SCAN</small><strong id="portfolioScan">—</strong></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Positions / Trade Journal</h3><span>Saved locally on server</span></div><div class="table-wrap"><table class="table"><thead><tr><th>INDEX</th><th>TYPE</th><th>STRIKE</th><th>ENTRY</th><th>SL</th><th>TARGET</th><th>CONF.</th></tr></thead><tbody id="portfolioRows"><tr><td colspan="7" class="empty">No active trades.</td></tr></tbody></table></div></div></section></div>
 
@@ -310,7 +448,7 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
 <script>
 'use strict';
 const BACKEND=location.origin;
-const S={index:localStorage.getItem('eraSelectedIndex')||'NIFTY',market:{},analysis:{},activeTrades:[],settings:{},optionIndex:'NIFTY',history:[],journal:[],paper:{},marketOpen:false};
+const S={index:localStorage.getItem('eraSelectedIndex')||'NIFTY',market:{},analysis:{},activeTrades:[],settings:{},optionIndex:'NIFTY',optionMode:'BOTH',optionFilter:'ATM',optionExpiry:'',optionData:null,history:[],journal:[],paper:{},marketOpen:false};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const num=v=>Number.isFinite(Number(v))?Number(v):null;
@@ -467,8 +605,182 @@ function connectRealtimeSync(){
 }
 
 async function loadNews(){try{const d=await api('/api/news');$('newsUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('newsGrid').innerHTML=(d.news||[]).slice(0,20).map(n=>`<div class="card news-item"><a href="${esc(n.link||'#')}" target="_blank" rel="noopener">${esc(n.title)}</a><small>${esc(n.pubDate||'')}</small></div>`).join('')||'<div class="card news-item">No news available.</div>'}catch(e){toast('News: '+errorText(e.message))}}
-async function loadOptions(){try{const idx=S.optionIndex||'NIFTY';const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);let expiries=Array.isArray(ex.expiries)?ex.expiries:[];const current=$('expirySelect').value;const keep=expiries.includes(current)?current:(expiries[0]||'');$('expirySelect').innerHTML=expiries.length?expiries.map(x=>`<option value=\"${esc(x)}\">${esc(x)}</option>`).join(''):'<option value=\"\">Expiry unavailable</option>';if(keep)$('expirySelect').value=keep;await loadOptionChainForExpiry(keep)}catch(e){$('expirySelect').innerHTML='<option value=\"\">Expiry unavailable</option>';$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
-async function loadOptionChainForExpiry(expiry){try{const idx=S.optionIndex||'NIFTY';const q=expiry?`&expiry=${encodeURIComponent(expiry)}`:'';const d=await api(`/api/options/chain?index=${encodeURIComponent(idx)}${q}`);S.optionData=d;const rows=d.rows||d.data||[];$('optionSpot').textContent='Spot '+fmt(d.spot);$('optionUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('optionPCR').textContent=`PCR ${fmt(d.summary?.pcr)}`;$('optionSentiment').textContent=`Sentiment ${d.summary?.sentiment||'—'}`;if(d.expiry&&!Array.from($('expirySelect').options).some(o=>o.value===String(d.expiry))){const o=document.createElement('option');o.value=d.expiry;o.textContent=d.expiry;$('expirySelect').appendChild(o)}if(d.expiry)$('expirySelect').value=String(d.expiry);$('optionRows').innerHTML=rows.map((r,i)=>`<tr class=\"${i===Math.floor(rows.length/2)?'selected-row':''}\"><td>${fmt(r.call?.ltp)}</td><td>${fmt(r.call?.oi)}</td><td>${fmt(r.call?.changeOI)}</td><td><b>${fmt(r.strike)}</b></td><td>${fmt(r.put?.changeOI)}</td><td>${fmt(r.put?.oi)}</td><td>${fmt(r.put?.ltp)}</td></tr>`).join('')||'<tr><td colspan=\"7\" class=\"empty\">No option rows available.</td></tr>'}catch(e){$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
+function optionQty(v){
+  const n=Number(v);
+  if(!Number.isFinite(n))return '—';
+  const a=Math.abs(n);
+  if(a>=1e7)return `${(n/1e7).toFixed(2).replace(/\.00$/,'')} Cr`;
+  if(a>=1e5)return `${(n/1e5).toFixed(2).replace(/\.00$/,'')} L`;
+  if(a>=1e3)return `${(n/1e3).toFixed(1).replace(/\.0$/,'')} K`;
+  return n.toLocaleString('en-IN',{maximumFractionDigits:0});
+}
+function optionOIChange(side){
+  const oi=Number(side?.oi);
+  const ch=Number(side?.changeOI);
+  if(!Number.isFinite(ch)||ch===0)return {text:'—',up:true};
+  const prev=oi-ch;
+  const pctChange=Number.isFinite(prev)&&prev!==0?(ch/prev)*100:null;
+  const sign=ch>0?'+':'';
+  const pctText=pctChange===null?'':` (${sign}${pctChange.toFixed(2)}%)`;
+  return {text:`${sign}${optionQty(ch)}${pctText}`,up:ch>0};
+}
+function optionLtpChange(side){
+  const ch=Number(side?.changeLtp);
+  const ltp=Number(side?.ltp);
+  if(!Number.isFinite(ch)||ch===0)return {text:'—',up:true};
+  const close=ltp-ch;
+  const pctChange=Number.isFinite(close)&&close!==0?(ch/close)*100:null;
+  const sign=ch>0?'+':'';
+  const pctText=pctChange===null?'':` (${sign}${pctChange.toFixed(2)}%)`;
+  return {text:`${sign}${fmt(ch)}${pctText}`,up:ch>0};
+}
+function optionRowPcr(row){
+  const c=Number(row?.call?.oi)||0, p=Number(row?.put?.oi)||0;
+  return c>0?p/c:null;
+}
+function optionNearestIndex(rows,spot){
+  if(!rows.length)return -1;
+  const s=Number(spot);
+  if(!Number.isFinite(s))return Math.floor(rows.length/2);
+  let best=0,dist=Infinity;
+  rows.forEach((r,i)=>{const d=Math.abs(Number(r.strike)-s);if(Number.isFinite(d)&&d<dist){dist=d;best=i}});
+  return best;
+}
+function optionRowsForDisplay(rows,spot){
+  const data=Array.isArray(rows)?rows.filter(r=>Number.isFinite(Number(r?.strike))).slice():[];
+  if(!data.length)return [];
+  const atm=optionNearestIndex(data,spot);
+  const mode=S.optionFilter||'ATM';
+  if(mode==='ATM'){
+    const before=5, after=5;
+    const from=Math.max(0,Math.min(Math.max(0,data.length-11),atm-before));
+    return data.slice(from,from+11);
+  }
+  const sideKey=S.optionMode==='PUT'?'put':S.optionMode==='CALL'?'call':null;
+  const score=(r)=>{
+    const c=r?.call||{},p=r?.put||{};
+    if(mode==='OI_HIGH'||mode==='HIGH_OI')return Number(sideKey ? r[sideKey]?.oi : Math.max(Number(c.oi)||0,Number(p.oi)||0));
+    if(mode==='OI_LOW')return Number(sideKey ? r[sideKey]?.oi : Math.min(Number(c.oi)||0,Number(p.oi)||0));
+    if(mode==='HIGH_VOL')return Number(sideKey ? r[sideKey]?.volume : Math.max(Number(c.volume)||0,Number(p.volume)||0));
+    if(mode==='HIGH_IV')return Number(sideKey ? r[sideKey]?.iv : Math.max(Number(c.iv)||0,Number(p.iv)||0));
+    return 0;
+  };
+  const sorted=data.slice().sort((a,b)=>score(b)-score(a));
+  return sorted.slice(0,11);
+}
+function renderOptionMarket(d){
+  const idx=S.optionIndex||'NIFTY';
+  const names={NIFTY:'NIFTY 50',BANKNIFTY:'BANK NIFTY',FINNIFTY:'FIN NIFTY',SENSEX:'SENSEX'};
+  const market=S.homeAnalyses?.[idx]?.market||((idx===S.index)?S.market:null)||{};
+  const spot=Number(d?.spot);
+  $('optionMarketName').textContent=market.name||names[idx]||idx;
+  $('optionMarketPrice').textContent=fmt(Number.isFinite(spot)?spot:market.price);
+  const ch=num(market.changePercent??market.change_pct);
+  $('optionMarketChange').textContent=ch===null?(market.change||'—'):pct(ch);
+  $('optionMarketChange').className=ch===null?'':(ch>=0?'bullish':'bearish');
+  const live=Boolean(S.homeAnalyses?.[idx]?.marketOpen ?? ((idx===S.index)?S.marketOpen:false));
+  $('optionMarketStatus').textContent=live?'● MARKET LIVE':'■ MARKET CLOSED';
+  $('optionMarketStatus').style.color=live?'#4f9227':'#918aa3';
+  $('optionPCR').textContent=fmt(d?.summary?.pcr);
+  $('optionSentiment').textContent=d?.summary?.sentiment||'—';
+  $('optionSpot').textContent=`Spot ${fmt(spot)}`;
+  $('optionUpdated').textContent=new Date(d?.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+}
+function renderOptionHead(){
+  const mode=S.optionMode||'BOTH';
+  if(mode==='BOTH'){
+    $('optionHead').innerHTML='<tr><th>OI<small>change</small></th><th>LTP<small>change</small></th><th class="strike-head">Strike<small>PCR</small></th><th>LTP<small>change</small></th><th>OI<small>change</small></th></tr>';
+    $('optionModeNote').textContent='Calls + Puts';
+  }else{
+    $('optionHead').innerHTML='<tr><th>Strike<small>PCR</small></th><th>LTP<small>change</small></th><th>OI<small>change</small></th><th>Vol.<small>today</small></th><th>IV<small>%</small></th></tr>';
+    $('optionModeNote').textContent=mode==='CALL'?'Showing Calls':'Showing Puts';
+  }
+  $('optionCallsBtn').classList.toggle('active',mode==='CALL');
+  $('optionPutsBtn').classList.toggle('active',mode==='PUT');
+  $('optionBothBtn').classList.toggle('active',mode==='BOTH');
+}
+function renderOptionRows(){
+  const d=S.optionData||{};
+  const allRows=d.rows||d.data||[];
+  const rows=optionRowsForDisplay(allRows,d.spot);
+  const atmStrike=Number(d.summary?.atm);
+  renderOptionHead();
+  if(!rows.length){
+    $('optionRows').innerHTML='<tr><td colspan="5" class="empty">No option rows available.</td></tr>';
+    return;
+  }
+  const mode=S.optionMode||'BOTH';
+  $('optionRows').innerHTML=rows.map(r=>{
+    const isAtm=Number.isFinite(atmStrike)&&Number(r.strike)===atmStrike;
+    const ce=r.call||{},pe=r.put||{};
+    const coichg=optionOIChange(ce), poichg=optionOIChange(pe); const cltpchg=optionLtpChange(ce), pltpchg=optionLtpChange(pe);
+    if(mode==='BOTH'){
+      return `<tr class="${isAtm?'atm-row':''}">
+        <td><span class="option-cell-main">${optionQty(ce.oi)}</span><span class="option-cell-sub ${coichg.up?'':'down'}">${esc(coichg.text)}</span></td>
+        <td><span class="option-cell-main">${fmt(ce.ltp)}</span><span class="option-cell-sub ${cltpchg.up?'':'down'}">${esc(cltpchg.text)}</span></td>
+        <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
+        <td><span class="option-cell-main">${fmt(pe.ltp)}</span><span class="option-cell-sub ${pltpchg.up?'':'down'}">${esc(pltpchg.text)}</span></td>
+        <td><span class="option-cell-main">${optionQty(pe.oi)}</span><span class="option-cell-sub ${poichg.up?'':'down'}">${esc(poichg.text)}</span></td>
+      </tr>`;
+    }
+    const side=mode==='CALL'?ce:pe;
+    const ch=optionOIChange(side); const ltpCh=optionLtpChange(side);
+    const iv=Number(side.iv);
+    return `<tr class="${isAtm?'atm-row':''}">
+      <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
+      <td><span class="option-cell-main">${fmt(side.ltp)}</span><span class="option-cell-sub ${ltpCh.up?'':'down'}">${esc(ltpCh.text)}</span></td>
+      <td><span class="option-cell-main">${optionQty(side.oi)}</span><span class="option-cell-sub ${ch.up?'':'down'}">${esc(ch.text)}</span></td>
+      <td><span class="option-cell-main">${optionQty(side.volume)}</span><span class="option-cell-sub">${side.volume?'LIVE':'—'}</span></td>
+      <td><span class="option-cell-main">${Number.isFinite(iv)&&iv>0?iv.toFixed(2):'—'}</span><span class="option-cell-sub">${Number.isFinite(iv)&&iv>0?'IV':'—'}</span></td>
+    </tr>`;
+  }).join('');
+  const atmRow=document.querySelector('#optionRows .atm-row');
+  if(atmRow)atmRow.scrollIntoView({block:'nearest'});
+}
+function optionExpiryLabel(value){
+  const s=String(value||'');
+  const m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+  if(!m)return s;
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${m[3]} ${months[Number(m[2])-1]||m[2]}`;
+}
+function renderOptionExpiryTabs(expiries){
+  const tabs=$('optionExpiryTabs');
+  const list=Array.isArray(expiries)?expiries:[];
+  if(!list.length){
+    tabs.innerHTML='<button class="option-expiry-placeholder" disabled>Expiry unavailable</button>';
+    return;
+  }
+  tabs.innerHTML=list.map(x=>`<button type="button" class="${String(x)===String(S.optionExpiry)?'active':''}" data-expiry="${esc(x)}">${esc(optionExpiryLabel(x))}</button>`).join('');
+  tabs.querySelectorAll('[data-expiry]').forEach(b=>b.onclick=()=>{S.optionExpiry=b.dataset.expiry;renderOptionExpiryTabs(list);loadOptionChainForExpiry(S.optionExpiry)});
+}
+async function loadOptions(){
+  try{
+    const idx=S.optionIndex||'NIFTY';
+    const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);
+    const expiries=Array.isArray(ex.expiries)?ex.expiries:[];
+    const keep=expiries.includes(S.optionExpiry)?S.optionExpiry:(expiries[0]||'');
+    S.optionExpiry=keep;
+    renderOptionExpiryTabs(expiries);
+    await loadOptionChainForExpiry(keep);
+  }catch(e){
+    renderOptionExpiryTabs([]);
+    $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
+  }
+}
+async function loadOptionChainForExpiry(expiry){
+  try{
+    const idx=S.optionIndex||'NIFTY';
+    const q=expiry?`&expiry=${encodeURIComponent(expiry)}`:'';
+    const d=await api(`/api/options/chain?index=${encodeURIComponent(idx)}${q}`);
+    S.optionData=d;
+    renderOptionMarket(d);
+    renderOptionRows();
+    if(d.expiry){S.optionExpiry=String(d.expiry);renderOptionExpiryTabs(Array.from(document.querySelectorAll('#optionExpiryTabs [data-expiry]')).map(x=>x.dataset.expiry))}
+  }catch(e){
+    $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
+  }
+}
 async function loadSettings(){try{const d=await api('/api/settings');S.settings=d.settings||{};document.querySelectorAll('.notify').forEach(x=>x.checked=S.settings.notifications?.[x.dataset.key]!==false)}catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Settings: '+errorText(e.message))}}
 async function saveSettings(){try{const notifications={};document.querySelectorAll('.notify').forEach(x=>notifications[x.dataset.key]=x.checked);const d=await api('/api/settings',{method:'POST',body:JSON.stringify({movementThreshold:Number(S.settings.movementThreshold||20),minConfidence:61,notifications})});S.settings=d.settings;toast('ERA notification settings saved')}catch(e){if(/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message))){showAuth();authMessage('Please login again with Gmail OTP to save notification settings.');return;}toast('Save failed: '+errorText(e.message))}}
 async function loadHistory(){try{const d=await api('/api/history');S.history=d.history||[];renderHistory()}catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('History: '+errorText(e.message))}}
@@ -588,7 +900,23 @@ $('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotificat
 loadTradeAlerts();
 
 // Core bindings
-document.querySelectorAll('#homeIndices button,.market-index').forEach(b=>b.onclick=()=>selectIndex(b.dataset.index));document.querySelectorAll('.option-index').forEach(b=>b.onclick=()=>{S.optionIndex=b.dataset.index;document.querySelectorAll('.option-index').forEach(x=>x.classList.toggle('active',x===b));loadOptions()});$('expirySelect').onchange=()=>loadOptionChainForExpiry($('expirySelect').value);$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper()}};$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
+document.querySelectorAll('#homeIndices button,.market-index').forEach(b=>b.onclick=()=>selectIndex(b.dataset.index));
+document.querySelectorAll('.option-index').forEach(b=>b.onclick=()=>{
+  S.optionIndex=b.dataset.index;
+  S.optionExpiry='';
+  S.optionFilter='ATM';
+  document.querySelectorAll('.option-index').forEach(x=>x.classList.toggle('active',x===b));
+  loadOptions();
+});
+$('optionCallsBtn').onclick=()=>{S.optionMode='CALL';S.optionFilter='ATM';renderOptionRows()};
+$('optionPutsBtn').onclick=()=>{S.optionMode='PUT';S.optionFilter='ATM';renderOptionRows()};
+$('optionBothBtn').onclick=()=>{S.optionMode='BOTH';S.optionFilter='ATM';renderOptionRows()};
+document.querySelectorAll('[data-option-filter]').forEach(b=>b.onclick=()=>{
+  S.optionFilter=b.dataset.optionFilter;
+  document.querySelectorAll('[data-option-filter]').forEach(x=>x.classList.toggle('active',x===b));
+  renderOptionRows();
+});
+$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper()}};$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
 // Gmail/email OTP only — existing email OTP flow preserved.
 let pendingAuthValue='';
 function showApp(showWelcome=false){if($('authScreen'))$('authScreen').style.display='none';document.querySelector('.app').style.display='block';const u=localStorage.getItem('eraUser')||'Guest';$('accountStatus').textContent=u==='Guest'?'GUEST':'SIGNED IN';$('accountInfo').textContent=u; if(showWelcome&&window.__showWelcome){window.__showWelcome();}}
