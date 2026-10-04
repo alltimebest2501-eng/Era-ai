@@ -338,9 +338,15 @@ async function requireAuth(req, res, next) {
     if (!session) return res.status(401).json({ ok:false, error:"Authentication required.", code:"AUTH_REQUIRED", requestId:req.eraRequestId });
     req.eraUser = session.user;
     req.eraUserId = userIdFor(session.user);
+    // Render can boot before PostgreSQL is reachable. Do not turn every authenticated
+    // feature into HTTP 503 in that case; fall back to the legacy server state until
+    // the database becomes ready. When PostgreSQL is available, the normal user-scoped
+    // persistent state path below is used.
     if (!dbReady || !dbPool) {
-      return res.status(503).json({ok:false,error:"Persistent user database is required for authenticated data access.",code:"USER_DB_REQUIRED",requestId:req.eraRequestId});
+      req.eraPersistence = "local-fallback";
+      return next();
     }
+    req.eraPersistence = "postgres";
     const previous = userStateLocks.get(req.eraUserId) || Promise.resolve();
     let releaseLock;
     const lockPromise = new Promise(resolve => { releaseLock = resolve; });
@@ -2143,8 +2149,15 @@ async function fetchExtraMarketData() {
 // ============================================================
 
 async function refreshMarketData(requestedIndex = null) {
-  const quotes =
-    await fetchQuotes();
+  let quotes;
+  try {
+    quotes = await fetchQuotes();
+  } catch (error) {
+    // Keep the last good market snapshot alive when Upstox temporarily returns
+    // 429/5xx. Realtime V3 ticks remain authoritative when available.
+    console.error("[ERA] Market quote refresh failed:", error.response?.status || error.message);
+    quotes = state.market && Object.keys(state.market).length ? state.market : {};
+  }
 
   if (requestedIndex && INDICES[requestedIndex]) {
     state.market[requestedIndex] = quotes[requestedIndex];
@@ -2187,8 +2200,8 @@ async function refreshMarketData(requestedIndex = null) {
     }
   }
 
-  const extra =
-    await fetchExtraMarketData();
+  let extra = {GIFT_NIFTY:{available:false}, INDIA_VIX:{available:false}};
+  try { extra = await fetchExtraMarketData(); } catch (_) {}
 
   state.market.GIFT_NIFTY =
     extra.GIFT_NIFTY;
@@ -6516,29 +6529,18 @@ app.get(
       });
 
     } catch (error) {
-      state.lastError = {
-        message:
-          error.message,
-
-        at:
-          nowISO()
-      };
-
-      res.status(500).json({
-        ok: false,
-
-        error:
-          error.message,
-
-        market:
-          state.market,
-
-        analysis:
-          state.analysis,
-
-        updatedAt:
-          nowISO()
-      });
+      state.lastError = { message: error.message, at: nowISO() };
+      const cached = state.analysis || {};
+      if (Object.keys(cached).length) {
+        return res.json({
+          ok:true, version:VERSION, market:state.market, markets:state.market,
+          analysis:cached, indexes:cached, selectedIndex:normalizeIndex(req.query.index)||"NIFTY",
+          selected:cached[normalizeIndex(req.query.index)||"NIFTY"]||null,
+          activeTrades:state.activeTrades||[], marketOpen:isMarketHours(), updatedAt:nowISO(),
+          stale:true, warning:"Live analysis refresh temporarily unavailable; showing last known analysis."
+        });
+      }
+      res.status(503).json({ ok:false, error:"Market analysis temporarily unavailable. Please retry in a few seconds.", market:state.market, analysis:state.analysis, updatedAt:nowISO() });
     }
   }
 );
@@ -7359,7 +7361,7 @@ Use the supplied market and analysis data as the source of truth.`;
 
       // If OpenRouter credits/token budget are unavailable, ERA must still answer
       // from its local deterministic market state instead of showing the raw quota error.
-      if (/more credits|can only afford|max_tokens|insufficient|quota|credit/i.test(upstreamText)) {
+      if (/more credits|can only afford|max_tokens|insufficient|quota|credit|too many requests|rate limit|429/i.test(upstreamText) || error.response?.status === 429) {
         const m = state.market?.[index] || {};
         const a = state.analysis?.[index] || {};
         const t = a.technical || {};
