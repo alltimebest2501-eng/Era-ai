@@ -223,6 +223,48 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
   .option-cell-sub{font-size:9px}
   .option-chain-table td b{font-size:13px}
 }
+/* PAPER TRADING PRO UI */
+.paper-side{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.paper-side button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:13px;font-weight:900;font-size:12px;color:#6b6579}
+.paper-side button.active-buy{background:#20d66d;color:#fff;border-color:#20d66d;box-shadow:0 8px 22px rgba(32,214,109,.18)}
+.paper-side button.active-sell{background:#ff527c;color:#fff;border-color:#ff527c;box-shadow:0 8px 22px rgba(255,82,124,.18)}
+.paper-entry-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.paper-position-card{padding:15px;border-radius:18px;border:1px solid var(--line);background:#fff;margin-top:10px;cursor:pointer}
+.paper-position-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.paper-position-title{font-weight:900;font-size:15px}
+.paper-position-meta{font-size:10px;color:var(--muted);margin-top:4px}
+.paper-position-pnl{text-align:right;font-weight:900;font-size:17px}
+.paper-position-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.paper-position-grid div{background:#f7f7fb;border-radius:10px;padding:9px}
+.paper-position-grid small{display:block;color:var(--muted);font-size:8px}
+.paper-position-grid b{display:block;margin-top:3px;font-size:11px}
+.paper-position-actions{display:flex;gap:8px;margin-top:11px}
+.paper-position-actions button{flex:1}
+.paper-performance-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.paper-performance-tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 10px}
+.paper-performance-tabs button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 13px;white-space:nowrap;font-size:10px;font-weight:800}
+.paper-performance-tabs button.active{border-color:var(--accent);color:var(--accent);background:rgba(25,230,255,.08)}
+.paper-history-card{padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff;margin-top:9px;cursor:pointer}
+.paper-history-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.paper-history-title{font-weight:900;font-size:13px}
+.paper-history-sub{font-size:9px;color:var(--muted);margin-top:4px}
+.paper-history-pnl{font-weight:900;font-size:14px}
+.paper-detail{display:none}
+.paper-detail.open{display:block}
+.paper-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.paper-detail-pnl{text-align:center;padding:18px;border-radius:16px;background:#f7f7fb;margin:12px 0}
+.paper-detail-pnl strong{display:block;font-size:25px}
+.paper-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.paper-detail-grid div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11px}
+.paper-detail-grid span{color:var(--muted)}
+.paper-order-log{position:relative;padding:10px 0 10px 17px;border-left:2px solid var(--line);margin-left:7px}
+.paper-order-log::before{content:"";position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.paper-edit-modal{position:fixed;inset:0;z-index:520;display:none;place-items:center;padding:18px;background:rgba(0,0,0,.45);backdrop-filter:blur(5px)}
+.paper-edit-modal.open{display:grid}
+.paper-edit-card{width:min(440px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.2)}
+.paper-edit-actions{display:flex;gap:8px;margin-top:12px}
+.paper-edit-actions button{flex:1}
+@media(max-width:650px){.paper-entry-grid{grid-template-columns:1fr}.paper-position-grid{grid-template-columns:1fr 1fr}.paper-detail-grid{grid-template-columns:1fr}}
 </style>
 
 <style>
@@ -281,7 +323,7 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
     <button data-view="options">▦ &nbsp; Options</button>
     <button data-view="charts">◒ &nbsp; Charts</button>
     <button data-view="portfolio">💼 &nbsp; Portfolio</button>
-    <button data-view="paper">🧪 &nbsp; Paper Trading</button>
+    <button data-view="paper">🧪 &nbsp; Paper Trading</button><button data-view="paper-performance">📈 &nbsp; Paper Performance</button>
     <button data-view="journal">📓 &nbsp; AI Journal</button>
     <button data-view="tools">🧮 &nbsp; Trading Tools</button>
     <button data-view="news">📰 &nbsp; News & Events</button>
@@ -409,7 +451,87 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
 
   <div id="view-charts" class="view"><section class="section"><div class="section-title"><h3>Advanced Charts</h3><span id="chartUpdated">—</span></div><div class="card panel"><div class="toolbar"><select class="select" id="chartIndex"><option value="NIFTY">NIFTY 50</option><option value="BANKNIFTY">BANK NIFTY</option><option value="FINNIFTY">FIN NIFTY</option><option value="SENSEX">SENSEX</option></select><select class="select" id="chartInterval"><option value="1">1m</option><option value="3">3m</option><option value="5" selected>5m</option><option value="15">15m</option><option value="30">30m</option><option value="60">1H</option></select><button class="primary" id="loadChart" style="width:auto;margin-top:0">Load Chart</button></div><canvas id="chartCanvas" class="chart-canvas" width="1200" height="330"></canvas><div class="mini-grid" style="margin-top:10px"><div class="card stat"><small>EMA 9</small><strong id="chartEma9">—</strong></div><div class="card stat"><small>EMA 20</small><strong id="chartEma20">—</strong></div><div class="card stat"><small>RSI</small><strong id="chartRsi">—</strong></div><div class="card stat"><small>VWAP</small><strong id="chartVwap">—</strong></div><div class="card stat"><small>VOLUME</small><strong id="chartVolume">—</strong></div></div></div></section></div>
 
-  <div id="view-paper" class="view"><section class="section"><div class="section-title"><h3>Paper Trading</h3><span>Virtual capital • live option marks</span></div><div class="stats-grid"><div class="card stat"><small>AVAILABLE CASH</small><strong id="paperCash">—</strong></div><div class="card stat"><small>REALIZED P&L</small><strong id="paperPnl">—</strong></div><div class="card stat"><small>LIVE P&L</small><strong id="paperLivePnl">—</strong></div><div class="card stat"><small>OPEN POSITIONS</small><strong id="paperPositions">0</strong></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Place Paper Order</h3><span class="pill">NO REAL MONEY</span></div><div class="mini-grid"><select class="select" id="paperIndex"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="SENSEX">SENSEX</option></select><select class="select" id="paperExpiry"><option value="">Loading expiry…</option></select><select class="select" id="paperType"><option value="CE">CALL (CE)</option><option value="PE">PUT (PE)</option></select><select class="select" id="paperStrike"><option value="">Select strike</option></select></div><div class="paper-live"><div class="card"><small>OPTION</small><b id="paperSelectedOption">—</b></div><div class="card"><small>LIVE PREMIUM</small><b id="paperLivePrice">—</b></div><div class="card"><small>INSTRUMENT</small><b id="paperInstrumentStatus">Ready</b></div></div><div class="paper-mode"><button id="paperMarketMode" class="active" type="button">BUY AT MARKET PRICE</button><button id="paperLimitMode" type="button">BUY AT CUSTOM PRICE</button></div><div class="mini-grid"><input class="mini-input" id="paperPrice" type="number" step="0.05" placeholder="Custom entry premium" disabled><input class="mini-input" id="paperQty" type="number" min="1" step="1" placeholder="Quantity" value="1"><input class="mini-input" id="paperSL" type="number" step="0.05" placeholder="Stop Loss (premium)"><input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target (premium)"></div><button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ BUY PAPER @ MARKET</button><div class="result-box" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. ERA will use the live option premium for market-price paper execution.</div><div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Open Positions</h3><span class="pill">LIVE MARKING</span></div><div class="table-wrap"><table class="table"><thead><tr><th>INDEX</th><th>OPTION</th><th>STRIKE</th><th>EXPIRY</th><th>QTY</th><th>ENTRY</th><th>CURRENT</th><th>LIVE P&L</th><th>STATUS</th><th></th></tr></thead><tbody id="paperRows"><tr><td colspan="10" class="empty">No paper positions.</td></tr></tbody></table></div></div></section></div>
+  <div id="view-paper" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Trading</h3><span>Virtual execution • live option marks</span></div><button class="pill" data-view="paper-performance">Performance ↗</button></div>
+      <div class="card panel" style="margin-bottom:10px"><div class="paper-performance-head"><div><small>OVERALL PAPER P&L</small><strong id="paperOverallPnl" style="display:block;font-size:25px;margin-top:4px">₹0</strong></div><span id="paperOverallMeta" class="pill">0 positions</span></div></div>
+      <div class="stats-grid">
+        <div class="card stat"><small>AVAILABLE CASH</small><strong id="paperCash">—</strong></div>
+        <div class="card stat"><small>REALIZED P&L</small><strong id="paperPnl">—</strong></div>
+        <div class="card stat"><small>LIVE P&L</small><strong id="paperLivePnl">—</strong></div>
+        <div class="card stat"><small>OPEN POSITIONS</small><strong id="paperPositions">0</strong></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="card panel">
+        <div class="panel-head"><h3>Place Paper Trade</h3><span class="pill">NO REAL MONEY</span></div>
+        <div class="paper-side">
+          <button id="paperBuySide" class="active-buy" type="button">BUY</button>
+          <button id="paperSellSide" type="button">SELL</button>
+        </div>
+        <div class="paper-entry-grid">
+          <select class="select" id="paperIndex"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="SENSEX">SENSEX</option></select>
+          <select class="select" id="paperType"><option value="CE">CALL (CE)</option><option value="PE">PUT (PE)</option></select>
+          <select class="select" id="paperExpiry"><option value="">Loading expiry…</option></select>
+          <select class="select" id="paperStrike"><option value="">Select strike</option></select>
+        </div>
+        <div class="paper-live">
+          <div class="card"><small>OPTION</small><b id="paperSelectedOption">—</b></div>
+          <div class="card"><small>LIVE PREMIUM</small><b id="paperLivePrice">—</b></div>
+          <div class="card"><small>INSTRUMENT</small><b id="paperInstrumentStatus">Ready</b></div>
+        </div>
+        <div class="paper-mode">
+          <button id="paperMarketMode" class="active" type="button">MARKET PRICE</button>
+          <button id="paperLimitMode" type="button">CUSTOM PRICE</button>
+        </div>
+        <div class="paper-entry-grid">
+          <input class="mini-input" id="paperPrice" type="number" step="0.05" placeholder="Entry premium" disabled>
+          <input class="mini-input" id="paperQty" type="number" min="1" step="1" placeholder="Quantity" value="1">
+          <input class="mini-input" id="paperSL" type="number" step="0.05" placeholder="Stop Loss">
+          <input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target">
+        </div>
+        <button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ PLACE PAPER BUY</button>
+        <div class="result-box" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
+        <div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="section-title"><h3>Positions</h3><span>Tick-by-tick P&L</span></div>
+      <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
+    </section>
+    <section class="section">
+      <div class="card panel">
+        <div class="paper-performance-head"><div><h3 style="margin:0">Performance</h3><small style="color:var(--muted)">All paper trades, open + closed</small></div><button class="primary" style="width:auto;margin:0" data-view="paper-performance">View all</button></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="view-paper-performance" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Performance</h3><span>Every paper trade is recorded here</span></div><button class="pill" data-view="paper">← Paper</button></div>
+      <div class="stats-grid">
+        <div class="card stat"><small>TOTAL TRADES</small><strong id="paperPerfTotal">0</strong></div>
+        <div class="card stat"><small>WIN RATE</small><strong id="paperPerfWinRate">0%</strong></div>
+        <div class="card stat"><small>REALIZED P&L</small><strong id="paperPerfPnl">₹0</strong></div>
+        <div class="card stat"><small>OPEN</small><strong id="paperPerfOpen">0</strong></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="paper-performance-tabs" id="paperPerformanceTabs">
+        <button class="active" data-paper-filter="ALL">All</button><button data-paper-filter="OPEN">Open</button><button data-paper-filter="CLOSED">Closed</button><button data-paper-filter="PROFIT">In Profit</button><button data-paper-filter="LOSS">In Loss</button>
+      </div>
+      <div id="paperPerformanceList"><div class="card notification-item">Loading paper performance…</div></div>
+    </section>
+    <section class="section">
+      <div class="card panel paper-detail" id="paperTradeDetail">
+        <div class="paper-detail-head"><h3 style="margin:0">Trade Details</h3><button class="pill" id="paperDetailClose">Close</button></div>
+        <div class="paper-detail-pnl"><span id="paperDetailPnlLabel">Net Profit & Loss</span><strong id="paperDetailPnl">—</strong><small id="paperDetailStatus">—</small></div>
+        <div class="paper-detail-grid" id="paperDetailGrid"></div>
+        <div style="margin-top:16px"><h3>Order Logs</h3><div id="paperDetailLogs"></div></div>
+        <div style="margin-top:18px"><h3>Trade Journal</h3><div class="mini-grid"><input class="mini-input" id="paperJournalTitle" placeholder="Trade / setup title"><input class="mini-input" id="paperJournalRegime" placeholder="Market regime"><input class="mini-input" id="paperJournalResult" placeholder="Result / P&L"><input class="mini-input" id="paperJournalMistake" placeholder="Mistake / lesson"></div><textarea class="text-input" id="paperJournalNote" rows="4" style="width:100%;margin-top:8px" placeholder="What did you see, why did you take this trade, what did you learn?"></textarea><button class="primary" id="savePaperJournal" style="max-width:220px">Save Journal</button><div id="paperTradeJournalList" style="margin-top:10px"></div></div>
+      </div>
+    </section>
+  </div>
 
   <div id="view-journal" class="view"><section class="section"><div class="section-title"><h3>AI Trading Journal</h3><span>Evidence → decision → result</span></div><div class="card panel"><div class="mini-grid"><input class="mini-input" id="journalTitle" placeholder="Trade / setup title"><input class="mini-input" id="journalRegime" placeholder="Market regime"><input class="mini-input" id="journalResult" placeholder="Result / P&L"><input class="mini-input" id="journalMistake" placeholder="Mistake / lesson"></div><textarea class="text-input" id="journalNote" rows="4" style="width:100%;margin-top:8px" placeholder="Why did you enter, what did ERA see, what would you change?"></textarea><button class="primary" id="saveJournal" style="max-width:220px">Save Journal Entry</button></div></section><section class="section"><div class="notification-list" id="journalList"><div class="card notification-item">Loading journal…</div></div></section></div>
 
@@ -420,6 +542,14 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
   <footer class="footer">Era AI V8.2.5 · Autonomous Market Intelligence · Data and signals are informational and require independent verification.</footer>
 </main></div>
 <nav class="mobile-nav"><button class="active" data-view="home"><span>⌂</span>Home</button><button data-view="signal"><span>⚡</span>AI</button><button data-view="options"><span>▦</span>Options</button><button data-view="paper"><span>🧪</span>Paper</button><button data-view="era"><span>✦</span>More</button></nav>
+<div id="paperEditModal" class="paper-edit-modal">
+  <div class="paper-edit-card">
+    <div class="panel-head"><h3 style="margin:0">Edit Paper Trade</h3><button class="icon-btn" id="paperEditClose">×</button></div>
+    <div class="result-box" id="paperEditSummary">—</div>
+    <div class="mini-grid"><input class="mini-input" id="paperEditSL" type="number" step="0.05" placeholder="Stop Loss"><input class="mini-input" id="paperEditTarget" type="number" step="0.05" placeholder="Target"></div>
+    <div class="paper-edit-actions"><button class="welcome-skip" id="paperEditCancel">Cancel</button><button class="primary" id="paperEditSave">Save changes</button></div>
+  </div>
+</div>
 <div class="toast-container" id="toastContainer"></div>
 <div id="tradeAlertPopup" class="trade-alert-popup" aria-live="polite">
   <div class="trade-alert-card">
@@ -458,7 +588,7 @@ function safeAnswer(value){if(typeof value==='string')return value;if(Array.isAr
 function errorText(value){if(typeof value==='string')return value;if(value?.message)return String(value.message);if(value?.error?.message)return String(value.error.message);try{return JSON.stringify(value)}catch{return String(value)}}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=errorText(msg);$('toastContainer').appendChild(d);setTimeout(()=>d.remove(),3500)}
 async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
-function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
+function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-performance'){loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>setView(b.dataset.feature));
 function selected(){return S.analysis[S.index]||null} function marketOf(){return S.market[S.index]||selected()?.market||null}
@@ -590,7 +720,13 @@ $('tradeAlertPaper').onclick=()=>tradeAlertAction('PAPER_TRADE');
 function applyRealtimeOptionTick(payload){
   const key=payload?.instrumentKey;
   const tick=payload?.tick;
-  if(!key||!tick||!S.optionData)return;
+  if(!key||!tick)return;
+  if(paperSelectedInstrument?.instrumentKey===key && Number.isFinite(Number(tick.ltp))){
+    paperSelectedInstrument.ltp=Number(tick.ltp);
+    if($('paperLivePrice'))$('paperLivePrice').textContent=fmt(tick.ltp);
+    if(paperEntryMode==='market')$('paperOrderHint').textContent=`${paperSideMode} market entry will use current premium ₹${fmt(tick.ltp)}.`;
+  }
+  if(!S.optionData)return;
   const rows=S.optionData.rows||S.optionData.data||[];
   let changed=false;
   for(const row of rows){
@@ -630,7 +766,7 @@ function connectRealtimeSync(){
   realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('trade-alert',e=>{try{const d=JSON.parse(e.data);if(d?.alert)renderTradeAlertPopup(d.alert,true)}catch(_){}});
   realtimeSource.addEventListener('trade-alert-update',e=>{try{const d=JSON.parse(e.data);if(d?.alert&&currentTradeAlert?.id===d.alert.id)renderTradeAlertPopup(d.alert,true)}catch(_){}});
-  realtimeSource.addEventListener('paper-position-update',e=>{try{const d=JSON.parse(e.data);if(d?.paper){S.paper={...S.paper,...d.paper};if(d.type==='CLOSED')toast(`Paper ${d.position?.reason||'position'} closed • P&L ₹${fmt(d.position?.pnl||0)}`);refreshPaperLive();}}catch(_){}});
+  realtimeSource.addEventListener('paper-position-update',e=>{try{const d=JSON.parse(e.data);if(d?.paper){S.paper={...S.paper,...d.paper};if(d.type==='CLOSED'){toast(`Paper ${d.position?.reason||'position'} closed • P&L ₹${fmt(d.position?.pnl||0)}`);loadPaperPerformance();}renderPaperState();if($('view-paper-performance')?.classList.contains('active'))renderPaperPerformance();}}catch(_){}});
   realtimeSource.onopen=()=>{realtimeConnected=true;};
   realtimeSource.onerror=()=>{realtimeConnected=false;updateRealtimeStatusText({status:'RECONNECTING',marketOpen:S.marketOpen});};
 }
@@ -916,12 +1052,219 @@ typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing
 function selectIndex(k){S.index=k;localStorage.setItem('eraSelectedIndex',k);document.querySelectorAll('[data-index]').forEach(x=>x.classList.toggle('active',x.dataset.index===k));renderHome();renderMarket();renderSignal()}
 async function loadChart(){try{const index=$('chartIndex').value||S.index,interval=$('chartInterval').value||5;const d=await api(`/api/candles?index=${index}&interval=${interval}`);const c=d.candles||[];drawChart(c);$('chartUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');const closes=c.map(x=>Number(x[4]));const calcEma=(v,p)=>{if(v.length<p)return null;let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)e=(v[i]*(2/(p+1)))+e*(1-2/(p+1));return e};const rsiCalc=v=>{if(v.length<15)return null;let g=0,l=0;for(let i=1;i<15;i++){const z=v[i]-v[i-1];if(z>0)g+=z;else l-=z}let ag=g/14,al=l/14;for(let i=15;i<v.length;i++){const z=v[i]-v[i-1];ag=(ag*13+Math.max(z,0))/14;al=(al*13+Math.max(-z,0))/14}return al?100-(100/(1+ag/al)):100};$('chartEma9').textContent=fmt(calcEma(closes,9));$('chartEma20').textContent=fmt(calcEma(closes,20));$('chartRsi').textContent=fmt(rsiCalc(closes));const volSum=c.reduce((s,x)=>s+Math.max(0,Number(x[5]||0)),0);const weighted=volSum>0?c.reduce((s,x)=>s+(Number(x[4]||0)*Math.max(0,Number(x[5]||0))),0)/volSum:(closes.length?c.reduce((s,x)=>s+((Number(x[2]||0)+Number(x[3]||0)+Number(x[4]||0))/3),0)/closes.length:null);$('chartVwap').textContent=fmt(weighted);if($('chartVolume'))$('chartVolume').textContent=fmt(c.length?Number(c[c.length-1][5]||0):null)}catch(e){toast('Chart: '+errorText(e.message))}}
 function drawChart(c){const canvas=$('chartCanvas'),ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1,w=canvas.clientWidth||1200,h=330;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);if(!c.length){ctx.fillStyle='#8196b2';ctx.fillText('No candle data available.',20,30);return}const highs=c.map(x=>Number(x[2])),lows=c.map(x=>Number(x[3])),max=Math.max(...highs),min=Math.min(...lows),range=max-min||1;ctx.strokeStyle='rgba(24,48,76,.8)';for(let y=30;y<h;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const step=w/Math.max(1,c.length-1);ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();ctx.lineWidth=2;ctx.beginPath();c.forEach((x,i)=>{const y=20+(max-Number(x[4]))/range*(h-40);if(i===0)ctx.moveTo(i*step,y);else ctx.lineTo(i*step,y)});ctx.stroke();c.slice(-80).forEach((x,i)=>{const px=(i/(Math.max(1,Math.min(80,c.length)-1)))*w;const y=20+(max-Number(x[4]))/range*(h-40);ctx.fillStyle=Number(x[4])>=Number(x[1])?'#27e69b':'#ff527c';ctx.fillRect(px-1,y-1,3,3)})}
-let paperOptionRows=[];let paperSelectedInstrument=null;let paperEntryMode='market';
-async function loadPaperOptions(){try{const index=$('paperIndex').value||S.index;let expiries=[];try{const ex=await api(`/api/options/expiries?index=${encodeURIComponent(index)}`);expiries=ex.expiries||[];}catch(_){}const current=$('paperExpiry').value;const selectedExpiry=expiries.includes(current)?current:(expiries[0]||current||'');$('paperExpiry').innerHTML=expiries.length?expiries.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''):(selectedExpiry?`<option value="${esc(selectedExpiry)}">${esc(selectedExpiry)}</option>`:'<option value="">Expiry unavailable</option>');if(selectedExpiry)$('paperExpiry').value=selectedExpiry;const expiryParam=selectedExpiry?`&expiry=${encodeURIComponent(selectedExpiry)}`:'';const d=await api(`/api/options/chain?index=${encodeURIComponent(index)}${expiryParam}`);paperOptionRows=d.rows||d.data||[];const returnedExpiry=d.expiry||selectedExpiry;if(returnedExpiry&&!expiries.includes(returnedExpiry)){const opt=document.createElement('option');opt.value=returnedExpiry;opt.textContent=returnedExpiry;$('paperExpiry').appendChild(opt);$('paperExpiry').value=returnedExpiry;}const strikes=[...new Set(paperOptionRows.map(r=>Number(r.strike)).filter(Number.isFinite))].sort((a,b)=>a-b);$('paperStrike').innerHTML='<option value="">Select exact strike</option>'+strikes.map(x=>`<option value="${x}">${fmt(x)}</option>`).join('');updatePaperSelection();}catch(e){$('paperInstrumentStatus').textContent='Options unavailable';toast('Paper options: '+errorText(e.message))}}
-function updatePaperSelection(){const strike=Number($('paperStrike').value);const type=$('paperType').value;const row=paperOptionRows.find(r=>Number(r.strike)===strike);const side=type==='CE'?row?.call:row?.put;paperSelectedInstrument=side||null;$('paperSelectedOption').textContent=row&&side?`${$('paperIndex').value} ${type} ${fmt(strike)}`:'Select exact option';$('paperLivePrice').textContent=side?fmt(side.ltp):'—';$('paperInstrumentStatus').textContent=side?.instrumentKey?'LIVE':'Select strike';if(side&&paperEntryMode==='market')$('paperOrderHint').textContent=`Market entry will use current premium ₹${fmt(side.ltp)}.`;else if(side)$('paperOrderHint').textContent='Custom entry mode selected. Enter your premium above.';}
-async function loadPaper(){try{const d=await api('/api/paper/refresh',{method:'POST'});S.paper=d.paper||{};$('paperCash').textContent=fmt(S.paper.cash);$('paperPnl').textContent=fmt(S.paper.realizedPnl);$('paperLivePnl').textContent=fmt(S.paper.unrealizedPnl||0);$('paperLivePnl').className=(Number(S.paper.unrealizedPnl||0)>=0?'bullish':'bearish')+' paper-pnl';$('paperPositions').textContent=(S.paper.positions||[]).length;if($('paperRisk'))$('paperRisk').textContent=d.risk?.killSwitch?'BLOCKED':'SAFE';$('paperRows').innerHTML=(S.paper.positions||[]).length?S.paper.positions.map(p=>{const lp=num(p.unrealizedPnl)?Number(p.unrealizedPnl):((Number(p.currentPrice||0)-Number(p.entry||0))*Number(p.quantity||0));return `<tr><td>${esc(p.index)}</td><td>${esc(p.optionType)}</td><td>${fmt(p.strike)}</td><td>${esc(p.expiry||'—')}</td><td>${fmt(p.quantity)}</td><td>${fmt(p.entry)}</td><td>${fmt(p.currentPrice)}</td><td class=\"${lp>=0?'bullish':'bearish'}\">${fmt(lp)} (${fmt(p.pnlPercent||0)}%)</td><td>${esc(p.status||'RUNNING')}</td><td><button class=\"paper-close\" data-close=\"${esc(p.id)}\">EXIT</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">No paper positions.</td></tr>';document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closePaper(b.dataset.close));}catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}}
-async function placePaper(){try{if(!paperSelectedInstrument?.instrumentKey)throw new Error('Select an exact option strike first.');const live=Number(paperSelectedInstrument.ltp||0);const custom=Number($('paperPrice').value||0);const price=paperEntryMode==='market'?live:custom;if(!(price>0))throw new Error('Valid option premium is required.');const b={side:'BUY',index:$('paperIndex').value,optionType:$('paperType').value,strike:Number($('paperStrike').value),expiry:$('paperExpiry').value,price,entryMode:paperEntryMode,quantity:Number($('paperQty').value||1),stopLoss:Number($('paperSL').value||0),target:Number($('paperTarget').value||0),instrumentKey:paperSelectedInstrument.instrumentKey};await api('/api/paper/order',{method:'POST',body:JSON.stringify(b)});toast(`Paper BUY ${b.optionType} ${b.strike} @ ₹${fmt(price)}`);await loadPaper()}catch(e){toast('Paper order: '+errorText(e.message))}}
-async function closePaper(id){try{const d=await api('/api/paper/exit',{method:'POST',body:JSON.stringify({positionId:id,reason:'MANUAL_EXIT'})});const c=d.closed;if(c)toast(`Paper exit @ ₹${fmt(c.exit)} • P&L ${fmt(c.pnl)}`);else toast('Paper position closed');await loadPaper()}catch(e){toast('Close: '+errorText(e.message))}}
+let paperOptionRows=[];let paperSelectedInstrument=null;let paperEntryMode='market';let paperSideMode='BUY';let paperPerformanceData=[];let paperPerformanceFilter='ALL';let selectedPaperTradeId=null;let editingPaperPositionId=null;
+
+function paperDate(value){
+  if(!value)return '—';
+  try{return new Date(value).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});}catch(_){return String(value);}
+}
+function paperSideLabel(side){return String(side||'BUY').toUpperCase()==='SELL'?'SELL':'BUY';}
+function paperPnl(position){
+  const entry=Number(position?.entry||0), current=Number(position?.currentPrice||0), qty=Number(position?.quantity||0);
+  return paperSideLabel(position?.side)==='SELL'?(entry-current)*qty:(current-entry)*qty;
+}
+function setPaperSide(side){
+  paperSideMode=paperSideLabel(side);
+  $('paperBuySide').classList.toggle('active-buy',paperSideMode==='BUY');
+  $('paperSellSide').classList.toggle('active-sell',paperSideMode==='SELL');
+  $('paperBuy').textContent=paperSideMode==='BUY'?'⚡ PLACE PAPER BUY':'⚡ PLACE PAPER SELL';
+  $('paperSL').placeholder=paperSideMode==='BUY'?'Stop Loss (below entry)':'Stop Loss (above entry)';
+  $('paperTarget').placeholder=paperSideMode==='BUY'?'Target (above entry)':'Target (below entry)';
+  updatePaperSelection();
+}
+async function loadPaperOptions(){
+  try{
+    const index=$('paperIndex').value||S.index;
+    let expiries=[];
+    try{const ex=await api(`/api/options/expiries?index=${encodeURIComponent(index)}`);expiries=ex.expiries||[];}catch(_){}
+    const current=$('paperExpiry').value;
+    const selectedExpiry=expiries.includes(current)?current:(expiries[0]||current||'');
+    $('paperExpiry').innerHTML=expiries.length?expiries.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''):(selectedExpiry?`<option value="${esc(selectedExpiry)}">${esc(selectedExpiry)}</option>`:'<option value="">Expiry unavailable</option>');
+    if(selectedExpiry)$('paperExpiry').value=selectedExpiry;
+    const expiryParam=selectedExpiry?`&expiry=${encodeURIComponent(selectedExpiry)}`:'';
+    const d=await api(`/api/options/chain?index=${encodeURIComponent(index)}${expiryParam}`);
+    paperOptionRows=d.rows||d.data||[];
+    const returnedExpiry=d.expiry||selectedExpiry;
+    if(returnedExpiry&&!expiries.includes(returnedExpiry)){const opt=document.createElement('option');opt.value=returnedExpiry;opt.textContent=returnedExpiry;$('paperExpiry').appendChild(opt);$('paperExpiry').value=returnedExpiry;}
+    const strikes=[...new Set(paperOptionRows.map(r=>Number(r.strike)).filter(Number.isFinite))].sort((a,b)=>a-b);
+    $('paperStrike').innerHTML='<option value="">Select strike</option>'+strikes.map(x=>`<option value="${x}">${fmt(x)}</option>`).join('');
+    updatePaperSelection();
+  }catch(e){$('paperInstrumentStatus').textContent='Options unavailable';toast('Paper options: '+errorText(e.message))}
+}
+function updatePaperSelection(){
+  const strike=Number($('paperStrike').value);
+  const type=$('paperType').value;
+  const row=paperOptionRows.find(r=>Number(r.strike)===strike);
+  const side=type==='CE'?row?.call:row?.put;
+  paperSelectedInstrument=side||null;
+  $('paperSelectedOption').textContent=row&&side?`${$('paperIndex').value} ${paperSideMode} ${type} ${fmt(strike)}`:'Select exact option';
+  $('paperLivePrice').textContent=side?fmt(side.ltp):'—';
+  $('paperInstrumentStatus').textContent=side?.instrumentKey?'LIVE':'Select strike';
+  if(side&&paperEntryMode==='market')$('paperOrderHint').textContent=`${paperSideMode} market entry will use current premium ₹${fmt(side.ltp)}.`;
+  else if(side)$('paperOrderHint').textContent=`${paperSideMode} custom entry selected. Enter your premium above.`;
+}
+function renderPaperState(){
+  const p=S.paper||{};
+  $('paperCash').textContent=fmt(p.cash);
+  $('paperPnl').textContent=fmt(p.realizedPnl);
+  $('paperLivePnl').textContent=fmt(p.unrealizedPnl||0);
+  $('paperLivePnl').className=(Number(p.unrealizedPnl||0)>=0?'bullish':'bearish')+' paper-pnl';
+  const overall=Number(p.realizedPnl||0)+Number(p.unrealizedPnl||0); $('paperOverallPnl').textContent=`₹${fmt(overall)}`; $('paperOverallPnl').className=overall>=0?'bullish':'bearish'; $('paperOverallMeta').textContent=`${(p.positions||[]).length} position${(p.positions||[]).length===1?'':'s'}`;
+  $('paperPositions').textContent=(p.positions||[]).length;
+  const positions=p.positions||[];
+  $('paperPositionsList').innerHTML=positions.length?positions.map(pos=>{
+    const pnl=paperPnl(pos);
+    const side=paperSideLabel(pos.side);
+    const pnlClass=pnl>=0?'bullish':'bearish';
+    return `<div class="paper-position-card">
+      <div class="paper-position-top">
+        <div><div class="paper-position-title">${esc(pos.index)} ${esc(side)} ${esc(pos.strike)} ${esc(pos.optionType)}</div><div class="paper-position-meta">${esc(pos.quantity)} Qty • ${esc(pos.expiry||'—')} • ${esc(pos.status||'RUNNING')}</div></div>
+        <div class="paper-position-pnl ${pnlClass}">₹${fmt(pnl)}<div style="font-size:9px">${pct(pos.pnlPercent)}</div></div>
+      </div>
+      <div class="paper-position-grid">
+        <div><small>ENTRY PRICE</small><b>₹${fmt(pos.entry)}</b></div>
+        <div><small>CURRENT PRICE</small><b>₹${fmt(pos.currentPrice)}</b></div>
+        <div><small>STOP LOSS</small><b>₹${fmt(pos.stopLoss)}</b></div>
+        <div><small>TARGET</small><b>₹${fmt(pos.target)}</b></div>
+        <div><small>QUANTITY</small><b>${fmt(pos.quantity)}</b></div>
+        <div><small>MARGIN / VALUE</small><b>₹${fmt(pos.marginUsed||Number(pos.entry||0)*Number(pos.quantity||0))}</b></div>
+        <div><small>OPENED</small><b>${esc(paperDate(pos.openedAt))}</b></div>
+        <div><small>LAST TICK</small><b>${esc(paperDate(pos.lastTickAt))}</b></div>
+      </div>
+      <div class="paper-position-actions"><button class="welcome-skip paper-edit" data-edit-position="${esc(pos.id)}">EDIT</button><button class="paper-close" data-exit-position="${esc(pos.id)}">EXIT</button></div>
+    </div>`;
+  }).join(''):'<div class="card notification-item">No paper positions.</div>';
+  document.querySelectorAll('[data-edit-position]').forEach(b=>b.onclick=()=>openPaperEdit(b.dataset.editPosition));
+  document.querySelectorAll('[data-exit-position]').forEach(b=>b.onclick=()=>closePaper(b.dataset.exitPosition));
+}
+async function loadPaper(){
+  try{
+    const d=await api('/api/paper/refresh',{method:'POST'});
+    S.paper=d.paper||{};
+    renderPaperState();
+  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}
+}
+async function placePaper(){
+  try{
+    if(!paperSelectedInstrument?.instrumentKey)throw new Error('Select an exact option strike first.');
+    const live=Number(paperSelectedInstrument.ltp||0);
+    const custom=Number($('paperPrice').value||0);
+    const price=paperEntryMode==='market'?live:custom;
+    if(!(price>0))throw new Error('Valid option premium is required.');
+    const b={side:paperSideMode,index:$('paperIndex').value,optionType:$('paperType').value,strike:Number($('paperStrike').value),expiry:$('paperExpiry').value,price,entryMode:paperEntryMode,quantity:Number($('paperQty').value||1),stopLoss:Number($('paperSL').value||0),target:Number($('paperTarget').value||0),instrumentKey:paperSelectedInstrument.instrumentKey,source:'MANUAL_PAPER'};
+    await api('/api/paper/order',{method:'POST',body:JSON.stringify(b)});
+    toast(`Paper ${b.side} ${b.optionType} ${b.strike} @ ₹${fmt(price)}`);
+    await loadPaper();
+    loadPaperPerformance();
+  }catch(e){toast('Paper order: '+errorText(e.message))}
+}
+async function closePaper(id){
+  try{
+    const d=await api('/api/paper/exit',{method:'POST',body:JSON.stringify({positionId:id,reason:'MANUAL_EXIT'})});
+    const c=d.closed;
+    if(c)toast(`Paper exit @ ₹${fmt(c.exit)} • P&L ${fmt(c.pnl)}`);else toast('Paper position closed');
+    S.paper=d.paper||S.paper;
+    renderPaperState();
+    loadPaperPerformance();
+  }catch(e){toast('Close: '+errorText(e.message))}
+}
+function openPaperEdit(id){
+  const p=(S.paper?.positions||[]).find(x=>x.id===id);
+  if(!p)return;
+  editingPaperPositionId=id;
+  $('paperEditSummary').textContent=`${p.index} ${paperSideLabel(p.side)} ${p.optionType} ${fmt(p.strike)} • Entry ₹${fmt(p.entry)}`;
+  $('paperEditSL').value=p.stopLoss??'';
+  $('paperEditTarget').value=p.target??'';
+  $('paperEditModal').classList.add('open');
+}
+function closePaperEdit(){editingPaperPositionId=null;$('paperEditModal').classList.remove('open')}
+async function savePaperEdit(){
+  if(!editingPaperPositionId)return;
+  try{
+    const d=await api('/api/paper/edit',{method:'POST',body:JSON.stringify({positionId:editingPaperPositionId,stopLoss:Number($('paperEditSL').value||0),target:Number($('paperEditTarget').value||0)})});
+    S.paper=d.paper||S.paper;
+    closePaperEdit();
+    renderPaperState();
+    toast('Paper trade updated');
+    loadPaperPerformance();
+  }catch(e){toast('Edit: '+errorText(e.message))}
+}
+function paperHistoryMatches(t){
+  if(paperPerformanceFilter==='OPEN')return t.status==='OPEN';
+  if(paperPerformanceFilter==='CLOSED')return t.status==='CLOSED';
+  if(paperPerformanceFilter==='PROFIT')return Number(t.pnl||0)>0;
+  if(paperPerformanceFilter==='LOSS')return Number(t.pnl||0)<0;
+  return true;
+}
+function renderPaperPerformance(){
+  const all=paperPerformanceData||[];
+  const liveMap=new Map((S.paper?.positions||[]).map(p=>[p.tradeId,p]));
+  const list=all.filter(paperHistoryMatches);
+  const stats={total:all.length,open:all.filter(x=>x.status==='OPEN').length,closed:all.filter(x=>x.status==='CLOSED').length,wins:all.filter(x=>x.status==='CLOSED'&&Number(x.pnl||0)>0).length,realizedPnl:all.filter(x=>x.status==='CLOSED').reduce((s,x)=>s+Number(x.pnl||0),0)};
+  $('paperPerfTotal').textContent=fmt(stats.total);
+  $('paperPerfOpen').textContent=fmt(stats.open);
+  $('paperPerfWinRate').textContent=stats.closed?`${fmt(stats.wins/stats.closed*100)}%`:'0%';
+  $('paperPerfPnl').textContent=`₹${fmt(stats.realizedPnl)}`;
+  $('paperPerformanceList').innerHTML=list.length?list.map(t=>{
+    const live=liveMap.get(t.tradeId);
+    const pnl=t.status==='OPEN'&&live?paperPnl(live):Number(t.pnl||0);
+    const side=paperSideLabel(t.side);
+    return `<div class="paper-history-card" data-paper-trade="${esc(t.tradeId)}">
+      <div class="paper-history-row"><div><div class="paper-history-title">${esc(t.index)} ${esc(side)} ${esc(t.optionType)} ${fmt(t.strike)}</div><div class="paper-history-sub">${esc(t.quantity)} Qty • Entry ₹${fmt(t.entry)} • ${esc(t.status)} • ${esc(t.expiry||'—')}</div></div><div class="paper-history-pnl ${pnl>=0?'bullish':'bearish'}">${t.status==='OPEN'?'LIVE':'₹'+fmt(pnl)}</div></div>
+      <div class="paper-history-sub">${esc(paperDate(t.openedAt))}${t.closedAt?' → '+esc(paperDate(t.closedAt)):''}</div>
+    </div>`;
+  }).join(''):'<div class="card notification-item">No paper trades in this filter.</div>';
+  document.querySelectorAll('[data-paper-trade]').forEach(b=>b.onclick=()=>openPaperTradeDetail(b.dataset.paperTrade));
+}
+async function loadPaperPerformance(){
+  try{
+    const d=await api('/api/trade-history?executionType=PAPER');
+    paperPerformanceData=d.history||[];
+    renderPaperPerformance();
+  }catch(e){toast('Performance: '+errorText(e.message))}
+}
+async function openPaperTradeDetail(tradeId){
+  try{
+    const d=await api(`/api/trade-history/${encodeURIComponent(tradeId)}`);
+    const t=d.trade||{};
+    selectedPaperTradeId=tradeId;
+    const livePosition=(S.paper?.positions||[]).find(p=>p.tradeId===t.tradeId);
+    const pnl=t.status==='OPEN'&&livePosition?paperPnl(livePosition):Number(t.pnl||0);
+    $('paperTradeDetail').classList.add('open');
+    $('paperDetailPnl').textContent=`₹${fmt(pnl)} (${pct(livePosition?.pnlPercent??t.pnlPercent)})`;
+    $('paperDetailPnl').className=pnl>=0?'bullish':'bearish';
+    $('paperDetailStatus').textContent=`${t.status||'—'} • ${paperSideLabel(t.side)} ${t.optionType||''}`;
+    $('paperDetailGrid').innerHTML=[
+      ['Instrument',`${t.index||'—'} ${paperSideLabel(t.side)} ${t.optionType||''} ${fmt(t.strike)}`],
+      ['Status',t.status||'—'],['Quantity',fmt(t.quantity)],['Entry Price',`₹${fmt(t.entry)}`],
+      ['Current Price',livePosition?`₹${fmt(livePosition.currentPrice)}`:'—'],['Exit Price',t.exit==null?'—':`₹${fmt(t.exit)}`],['Stop Loss',`₹${fmt(t.stopLoss)}`],
+      ['Target',t.targets?.[0]==null?'—':`₹${fmt(t.targets[0])}`],['Expiry',t.expiry||'—'],
+      ['Validity Till',t.expiry?`${t.expiry} • 3:30 PM`:'—'],['Margin Used',`₹${fmt(livePosition?.marginUsed||t.entry*Number(t.quantity||0))}`],['Est. Charges','₹0 (Paper)'],['Opened',paperDate(t.openedAt)],
+      ['Closed',paperDate(t.closedAt)],['Confidence',t.confidence==null?'—':`${fmt(t.confidence)}%`],
+      ['Reason',t.result||'—'],['Source',t.source||'PAPER']
+    ].map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
+    const events=d.events||[];
+    $('paperDetailLogs').innerHTML=events.length?events.slice().reverse().map(e=>`<div class="paper-order-log"><b>${esc(e.eventType||'EVENT')}</b><div style="font-size:10px;color:var(--muted)">${esc(e.reason||e.result||'Paper trade event')} • ${esc(paperDate(e.executedAt))}</div><div style="font-size:11px;margin-top:4px">Price ₹${fmt(e.price)} • Qty ${fmt(e.quantity)}</div></div>`).join(''):'<div class="muted">No order logs.</div>';
+    await loadPaperTradeJournal(tradeId);
+    $('paperTradeDetail').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){toast('Trade details: '+errorText(e.message))}
+}
+async function loadPaperTradeJournal(tradeId){
+  try{
+    const d=await api(`/api/journal?tradeId=${encodeURIComponent(tradeId)}`);
+    const rows=d.journal||[];
+    $('paperTradeJournalList').innerHTML=rows.length?rows.map(x=>`<div class="card notification-item"><b>${esc(x.title||'Journal entry')}</b><small>${esc(paperDate(x.createdAt))} • ${esc(x.regime||'REGIME —')}</small><div style="margin-top:6px;font-size:11px">${esc(x.note||'')}</div><div class="muted" style="margin-top:6px;font-size:10px">Result: ${esc(x.result||'—')} • Lesson: ${esc(x.mistake||'—')}</div></div>`).join(''):'<div class="muted">No journal entries for this trade yet.</div>';
+  }catch(e){$('paperTradeJournalList').textContent='Journal unavailable'}
+}
+async function savePaperJournal(){
+  if(!selectedPaperTradeId)return;
+  try{
+    await api('/api/journal',{method:'POST',body:JSON.stringify({tradeId:selectedPaperTradeId,title:$('paperJournalTitle').value,note:$('paperJournalNote').value,regime:$('paperJournalRegime').value,result:$('paperJournalResult').value,mistake:$('paperJournalMistake').value})});
+    ['paperJournalTitle','paperJournalNote','paperJournalRegime','paperJournalResult','paperJournalMistake'].forEach(id=>$(id).value='');
+    toast('Trade journal saved');
+    loadPaperTradeJournal(selectedPaperTradeId);
+  }catch(e){toast('Journal: '+errorText(e.message))}
+}
 async function loadJournal(){try{const d=await api('/api/journal');S.journal=d.journal||[];$('journalList').innerHTML=S.journal.length?S.journal.map(x=>`<div class="card notification-item"><b>${esc(x.title||'Journal entry')}</b><small>${esc(new Date(x.createdAt).toLocaleString('en-IN'))} • ${esc(x.regime||'REGIME —')}</small><div style="margin-top:7px;font-size:11px">${esc(x.note||'')}</div><div class="muted" style="margin-top:7px;font-size:10px">Result: ${esc(x.result||'—')} • Lesson: ${esc(x.mistake||'—')}</div></div>`).join(''):'<div class="card notification-item">No journal entries yet.</div>'}catch(e){toast('Journal: '+errorText(e.message))}}
 async function saveJournal(){try{await api('/api/journal',{method:'POST',body:JSON.stringify({title:$('journalTitle').value,note:$('journalNote').value,regime:$('journalRegime').value,result:$('journalResult').value,mistake:$('journalMistake').value})});['journalTitle','journalNote','journalRegime','journalResult','journalMistake'].forEach(id=>$(id).value='');toast('Journal entry saved');loadJournal()}catch(e){toast('Journal: '+errorText(e.message))}}
 async function runCalc(){try{const d=await api('/api/calculator',{method:'POST',body:JSON.stringify({capital:Number($('calcCapital').value),riskPct:Number($('calcRisk').value),entry:Number($('calcEntry').value),stop:Number($('calcStop').value),target:Number($('calcTarget').value),qty:Number($('calcQty').value)})});$('calcResult').innerHTML=`Risk / unit: <b>${fmt(d.riskPerUnit)}</b> • Capital at risk: <b>${fmt(d.capitalRisk)}</b> • Suggested qty: <b>${fmt(d.suggestedQty)}</b> • R:R: <b>${fmt(d.rr)}</b> • P&L at target: <b>${fmt(d.pnl)}</b>`}catch(e){toast('Calculator: '+errorText(e.message))}}
@@ -932,7 +1275,14 @@ async function loadAlerts(){try{const d=await api('/api/alerts');$('alertsList')
 async function saveAlert(){try{await api('/api/alerts',{method:'POST',body:JSON.stringify({index:$('alertIndex').value||S.index,price:Number($('alertPrice').value),note:$('alertNote').value})});$('alertNote').value='';toast('Alert created');loadAlerts()}catch(e){toast('Alert: '+errorText(e.message))}}
 function showTool(name){document.querySelectorAll('.tool-panel').forEach(x=>x.style.display='none');$('tool-'+name).style.display='block';document.querySelectorAll('.tool-tab').forEach(x=>x.classList.toggle('active',x.dataset.tool===name));if(name==='risk')loadRisk();if(name==='alerts')loadAlerts()}
 // Welcome, menu, notifications and paper trading bindings
-$('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotifications(true);if(ok){$('notificationModal').classList.remove('open');$('notificationModalStatus').textContent='Notifications enabled.';}};$('notificationModalLater').onclick=()=>{$('notificationModal').classList.remove('open');};$('enableNotifications2').onclick=()=>setupPushNotifications(true);$('enableSettingsNotifications').onclick=()=>setupPushNotifications(true);$('enterEra')?.remove();$('skipWelcome')?.remove();$('menuBtn').onclick=()=>$('menuDrawer').classList.add('open');$('closeMenu').onclick=()=>$('menuDrawer').classList.remove('open');$('menuBackdrop').onclick=()=>$('menuDrawer').classList.remove('open');document.querySelectorAll('[data-menu-view]').forEach(b=>b.onclick=()=>{$('menuDrawer').classList.remove('open');setView(b.dataset.menuView)});$('bellBtn').onclick=()=>{$('notificationPanel').classList.toggle('open');loadAlerts()};$('closeNotifications').onclick=()=>$('notificationPanel').classList.remove('open');$('openAlerts').onclick=()=>{$('notificationPanel').classList.remove('open');setView('tools');showTool('alerts')};$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;$('paperMarketMode').onclick=()=>{paperEntryMode='market';$('paperMarketMode').classList.add('active');$('paperLimitMode').classList.remove('active');$('paperPrice').disabled=true;$('paperBuy').textContent='⚡ BUY PAPER @ MARKET';updatePaperSelection()};$('paperLimitMode').onclick=()=>{paperEntryMode='limit';$('paperLimitMode').classList.add('active');$('paperMarketMode').classList.remove('active');$('paperPrice').disabled=false;$('paperBuy').textContent='BUY PAPER @ CUSTOM PRICE';updatePaperSelection()};
+$('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotifications(true);if(ok){$('notificationModal').classList.remove('open');$('notificationModalStatus').textContent='Notifications enabled.';}};$('notificationModalLater').onclick=()=>{$('notificationModal').classList.remove('open');};$('enableNotifications2').onclick=()=>setupPushNotifications(true);$('enableSettingsNotifications').onclick=()=>setupPushNotifications(true);$('enterEra')?.remove();$('skipWelcome')?.remove();$('menuBtn').onclick=()=>$('menuDrawer').classList.add('open');$('closeMenu').onclick=()=>$('menuDrawer').classList.remove('open');$('menuBackdrop').onclick=()=>$('menuDrawer').classList.remove('open');document.querySelectorAll('[data-menu-view]').forEach(b=>b.onclick=()=>{$('menuDrawer').classList.remove('open');setView(b.dataset.menuView)});$('bellBtn').onclick=()=>{$('notificationPanel').classList.toggle('open');loadAlerts()};$('closeNotifications').onclick=()=>$('notificationPanel').classList.remove('open');$('openAlerts').onclick=()=>{$('notificationPanel').classList.remove('open');setView('tools');showTool('alerts')};
+$('paperBuySide').onclick=()=>setPaperSide('BUY');$('paperSellSide').onclick=()=>setPaperSide('SELL');$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;
+$('paperMarketMode').onclick=()=>{paperEntryMode='market';$('paperMarketMode').classList.add('active');$('paperLimitMode').classList.remove('active');$('paperPrice').disabled=true;updatePaperSelection()};
+$('paperLimitMode').onclick=()=>{paperEntryMode='limit';$('paperLimitMode').classList.add('active');$('paperMarketMode').classList.remove('active');$('paperPrice').disabled=false;updatePaperSelection()};
+$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper();loadPaperPerformance()}};
+$('paperEditClose').onclick=closePaperEdit;$('paperEditCancel').onclick=closePaperEdit;$('paperEditSave').onclick=savePaperEdit;$('paperDetailClose').onclick=()=>{$('paperTradeDetail').classList.remove('open');selectedPaperTradeId=null};
+$('savePaperJournal').onclick=savePaperJournal;
+document.querySelectorAll('[data-paper-filter]').forEach(b=>b.onclick=()=>{paperPerformanceFilter=b.dataset.paperFilter;document.querySelectorAll('[data-paper-filter]').forEach(x=>x.classList.toggle('active',x===b));renderPaperPerformance()});
 loadTradeAlerts();
 
 // Core bindings
@@ -952,7 +1302,7 @@ document.querySelectorAll('[data-option-filter]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-option-filter]').forEach(x=>x.classList.toggle('active',x===b));
   renderOptionRows();
 });
-$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper()}};$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
+$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
 // Gmail/email OTP only — existing email OTP flow preserved.
 let pendingAuthValue='';
 function showApp(showWelcome=false){if($('authScreen'))$('authScreen').style.display='none';document.querySelector('.app').style.display='block';const u=localStorage.getItem('eraUser')||'Guest';$('accountStatus').textContent=u==='Guest'?'GUEST':'SIGNED IN';$('accountInfo').textContent=u; if(showWelcome&&window.__showWelcome){window.__showWelcome();}}
