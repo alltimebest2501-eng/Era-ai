@@ -475,7 +475,7 @@ async function loadHistory(){try{const d=await api('/api/history');S.history=d.h
 function renderHistory(){const f=S.historyFilter||'all';const rows=S.history.filter(x=>f==='all'||x.type===f);$('historyList').innerHTML=rows.length?rows.slice(0,200).map(x=>x.type==='chat'?`<div class="history-item"><b>CHAT</b><small>${esc(x.createdAt?new Date(x.createdAt).toLocaleString('en-IN'):'')}<br><strong>You:</strong> ${esc(x.userMessage||'')}<br><strong>ERA:</strong> ${esc(safeAnswer(x.answer||''))}</small></div>`:`<div class="history-item"><b>TRADE • ${esc(x.index||'')} ${esc(x.optionType||'')}</b><small>${esc(x.createdAt?new Date(x.createdAt).toLocaleString('en-IN'):'')}<br>Strike ${fmt(x.strike)} • Entry ${fmt(x.entry)} • SL ${fmt(x.stopLoss)} • Target ${fmt(x.targets?.[0])} • Confidence ${esc(x.confidence)}%</small></div>`).join(''):'<div class="history-item">No history yet.</div>'}
 let chatFullscreen=false,chatTouchStartY=0,chatTouchLastY=0;
 function openEraChat(){
-  const card=$('.era-chat-card');
+  const card=document.querySelector('.era-chat-card');
   if(!card||chatFullscreen)return;
   chatFullscreen=true;
   card.classList.remove('chat-closing');
@@ -484,14 +484,14 @@ function openEraChat(){
   setTimeout(()=>{const input=$('homeChat');if(input)input.focus({preventScroll:true});const board=$('chatBoard');if(board)board.scrollTop=board.scrollHeight;},180);
 }
 function closeEraChat(){
-  const card=$('.era-chat-card');
+  const card=document.querySelector('.era-chat-card');
   if(!card||!chatFullscreen)return;
   card.classList.remove('chat-fullscreen');
   card.classList.add('chat-closing');
   setTimeout(()=>{card.classList.remove('chat-closing');document.body.classList.remove('chat-focus-lock');chatFullscreen=false;},240);
 }
 function bindEraChatFullscreen(){
-  const card=$('.era-chat-card'),board=$('chatBoard');
+  const card=document.querySelector('.era-chat-card'),board=$('chatBoard');
   if(!card||!board||card.dataset.chatFullscreenBound==='1')return;
   card.dataset.chatFullscreenBound='1';
 
