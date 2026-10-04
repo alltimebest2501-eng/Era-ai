@@ -598,7 +598,7 @@ function safeAnswer(value){if(typeof value==='string')return value;if(Array.isAr
 function errorText(value){if(typeof value==='string')return value;if(value?.message)return String(value.message);if(value?.error?.message)return String(value.error.message);try{return JSON.stringify(value)}catch{return String(value)}}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=errorText(msg);$('toastContainer').appendChild(d);setTimeout(()=>d.remove(),3500)}
 async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
-function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-positions'){loadPaper();loadPaperPerformance();}if(view==='paper-performance'){loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
+function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-positions'){loadPaper();}if(view==='paper-performance'){loadPaper();loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));document.querySelectorAll('.paper-trade-nav [data-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setView(b.dataset.view);}));
 document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>setView(b.dataset.feature));
 function selected(){return S.analysis[S.index]||null} function marketOf(){return S.market[S.index]||selected()?.market||null}
@@ -1043,20 +1043,7 @@ try{
   d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});
   typing.textContent=safeAnswer(d.answer)||'No response';
 }catch(chatErr){
-  const msg=String(chatErr?.message||'');
-  if(/more credits|max_tokens|can only afford|tokens/i.test(msg)){
-    const brain=await api('/api/ai/brain',{method:'POST',body:JSON.stringify({index:S.index,question:q||visibleQuestion})});
-    const b=brain?.brain||{};
-    const parts=[];
-    if(b.decision)parts.push(`Decision: ${b.decision}`);
-    if(b.summary)parts.push(b.summary);
-    if(Array.isArray(b.evidence)&&b.evidence.length)parts.push('Evidence:\n• '+b.evidence.slice(0,4).map(x=>typeof x==='string'?x:(x?.text||x?.reason||JSON.stringify(x))).join('\n• '));
-    if(Array.isArray(b.risks)&&b.risks.length)parts.push('Risk:\n• '+b.risks.slice(0,4).join('\n• '));
-    if(b.tradePlan)parts.push('Trade Plan:\n'+(typeof b.tradePlan==='string'?b.tradePlan:JSON.stringify(b.tradePlan,null,2)));
-    typing.textContent=safeAnswer(parts.join('\n\n')||'ERA could not generate a readable response.');
-  }else{
-    throw chatErr;
-  }
+  throw chatErr;
 }
 typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
 function selectIndex(k){S.index=k;localStorage.setItem('eraSelectedIndex',k);document.querySelectorAll('[data-index]').forEach(x=>x.classList.toggle('active',x.dataset.index===k));renderHome();renderMarket();renderSignal()}
