@@ -229,8 +229,9 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
 .paper-side button.active-buy{background:#20d66d;color:#fff;border-color:#20d66d;box-shadow:0 8px 22px rgba(32,214,109,.18)}
 .paper-side button.active-sell{background:#ff527c;color:#fff;border-color:#ff527c;box-shadow:0 8px 22px rgba(255,82,124,.18)}
 .paper-entry-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.paper-entry-grid .mini-input{background:linear-gradient(145deg,rgba(14,28,49,.96),rgba(8,17,31,.96));color:var(--text);border-color:var(--line);color-scheme:dark}
-.paper-entry-grid .mini-input::placeholder{color:var(--muted);opacity:1}
+.paper-entry-grid .mini-input,.paper-entry-grid .select{background:#fff!important;color:#282542!important;border:1px solid rgba(78,66,120,.16)!important;color-scheme:light!important;-webkit-text-fill-color:#282542!important}
+.paper-entry-grid .mini-input::placeholder{color:#8b849e!important;-webkit-text-fill-color:#8b849e!important;opacity:1}
+.paper-entry-grid .mini-input:focus,.paper-entry-grid .select:focus{background:#fff!important;color:#282542!important;border-color:#7357e8!important;box-shadow:0 0 0 3px rgba(115,87,232,.10)!important;outline:none}
 .paper-trade-nav{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
 .paper-trade-nav button{border:1px solid var(--line);background:rgba(25,230,255,.05);color:var(--muted);border-radius:11px;padding:7px 10px;font-size:9px;font-weight:900;white-space:nowrap}
 .paper-trade-nav button:hover{color:var(--accent);border-color:rgba(25,230,255,.45);background:rgba(25,230,255,.10)}
@@ -502,8 +503,10 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
       </div>
     </section>
     <section class="section" id="paperPositionsSection">
-      <div class="section-title"><h3>Positions</h3><span>Tick-by-tick P&L</span></div>
-      <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
+      <div class="card panel">
+        <div class="paper-performance-head"><div><h3 style="margin:0">Positions</h3><small style="color:var(--muted)">Open paper trades • tick-by-tick P&L</small></div><button class="pill" type="button" data-paper-jump="trade">← Paper Trade</button></div>
+        <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
+      </div>
     </section>
     <section class="section" id="paperPerformanceSection">
       <div class="card panel">
