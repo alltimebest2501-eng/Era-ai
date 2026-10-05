@@ -338,9 +338,15 @@ async function requireAuth(req, res, next) {
     if (!session) return res.status(401).json({ ok:false, error:"Authentication required.", code:"AUTH_REQUIRED", requestId:req.eraRequestId });
     req.eraUser = session.user;
     req.eraUserId = userIdFor(session.user);
+    // Render can boot before PostgreSQL is reachable. Do not turn every authenticated
+    // feature into HTTP 503 in that case; fall back to the legacy server state until
+    // the database becomes ready. When PostgreSQL is available, the normal user-scoped
+    // persistent state path below is used.
     if (!dbReady || !dbPool) {
-      return res.status(503).json({ok:false,error:"Persistent user database is required for authenticated data access.",code:"USER_DB_REQUIRED",requestId:req.eraRequestId});
+      req.eraPersistence = "local-fallback";
+      return next();
     }
+    req.eraPersistence = "postgres";
     const previous = userStateLocks.get(req.eraUserId) || Promise.resolve();
     let releaseLock;
     const lockPromise = new Promise(resolve => { releaseLock = resolve; });
@@ -1347,8 +1353,19 @@ function saveState() {
       STATE_FILE,
       JSON.stringify(
         {
-          globalIntelligence:
-            state.globalIntelligence
+          history: state.history,
+          alerts: state.alerts,
+          tradeAlerts: state.tradeAlerts,
+          notificationHistory: state.notificationHistory,
+          pushSubscriptions: state.pushSubscriptions,
+          settings: state.settings,
+          paper: state.paper,
+          journal: state.journal,
+          executionLedger: state.executionLedger,
+          backtests: state.backtests,
+          risk: state.risk,
+          setupMemory: state.setupMemory,
+          globalIntelligence: state.globalIntelligence
         },
         null,
         2
@@ -1541,6 +1558,14 @@ function isMarketHours() {
 // UPSTOX REQUEST
 // ============================================================
 
+const upstoxResponseCache = new Map();
+const upstoxInflight = new Map();
+const UPSTOX_CACHE_TTL_MS = 2500;
+
+function upstoxCacheKey(url, params = {}) {
+  return `${url}?${new URLSearchParams(Object.entries(params).map(([k,v]) => [k, String(v ?? "")])).toString()}`;
+}
+
 async function upstoxRequest(
   url,
   params = {},
@@ -1554,23 +1579,37 @@ async function upstoxRequest(
     );
   }
 
-  const response =
-    await axios.get(
-      url,
-      {
-        params,
-        timeout,
-        headers: {
-          Accept:
-            "application/json",
+  const cacheKey = upstoxCacheKey(url, params);
+  const cached = upstoxResponseCache.get(cacheKey);
+  if (cached && (Date.now() - cached.at) < UPSTOX_CACHE_TTL_MS) return cached.data;
+  if (upstoxInflight.has(cacheKey)) return upstoxInflight.get(cacheKey);
 
-          Authorization:
-            `Bearer ${UPSTOX_ACCESS_TOKEN}`
-        }
+  const requestPromise = (async () => {
+    let lastError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        const response = await axios.get(url, {
+          params, timeout,
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${UPSTOX_ACCESS_TOKEN}`
+          }
+        });
+        upstoxResponseCache.set(cacheKey, { data: response.data, at: Date.now() });
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        const status = Number(error.response?.status || 0);
+        if (![429, 500, 502, 503, 504].includes(status) || attempt === 2) throw error;
+        const retryAfter = Number(error.response?.headers?.['retry-after'] || 0);
+        const delay = Math.min(2500, Math.max(retryAfter * 1000, 350 * (attempt + 1)));
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-    );
-
-  return response.data;
+    }
+    throw lastError;
+  })();
+  upstoxInflight.set(cacheKey, requestPromise);
+  try { return await requestPromise; } finally { upstoxInflight.delete(cacheKey); }
 }
 
 // STEP 20: authenticated broker request helper for order operations.
@@ -2132,8 +2171,15 @@ async function fetchExtraMarketData() {
 // ============================================================
 
 async function refreshMarketData(requestedIndex = null) {
-  const quotes =
-    await fetchQuotes();
+  let quotes;
+  try {
+    quotes = await fetchQuotes();
+  } catch (error) {
+    // Keep the last good market snapshot alive when Upstox temporarily returns
+    // 429/5xx. Realtime V3 ticks remain authoritative when available.
+    console.error("[ERA] Market quote refresh failed:", error.response?.status || error.message);
+    quotes = state.market && Object.keys(state.market).length ? state.market : {};
+  }
 
   if (requestedIndex && INDICES[requestedIndex]) {
     state.market[requestedIndex] = quotes[requestedIndex];
@@ -2176,8 +2222,8 @@ async function refreshMarketData(requestedIndex = null) {
     }
   }
 
-  const extra =
-    await fetchExtraMarketData();
+  let extra = {GIFT_NIFTY:{available:false}, INDIA_VIX:{available:false}};
+  try { extra = await fetchExtraMarketData(); } catch (_) {}
 
   state.market.GIFT_NIFTY =
     extra.GIFT_NIFTY;
@@ -3335,10 +3381,9 @@ async function fetchOptionContracts(
     );
 
   const payload = response && response.data;
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.contracts)) return payload.contracts;
-  return [];
+  const result = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.contracts) ? payload.contracts : [];
+  if (result.length) optionApiCache.set(optionCacheKey("contracts", index), { data: result, at: Date.now() });
+  return result;
 }
 
 // ============================================================
@@ -3397,13 +3442,18 @@ app.get('/api/options/expiries', async (req, res) => {
     res.json({ ok:true, index, expiries, nearest: expiries[0] || null, count: expiries.length, updatedAt: nowISO() });
   } catch (error) {
     console.error('[ERA] Option expiries endpoint:', error.response?.data || error.message);
-    res.status(500).json({ ok:false, error: apiError(error) });
+    const status = Number(error.response?.status || 0);
+    res.status(status === 429 ? 429 : 503).json({ ok:false, error:apiError(error.response?.data || error.message), requestId:req.eraRequestId });
   }
 });
 
 // ============================================================
 // OPTION CHAIN
 // ============================================================
+
+const optionChainInflight = new Map();
+const optionChainCache = new Map();
+const OPTION_CHAIN_CACHE_TTL_MS = 8000;
 
 async function fetchOptionChain(
   index,
@@ -3428,7 +3478,13 @@ async function fetchOptionChain(
     );
   }
 
-  const response =
+  const chainKey = `${index}:${expiry}`;
+  const cachedChain = optionChainCache.get(chainKey);
+  if (cachedChain && (Date.now() - cachedChain.at) < OPTION_CHAIN_CACHE_TTL_MS) return cachedChain.data;
+  if (optionChainInflight.has(chainKey)) return optionChainInflight.get(chainKey);
+
+  const requestPromise = (async () => {
+    const response =
     await upstoxRequest(
       "https://api.upstox.com/v2/option/chain",
       {
@@ -3440,12 +3496,12 @@ async function fetchOptionChain(
       }
     );
 
-  return {
-    expiry,
-
-    data:
-      response.data || []
-  };
+  const result = { expiry, data: response.data || [] };
+    optionChainCache.set(chainKey, { data: result, at: Date.now() });
+    return result;
+  })();
+  optionChainInflight.set(chainKey, requestPromise);
+  try { return await requestPromise; } finally { optionChainInflight.delete(chainKey); }
 }
 
 // ============================================================
@@ -6505,30 +6561,19 @@ app.get(
       });
 
     } catch (error) {
-      state.lastError = {
-        message:
-          error.message,
-
-        at:
-          nowISO()
-      };
-
-      res.status(500).json({
-        ok: false,
-
-        error:
-          error.message,
-
-        market:
-          state.market,
-
-        analysis:
-          state.analysis,
-
-        updatedAt:
-          nowISO()
+      state.lastError = { message: error.message, at: nowISO() };
+      console.error("[ERA] Analysis error:", error.response?.data || error.message);
+      const status = Number(error.response?.status || 0);
+      return res.status(status === 429 ? 429 : 503).json({
+        ok:false,
+        error: apiError(error.response?.data || error.message),
+        requestId:req.eraRequestId,
+        market:state.market,
+        analysis:state.analysis,
+        updatedAt:nowISO()
       });
     }
+
   }
 );
 
@@ -6751,30 +6796,11 @@ app.get(
           chain.expiry
         );
 
-      res.json({
-        ok: true,
-
-        index,
-
-        expiry:
-          chain.expiry,
-
-        spot:
-
-          spot,
-
-        rows,
-
-        data:
-          rows,
-
-        summary,
-
-        advanced,
-
-        updatedAt:
-          nowISO()
-      });
+      const chainPayload = {
+        ok: true, index, expiry: chain.expiry, spot, rows, data: rows, summary, advanced, updatedAt: nowISO()
+      };
+      optionApiCache.set(optionCacheKey("chain", index, chain.expiry || expiry || "nearest"), {data: chainPayload, at: Date.now()});
+      res.json(chainPayload);
 
     } catch (error) {
       console.error(
@@ -6783,12 +6809,11 @@ app.get(
         error.message
       );
 
-      res.status(500).json({
-        ok: false,
-
-        error:
-          error.message
-      });
+      const cached = optionApiCache.get(optionCacheKey("chain", index, expiry || "nearest"));
+      if (cached?.data) {
+        return res.json({...cached.data, stale:true, warning:"Using last known option chain because the live provider is temporarily unavailable."});
+      }
+      res.status(503).json({ok:false,error:"Option chain temporarily unavailable. Please retry shortly."});
     }
   }
 );
@@ -7057,7 +7082,7 @@ tradePlan must be null when there is no qualified trade.
         }
       ],
       temperature: 0.1,
-      max_tokens: 1800
+      max_tokens: 420
     },
     {
       timeout: 30000,
@@ -7146,29 +7171,38 @@ app.post("/api/ai/brain", requireAuth, async (req, res) => {
 // ============================================================
 // AI CHAT
 // ============================================================
+async function openRouterChatRequest(payload) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        payload,
+        { timeout: 30000, headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, "Content-Type": "application/json", "HTTP-Referer": BACKEND_URL, "X-Title": "Era AI" } }
+      );
+    } catch (error) {
+      lastError = error;
+      const status = Number(error.response?.status || 0);
+      if (![429, 500, 502, 503, 504].includes(status) || attempt === 2) throw error;
+      const retryAfter = Number(error.response?.headers?.['retry-after'] || 0);
+      await new Promise(resolve => setTimeout(resolve, Math.min(5000, Math.max(retryAfter * 1000, 600 * (attempt + 1)))));
+    }
+  }
+  throw lastError;
+}
+
 
 app.post(
   "/api/chat",
   requireAuth,
   async (req, res) => {
+    const message = String(req.body?.message || "").trim();
+    const requestedIndex = String(req.body?.index || "NIFTY").toUpperCase();
+    const index = INDICES[requestedIndex] ? requestedIndex : "NIFTY";
     try {
-      if (
-        !OPENROUTER_API_KEY
-      ) {
-        return res.status(503)
-          .json({
-            ok: false,
-
-            error:
-              "OPENROUTER_API_KEY is not configured"
-          });
+      if (!OPENROUTER_API_KEY) {
+        return res.status(503).json({ok:false,error:"OPENROUTER_API_KEY is not configured",requestId:req.eraRequestId});
       }
-
-      const message =
-        String(
-          req.body?.message ||
-          ""
-        ).trim();
 
       if (!message) {
         return res.status(400)
@@ -7199,8 +7233,6 @@ Use the supplied market and analysis data as the source of truth.`;
 
       // Keep the OpenRouter prompt small. The full state.analysis object can contain
       // large option/technical arrays; sending it repeatedly caused 44k+ token failures.
-      const requestedIndex = String(req.body?.index || "NIFTY").toUpperCase();
-      const index = INDICES[requestedIndex] ? requestedIndex : "NIFTY";
       const m = state.market?.[index] || {};
       const a = state.analysis?.[index] || {};
       const t = a.technical || {};
@@ -7219,7 +7251,6 @@ Use the supplied market and analysis data as the source of truth.`;
           high: m.high, low: m.low, volume: m.volume, timestamp: m.timestamp,
           source: m.source, stale: m.stale
         },
-        globalIntelligence: globalIntelligenceContext(),
         analysis: {
           direction: a.direction, movement: a.movement, confidence: a.confidence,
           suggestion: a.suggestion, decision: a.decision || null, reasons: Array.isArray(a.reasons) ? a.reasons.slice(0, 5) : [],
@@ -7238,20 +7269,15 @@ Use the supplied market and analysis data as the source of truth.`;
             volumeProfile: t.volumeProfile || null,
             support: t.support,
             resistance: t.resistance,
-            levels: t.levels || null,
-            priceAction: t.priceAction || null,
             structure: t.structure?.label || t.structure,
-            structureDetails: t.structureDetails || null,
             bos: t.bos,
-            choch: t.choch,
-            multiTimeframe: t.multiTimeframe || null
+            choch: t.choch
           },
           regime: a.regime || null,
           exactStrikeSelection: a.exactStrikeSelection || compactTrades[0]?.strikeSelection || null,
           options: {
             expiry: o.expiry || null,
-            summary: o.summary || null,
-            advanced: o.advanced || null
+            summary: o.summary || null
           },
           trades: compactTrades
         },
@@ -7261,10 +7287,7 @@ Use the supplied market and analysis data as the source of truth.`;
       const userContext = compactContext;
 
       const response =
-        await axios.post(
-          "https://openrouter.ai/api/v1/chat/completions",
-
-          {
+        await openRouterChatRequest({
             model:
               OPENROUTER_MODEL,
 
@@ -7292,28 +7315,8 @@ Use the supplied market and analysis data as the source of truth.`;
               0.2,
 
             max_tokens:
-              4096
-          },
-
-          {
-            timeout:
-              30000,
-
-            headers: {
-              Authorization:
-                `Bearer ${OPENROUTER_API_KEY}`,
-
-              "Content-Type":
-                "application/json",
-
-              "HTTP-Referer":
-                BACKEND_URL,
-
-              "X-Title":
-                "Era AI"
-            }
-          }
-        );
+              256
+          });
 
       const rawAnswer = response.data?.choices?.[0]?.message?.content;
       const answer = typeof rawAnswer === "string"
@@ -7342,18 +7345,17 @@ Use the supplied market and analysis data as the source of truth.`;
       });
 
     } catch (error) {
-      console.error(
-        "[ERA] Chat error:",
-        error.response?.data ||
-        error.message
-      );
-
-      res.status(500).json({
-        ok: false,
-
-        error: apiError(error.response?.data || error.message)
+      const upstream = error.response?.data || error.message;
+      const upstreamText = apiError(upstream);
+      console.error("[ERA] Chat error:", upstream);
+      const status = Number(error.response?.status || 0);
+      res.status([429,500,502,503,504].includes(status) ? status : 500).json({
+        ok:false,
+        error:upstreamText,
+        requestId:req.eraRequestId
       });
     }
+
   }
 );
 
