@@ -1347,19 +1347,8 @@ function saveState() {
       STATE_FILE,
       JSON.stringify(
         {
-          history: state.history,
-          alerts: state.alerts,
-          tradeAlerts: state.tradeAlerts,
-          notificationHistory: state.notificationHistory,
-          pushSubscriptions: state.pushSubscriptions,
-          settings: state.settings,
-          paper: state.paper,
-          journal: state.journal,
-          executionLedger: state.executionLedger,
-          backtests: state.backtests,
-          risk: state.risk,
-          setupMemory: state.setupMemory,
-          globalIntelligence: state.globalIntelligence
+          globalIntelligence:
+            state.globalIntelligence
         },
         null,
         2
@@ -7068,7 +7057,7 @@ tradePlan must be null when there is no qualified trade.
         }
       ],
       temperature: 0.1,
-      max_tokens: 420
+      max_tokens: 1800
     },
     {
       timeout: 30000,
@@ -7303,7 +7292,7 @@ Use the supplied market and analysis data as the source of truth.`;
               0.2,
 
             max_tokens:
-              900
+              4096
           },
 
           {
@@ -7353,32 +7342,17 @@ Use the supplied market and analysis data as the source of truth.`;
       });
 
     } catch (error) {
-      const upstream = error.response?.data || error.message;
-      const upstreamText = apiError(upstream);
-      console.error("[ERA] Chat error:", upstream);
+      console.error(
+        "[ERA] Chat error:",
+        error.response?.data ||
+        error.message
+      );
 
-      // If OpenRouter credits/token budget are unavailable, ERA must still answer
-      // from its local deterministic market state instead of showing the raw quota error.
-      if (/more credits|can only afford|max_tokens|insufficient|quota|credit/i.test(upstreamText)) {
-        const m = state.market?.[index] || {};
-        const a = state.analysis?.[index] || {};
-        const t = a.technical || {};
-        const fallback = [
-          `${index} ${Number.isFinite(Number(m.price)) ? Number(m.price).toFixed(2) : "live price unavailable"}.`,
-          `ERA view: ${a.decision || a.suggestion || a.direction || "WAIT"}.`,
-          `Confidence: ${a.confidence ?? "—"}%.`,
-          t.rsi != null ? `RSI ${t.rsi}.` : null,
-          Array.isArray(a.reasons) && a.reasons.length ? `Reason: ${a.reasons[0]}` : null,
-          Array.isArray(a.risks) && a.risks.length ? `Risk: ${a.risks[0]}` : null,
-          "AI credits are temporarily unavailable, so this response is from ERA's live deterministic engine."
-        ].filter(Boolean).join(" ");
-        state.history.unshift({type:"chat",userMessage:message,answer:fallback,index:req.body?.index||index,createdAt:nowISO(),source:"LOCAL_FALLBACK"});
-        state.history=state.history.slice(0,500);
-        saveState();
-        return res.json({ok:true,answer:fallback,source:"LOCAL_FALLBACK"});
-      }
+      res.status(500).json({
+        ok: false,
 
-      res.status(500).json({ok:false,error:upstreamText});
+        error: apiError(error.response?.data || error.message)
+      });
     }
   }
 );
