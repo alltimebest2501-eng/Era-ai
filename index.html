@@ -44,6 +44,279 @@
 .welcome-screen{animation:eraFadeIn .45s ease both}.welcome-card{animation:eraWelcomeIn .75s cubic-bezier(.2,.8,.2,1) both}.welcome-icon{animation:eraPulse 1.8s ease-in-out infinite}.welcome-card h1{overflow:hidden}.welcome-word{display:inline-block;opacity:0;transform:translateY(22px);animation:eraWordIn .55s cubic-bezier(.2,.8,.2,1) forwards}.welcome-word:nth-child(2){animation-delay:.18s}.welcome-word:nth-child(3){animation-delay:.36s}.welcome-word:nth-child(4){animation-delay:.54s}.welcome-sub{opacity:0;animation:eraSubIn .6s ease .8s forwards}.welcome-progress{height:3px;width:0;margin:18px auto 0;border-radius:9px;background:linear-gradient(90deg,var(--accent2),var(--accent));animation:eraProgress 2.7s linear forwards}.notify-modal{position:fixed;inset:0;z-index:700;display:none;place-items:center;padding:18px;background:#0009;backdrop-filter:blur(7px)}.notify-modal.open{display:grid}.notify-modal-card{width:min(430px,100%);padding:22px;border:1px solid rgba(25,230,255,.25);border-radius:22px;background:linear-gradient(145deg,#0d1930,#06101f);box-shadow:0 30px 100px #000c;animation:eraWelcomeIn .35s ease both}.notify-modal-icon{width:54px;height:54px;border-radius:17px;display:grid;place-items:center;font-size:25px;background:rgba(25,230,255,.1);border:1px solid rgba(25,230,255,.22);margin-bottom:12px}.notify-modal-card h2{margin:0 0 7px}.notify-modal-card p{color:var(--muted);font-size:11px;line-height:1.65;margin:0 0 14px}.notify-modal-actions{display:grid;gap:8px}.notify-types{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0 16px}.notify-type{padding:9px;border:1px solid var(--line);border-radius:10px;background:#081321;color:#a9bbd0;font-size:9px}.notify-type.on{border-color:rgba(25,230,255,.25);color:#dffcff;background:rgba(25,230,255,.05)}.notification-badge{position:absolute;top:-3px;right:-3px;min-width:15px;height:15px;padding:0 4px;border-radius:20px;background:var(--red);color:#fff;font-size:8px;display:none;align-items:center;justify-content:center}.top-actions .icon-btn{position:relative}@keyframes eraFadeIn{from{opacity:0}to{opacity:1}}@keyframes eraWelcomeIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}@keyframes eraPulse{0%,100%{transform:scale(1);box-shadow:0 0 35px var(--glow)}50%{transform:scale(1.06);box-shadow:0 0 65px var(--glow)}}@keyframes eraWordIn{to{opacity:1;transform:none}}@keyframes eraSubIn{to{opacity:1}}@keyframes eraProgress{to{width:72%}}
 .welcome-screen{position:fixed;inset:0;z-index:500;background:radial-gradient(circle at 50% 25%,rgba(118,87,255,.28),transparent 35%),#050914;display:none;place-items:center;padding:24px}.welcome-card{width:min(520px,100%);padding:32px 24px;text-align:center;border:1px solid rgba(25,230,255,.25);border-radius:28px;background:linear-gradient(145deg,rgba(13,25,45,.98),rgba(6,13,26,.98));box-shadow:0 30px 90px #0009}.welcome-icon{width:76px;height:76px;margin:0 auto 18px;border-radius:24px;display:grid;place-items:center;font-size:38px;font-weight:1000;background:linear-gradient(135deg,var(--accent2),var(--accent));box-shadow:0 0 40px var(--glow)}.welcome-card h1{margin:0 0 8px;font-size:30px}.welcome-card p{color:var(--muted);font-size:12px;line-height:1.7;margin:0 auto 20px;max-width:420px}.welcome-actions{display:grid;gap:9px}.welcome-skip{border:1px solid var(--line);background:#091321;padding:11px;border-radius:12px}.welcome-status{font-size:10px;color:var(--muted);margin-top:12px;min-height:16px}.menu-btn{display:block}.menu-drawer{position:fixed;inset:0;z-index:300;display:none}.menu-drawer.open{display:block}.menu-backdrop{position:absolute;inset:0;background:#0008;backdrop-filter:blur(4px)}.menu-panel{position:absolute;right:12px;top:64px;width:min(360px,calc(100% - 24px));max-height:calc(100vh - 80px);overflow:auto;padding:14px;border:1px solid var(--line);border-radius:20px;background:linear-gradient(145deg,#0d1930,#06101f);box-shadow:0 25px 70px #000b}.menu-head{display:flex;align-items:center;justify-content:space-between;padding:6px 4px 12px}.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.menu-item{border:1px solid var(--line);background:#081321;border-radius:13px;padding:12px;text-align:left}.menu-item b{display:block;font-size:12px}.menu-item small{display:block;color:var(--muted);font-size:9px;margin-top:3px}.permission-card{border:1px solid rgba(25,230,255,.18);background:rgba(25,230,255,.05);border-radius:14px;padding:12px;margin:8px 0 12px}.permission-card b{font-size:11px}.permission-card small{display:block;color:var(--muted);font-size:9px;line-height:1.5;margin:4px 0 8px}.paper-mode{display:flex;gap:8px;margin:8px 0}.paper-mode button{flex:1;border:1px solid var(--line);background:#081321;border-radius:10px;padding:9px;font-size:10px}.paper-mode button.active{border-color:var(--accent);color:var(--accent);background:rgba(25,230,255,.08)}.paper-live{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.paper-live .card{padding:10px}.paper-live small{display:block;color:var(--muted);font-size:8px}.paper-live b{display:block;margin-top:4px;font-size:13px}.paper-pnl{font-size:15px!important}.paper-close{border:1px solid var(--red);background:rgba(255,82,124,.08);color:#ff8ba7;border-radius:9px;padding:6px 8px;font-size:9px}.notification-panel{position:fixed;right:14px;top:68px;width:min(380px,calc(100% - 28px));z-index:280;display:none}.notification-panel.open{display:block}.notification-panel .card{padding:15px}.notification-panel h3{margin:0}.notification-panel p{color:var(--muted);font-size:10px;line-height:1.5}.notification-actions{display:flex;gap:8px}.notification-actions button{flex:1}.mobile-nav{display:flex!important}.era-guide{padding:14px}.guide-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.guide-item{border:1px solid var(--line);background:#081321;border-radius:12px;padding:11px}.guide-item b{display:block;font-size:11px}.guide-item small{display:block;color:var(--muted);font-size:9px;line-height:1.55;margin-top:4px}@media(max-width:650px){.guide-grid{grid-template-columns:1fr}}.topbar .top-actions .menu-btn{display:grid!important;place-items:center;min-width:42px;width:42px;height:42px;font-size:22px;line-height:1;flex:0 0 42px}.topbar .top-actions{display:flex;align-items:center;gap:8px}.topbar{position:relative;z-index:120}
 @media(max-width:950px){.menu-btn{display:block}.top-actions .menu-btn{display:block}.sidebar{display:none}main{margin-left:0;width:100%;padding:16px 14px 88px}.menu-grid{grid-template-columns:1fr 1fr}.welcome-card{padding:28px 20px}}
+
+/* ERA 2.0.2 UI refinement: light mode, non-overlay chat, home simplification, four AI signal cards */
+.era-chat-card{position:relative;display:flex;flex-direction:column;min-height:0}
+.chat-board{height:190px;max-height:none;margin-top:13px;flex:0 0 190px;padding:12px 12px 12px;overflow:auto}
+.chat-compose{position:static;left:auto;right:auto;bottom:auto;margin-top:10px;z-index:auto;flex:0 0 auto}
+.era-chat-chips{flex:0 0 auto}
+.era-index-section .section-title{margin-bottom:10px}
+.era-index-section .section-title>span{padding:7px 10px;border-radius:999px;background:rgba(53,217,160,.10);color:var(--green);border:1px solid rgba(53,217,160,.16);font-size:9px;font-weight:800}
+.ai-index-signal-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ai-index-signal{padding:16px;border-radius:21px}
+.ai-signal-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ai-signal-head h3{margin:5px 0 3px;font-size:18px}
+.ai-signal-head small{display:block;color:var(--muted);font-size:9px}
+.ai-signal-head>strong{font-size:22px;color:var(--green)}
+.ai-signal-status{font-size:20px;font-weight:950;color:var(--green);margin:4px 0}
+.ai-signal-grid,.ai-checks{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:12px}
+.ai-signal-grid div,.ai-checks div{padding:9px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.ai-signal-grid small,.ai-checks small{display:block;color:var(--muted);font-size:7px;text-transform:uppercase}
+.ai-signal-grid b,.ai-checks b{display:block;font-size:10px;margin-top:4px}
+.ai-reason{margin-top:10px;padding:10px;border-radius:11px;background:rgba(125,92,255,.06);color:var(--muted);font-size:9px;line-height:1.5}
+.era-chat-home{margin-top:12px}
+:root[data-theme="light"]{--bg:#f3effb;--bg2:#fbf9ff;--card:#ffffff;--card2:#ffffff;--line:rgba(83,69,130,.14);--text:#26233f;--muted:#756f89;--accent:#7357e8;--accent2:#a879e9;--green:#159f73;--red:#d94f68;--yellow:#b67d18;--glow:rgba(115,87,232,.16)}
+:root[data-theme="light"] body{background:linear-gradient(145deg,#eee8fb,#fff7fb 48%,#f1edff);color:var(--text)}
+:root[data-theme="light"] .card,.root[data-theme="light"] .card{background:linear-gradient(145deg,#ffffff,#fbf9ff);box-shadow:0 12px 32px rgba(73,61,110,.10)}
+:root[data-theme="light"] .era-index-card{background:linear-gradient(145deg,#ffffff,#fbf9ff);box-shadow:0 12px 30px rgba(73,61,110,.10)}
+:root[data-theme="light"] .era-index-metrics div,.root[data-theme="light"] .ai-signal-grid div,.root[data-theme="light"] .ai-checks div{background:#f6f2fc}
+:root[data-theme="light"] .chat-board{background:#fbfaff;border-color:rgba(83,69,130,.14);box-shadow:inset 0 0 25px rgba(115,87,232,.04)}
+:root[data-theme="light"] .chat-compose{background:#ffffff;border-color:rgba(83,69,130,.14);box-shadow:0 8px 24px rgba(73,61,110,.10)}
+:root[data-theme="light"] .chat-compose input{color:#26233f}
+:root[data-theme="light"] .chat-compose input::placeholder{color:#918aa3}
+:root[data-theme="light"] .era-chat-chips button{background:#ffffff;color:#4d4762;border-color:rgba(83,69,130,.14)}
+:root[data-theme="light"] .icon-btn{background:#ffffff;color:#403a57}
+:root[data-theme="light"] .index-tabs button,.root[data-theme="light"] .subtabs button{background:#ffffff;color:#625b77}
+:root[data-theme="light"] .menu-panel{background:linear-gradient(145deg,#ffffff,#f8f4ff);box-shadow:0 25px 70px rgba(50,39,82,.20)}
+:root[data-theme="light"] .menu-item{background:#ffffff;color:#312c48}
+:root[data-theme="light"] .menu-item small{color:#7b748e}
+:root[data-theme="light"] .mobile-nav{background:rgba(255,255,255,.94);box-shadow:0 10px 35px rgba(73,61,110,.15)}
+:root[data-theme="light"] .mobile-nav button{color:#77708a}
+:root[data-theme="light"] .mobile-nav button.active{color:var(--accent);background:#f0eafd}
+:root[data-theme="light"] .premium-box{background:linear-gradient(145deg,#fff0f7,#eee8ff);border-color:rgba(115,87,232,.15)}
+:root[data-theme="light"] .sidebar{background:linear-gradient(180deg,#e9e1fa,#ded5f5);color:#302a49}
+:root[data-theme="light"] .nav button{color:#5f5875}
+:root[data-theme="light"] .nav button:hover,:root[data-theme="light"] .nav button.active{color:#3e3562}
+@media(max-width:650px){.ai-index-signal-grid{grid-template-columns:1fr}.era-index-section .section-title h3{font-size:14px}.era-index-section .section-title>span{font-size:7px;padding:6px 8px}.era-index-grid{margin-top:8px}.era-chat-home{margin-top:10px}.era-chat-card{padding:12px}.chat-board{height:170px;flex-basis:170px}.chat-compose{padding:6px}.chat-compose input{font-size:12px}.ai-index-signal{padding:13px}.ai-signal-head h3{font-size:16px}.ai-signal-status{font-size:18px}.ai-signal-grid,.ai-checks{gap:5px}.ai-signal-grid div,.ai-checks div{padding:7px 6px}.ai-signal-grid b,.ai-checks b{font-size:8px}}
+
+/* ============================================================
+   ERA LIGHT-ONLY MOBILE UI FIX
+   ============================================================ */
+html,body{background:#f4f0fb!important;color:#282542!important}
+body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!important}
+.card,.era-index-card,.panel,.setting,.deep-card,.market,.signal,.news-item,.stat,.movement-card,.tech-card{
+  background:#fff!important;color:#282542!important;border-color:rgba(78,66,120,.14)!important;
+  box-shadow:0 10px 28px rgba(76,62,112,.10)!important;
+}
+.era-index-grid{width:100%!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.era-index-card{min-width:0!important}
+.era-index-price,.era-index-change,.index-symbol,.signal-data b,.market-name,.price,.change,
+.section-title h3,.era-card-head h3,.analysis-row b,.deep-title,.stat strong,.tech-value,
+.panel-head b,.setting-row,.history-item,.table td,.table th{color:#282542!important}
+.era-index-metrics div,.ai-signal-grid div,.ai-checks div,.deep-values div{
+  background:#f7f3fc!important;color:#282542!important
+}
+.era-index-metrics small,.era-index-metrics b,.era-card-head p,.analysis-row small,.deep-values small,
+.movement-card small,.tech-card small,.index-card small,.stat small,.section-title span,.muted,
+.label,.market-stats small,.signal-data div{color:#746d88!important}
+.chat-board{background:#fbf9ff!important;border-color:rgba(78,66,120,.14)!important;color:#282542!important}
+.chat-board .bubble{color:#282542!important}
+.chat-board .bubble.era{background:#eee8fb!important;border-color:rgba(115,87,232,.18)!important}
+.chat-board .bubble.user{background:#7357e8!important;color:#fff!important}
+.chat-compose{background:#fff!important;border-color:rgba(78,66,120,.14)!important;box-shadow:0 8px 22px rgba(76,62,112,.10)!important}
+.chat-compose input,.chat input,.text-input,.select{
+  background:#fff!important;color:#282542!important;border-color:rgba(78,66,120,.16)!important
+}
+.chat-compose input::placeholder,.chat input::placeholder,.text-input::placeholder{color:#918aa3!important}
+.chat-photo,.chat-mic{background:#f2eef9!important;color:#4d4762!important;border-color:rgba(78,66,120,.12)!important}
+.chat-send,.primary,.premium-btn{color:#fff!important}
+.era-chat-chips button,.index-tabs button,.subtabs button,.theme-toggle button{
+  background:#fff!important;color:#4d4762!important;border-color:rgba(78,66,120,.14)!important
+}
+.menu-panel{background:#fff!important;color:#282542!important;border-color:rgba(78,66,120,.14)!important}
+.menu-item{background:#fff!important;color:#282542!important;border-color:rgba(78,66,120,.14)!important}
+.menu-item small{color:#746d88!important}
+.mobile-nav{background:rgba(255,255,255,.98)!important;border-color:rgba(78,66,120,.14)!important;box-shadow:0 10px 30px rgba(76,62,112,.15)!important}
+.mobile-nav button{color:#746d88!important}.mobile-nav button.active{color:#7357e8!important;background:#f0eafd!important}
+.icon-btn{background:#fff!important;color:#403a57!important;border-color:rgba(78,66,120,.14)!important}
+.toggle{background:#dbe0ea!important}.toggle:before{background:#8291a9!important}.toggle:checked{background:#7357e8!important}
+.welcome-screen{background:linear-gradient(145deg,#eee8fb,#fff8fc)!important}
+.welcome-card{background:#fff!important;color:#282542!important;border-color:rgba(115,87,232,.18)!important;box-shadow:0 20px 60px rgba(76,62,112,.16)!important}
+.welcome-skip{background:#fff!important;color:#4d4762!important;border-color:rgba(78,66,120,.14)!important}
+.toast-container{bottom:82px!important}
+.toast{background:#fff!important;color:#282542!important;border-color:rgba(78,66,120,.16)!important;box-shadow:0 10px 30px rgba(76,62,112,.18)!important}
+.toast *{color:inherit!important}
+.notification-panel{color:#282542!important}
+.notification-panel .card{background:#fff!important}
+.paper-mode button{background:#fff!important;color:#4d4762!important;border-color:rgba(78,66,120,.14)!important}
+.paper-mode button.active{color:#7357e8!important;border-color:#7357e8!important;background:#f0eafd!important}
+.paper-close{background:#fff2f5!important;color:#d94f68!important}
+.logout-btn{background:#fff!important;color:#4d4762!important;border-color:rgba(78,66,120,.14)!important}
+.table th,.table td{border-bottom-color:rgba(78,66,120,.12)!important}
+@media(max-width:650px){
+  .era-index-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;gap:10px!important}
+  .era-index-card{width:100%!important}
+  .chat-board{height:150px!important}
+  .chat-compose{position:static!important}
+  .toast-container{left:12px!important;right:12px!important}
+  .toast{width:100%!important}
+}
+
+
+/* ============================================================
+   ERA OPTION CHAIN — broker-style mobile option-chain UI
+   ============================================================ */
+.option-chain-section{max-width:980px;margin:0 auto}
+.option-market-head{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 15px;margin-bottom:10px}
+.option-market-name{font-size:17px;font-weight:800}
+.option-market-price-row{display:flex;align-items:baseline;gap:8px;margin-top:4px}
+.option-market-price-row strong{font-size:31px;letter-spacing:-.7px}
+.option-market-price-row span{font-size:13px;font-weight:700}
+.option-market-status{font-size:9px;color:#746d88;margin-top:5px;font-weight:700}
+.option-pcr-box{min-width:78px;text-align:right}
+.option-pcr-box small{display:block;color:#746d88;font-size:9px}
+.option-pcr-box strong{display:block;font-size:20px;margin-top:2px}
+.option-pcr-box span{display:block;color:#7357e8;font-size:9px;font-weight:800;margin-top:2px}
+.option-index-tabs{display:flex;gap:7px;overflow:auto;padding:0 2px 10px}
+.option-index-tabs .option-index{border:1px solid rgba(78,66,120,.14);color:#4d4762;background:#fff;border-radius:11px;padding:9px 14px;white-space:nowrap;font-size:11px;font-weight:800}
+.option-index-tabs .option-index.active{color:#7357e8;border-color:#7357e8;background:#f0eafd}
+.option-expiry-wrap{overflow:hidden;margin-bottom:10px}
+.option-expiry-tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 7px;scrollbar-width:none}
+.option-expiry-tabs::-webkit-scrollbar{display:none}
+.option-expiry-tabs button{flex:0 0 auto;border:1px solid rgba(78,66,120,.16);background:#fff;color:#4d4762;border-radius:11px;padding:10px 17px;font-size:12px;font-weight:800}
+.option-expiry-tabs button.active{color:#d99516;border-color:#d99516;background:#fff8ea;box-shadow:0 3px 10px rgba(217,149,22,.08)}
+.option-expiry-placeholder{color:#918aa3!important}
+.option-chain-card{padding:0!important;overflow:hidden}
+.option-chain-head{height:64px;display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;border-bottom:1px solid rgba(78,66,120,.12);background:#fff}
+.option-side-btn,.option-chain-title{height:100%;border:0;background:transparent;font-weight:800}
+.option-side-btn{display:flex;align-items:center;gap:8px;justify-content:flex-start;padding:0 13px;color:#d99516;font-size:15px}.option-side-btn.active{background:#fff8ea;color:#d99516}.option-put-btn.active{background:#f3efff;color:#8a72d9}.option-chain-title.active{background:#f0eafd;color:#7357e8}
+.option-put-btn{justify-content:flex-end;color:#8a72d9}
+.option-chain-title{color:#282542;font-size:16px}
+.option-chain-title:active,.option-side-btn:active{transform:scale(.98)}
+.option-arrow{font-size:31px;line-height:1;font-weight:400}
+.option-chain-mode-note{text-align:center;color:#746d88;font-size:8px;font-weight:700;padding:5px 0 2px;letter-spacing:.2px}
+.option-table-wrap{overflow-x:auto;overflow-y:auto;max-height:min(560px,62dvh);-webkit-overflow-scrolling:touch;overscroll-behavior:contain;scrollbar-width:thin}
+.option-chain-table{width:100%;min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
+.option-chain-table th{height:50px;padding:5px 6px;background:#fff;color:#746d88;border-bottom:1px solid rgba(78,66,120,.10);font-size:9px;font-weight:700;text-align:center;vertical-align:middle}
+.option-chain-table th small{display:block;font-size:8px;color:#918aa3;font-weight:500;margin-top:3px}
+.option-chain-table td{height:72px;padding:7px 5px;border-bottom:1px solid rgba(78,66,120,.08);font-size:13px;text-align:center;color:#282542;vertical-align:middle;background:#fff}
+.option-chain-table td b{font-size:14px}
+.option-chain-table tr.atm-row td{background:#f6f1ff}
+.option-chain-table tr.atm-row td.strike-cell{position:relative}
+.option-chain-table tr.atm-row td.strike-cell b{display:inline-flex;align-items:center;justify-content:center;background:#1c936d;color:#fff;border-radius:8px;padding:7px 9px;min-width:68px}
+.option-chain-table td.change-up,.option-chain-table td.change-down{font-size:10px;font-weight:700;padding-top:0}
+.option-chain-table td.change-up{color:#4f9227}
+.option-chain-table td.change-down{color:#d05c68}
+.option-chain-table .empty{height:120px;color:#918aa3}
+.option-chain-table th:first-child,.option-chain-table td:first-child{border-left:0}
+.option-cell-main{display:block;font-size:14px;font-weight:650}
+.option-cell-sub{display:block;font-size:10px;line-height:1.25;margin-top:4px;color:#4f9227}
+.option-cell-sub.down{color:#d05c68}
+.option-chain-table .strike-cell{background:linear-gradient(90deg,#fbfaff,#fff,#fbfaff)}
+.option-chain-table tr.atm-row .strike-cell{background:#f0eafd}
+.option-filter-bar{display:flex;gap:10px;overflow-x:auto;padding:13px 12px 12px;background:#faf8fd;border-top:1px solid rgba(78,66,120,.08);scrollbar-width:none}
+.option-filter-bar::-webkit-scrollbar{display:none}
+.option-filter-bar button{flex:0 0 auto;min-width:76px;height:40px;padding:0 12px;border:1px solid rgba(78,66,120,.14);background:#fff;color:#4d4762;border-radius:12px;font-size:11px;font-weight:800;box-shadow:0 4px 12px rgba(76,62,112,.06)}
+.option-filter-bar button.active{color:#7357e8;border-color:#7357e8;background:#f0eafd}
+.option-chain-footer{display:flex;justify-content:space-between;align-items:center;padding:8px 12px 11px;color:#918aa3;font-size:9px;background:#fff}
+.option-chain-footer #optionSpot{font-weight:800;color:#4d4762}
+@media(max-width:650px){
+  .option-chain-section{margin:0 -2px}
+  .option-market-head{border-radius:18px;padding:15px 15px 13px}
+  .option-market-price-row strong{font-size:29px}
+  .option-chain-head{height:62px}
+  .option-side-btn{font-size:14px;padding:0 10px}
+  .option-chain-title{font-size:15px}
+  .option-chain-table th{font-size:8px;height:48px}
+  .option-chain-table td{height:67px;font-size:12px}
+  .option-cell-main{font-size:13px}
+  .option-cell-sub{font-size:9px}
+  .option-chain-table td b{font-size:13px}
+}
+/* PAPER TRADING PRO UI */
+.paper-side{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.paper-side button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:13px;font-weight:900;font-size:12px;color:#6b6579}
+.paper-side button.active-buy{background:#20d66d;color:#fff;border-color:#20d66d;box-shadow:0 8px 22px rgba(32,214,109,.18)}
+.paper-side button.active-sell{background:#ff527c;color:#fff;border-color:#ff527c;box-shadow:0 8px 22px rgba(255,82,124,.18)}
+.paper-entry-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.paper-entry-grid .mini-input,.paper-entry-grid .select{background:#fff!important;color:#282542!important;border:1px solid rgba(78,66,120,.16)!important;color-scheme:light!important;-webkit-text-fill-color:#282542!important}
+.paper-entry-grid .mini-input::placeholder{color:#8b849e!important;-webkit-text-fill-color:#8b849e!important;opacity:1}
+.paper-entry-grid .mini-input:focus,.paper-entry-grid .select:focus{background:#fff!important;color:#282542!important;border-color:#7357e8!important;box-shadow:0 0 0 3px rgba(115,87,232,.10)!important;outline:none}
+.paper-trade-nav{display:flex;gap:7px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.paper-trade-nav button{border:1px solid var(--line);background:rgba(25,230,255,.05);color:var(--muted);border-radius:11px;padding:7px 10px;font-size:9px;font-weight:900;white-space:nowrap}
+.paper-trade-nav button:hover{color:var(--accent);border-color:rgba(25,230,255,.45);background:rgba(25,230,255,.10)}
+.paper-trade-nav button.active{color:var(--accent);border-color:var(--accent);background:rgba(25,230,255,.10)}
+.paper-position-card{padding:15px;border-radius:18px;border:1px solid var(--line);background:#fff;margin-top:10px;cursor:pointer}
+.paper-position-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.paper-position-title{font-weight:900;font-size:15px}
+.paper-position-meta{font-size:10px;color:var(--muted);margin-top:4px}
+.paper-position-pnl{text-align:right;font-weight:900;font-size:17px}
+.paper-position-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:12px}
+.paper-position-grid div{background:#f7f7fb;border-radius:10px;padding:9px}
+.paper-position-grid small{display:block;color:var(--muted);font-size:8px}
+.paper-position-grid b{display:block;margin-top:3px;font-size:11px}
+.paper-position-actions{display:flex;gap:8px;margin-top:11px}
+.paper-position-actions button{flex:1}
+.paper-performance-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.paper-performance-tabs{display:flex;gap:8px;overflow:auto;padding:3px 0 10px}
+.paper-performance-tabs button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 13px;white-space:nowrap;font-size:10px;font-weight:800}
+.paper-performance-tabs button.active{border-color:var(--accent);color:var(--accent);background:rgba(25,230,255,.08)}
+.paper-history-card{padding:14px;border:1px solid var(--line);border-radius:16px;background:#fff;margin-top:9px;cursor:pointer}
+.paper-history-row{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.paper-history-title{font-weight:900;font-size:13px}
+.paper-history-sub{font-size:9px;color:var(--muted);margin-top:4px}
+.paper-history-pnl{font-weight:900;font-size:14px}
+.paper-detail{display:none}
+.paper-detail.open{display:block}
+.paper-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.paper-detail-pnl{text-align:center;padding:18px;border-radius:16px;background:#f7f7fb;margin:12px 0}
+.paper-detail-pnl strong{display:block;font-size:25px}
+.paper-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.paper-detail-grid div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:11px}
+.paper-detail-grid span{color:var(--muted)}
+.paper-order-log{position:relative;padding:10px 0 10px 17px;border-left:2px solid var(--line);margin-left:7px}
+.paper-order-log::before{content:"";position:absolute;left:-5px;top:15px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.paper-edit-modal{position:fixed;inset:0;z-index:520;display:none;place-items:center;padding:18px;background:rgba(0,0,0,.45);backdrop-filter:blur(5px)}
+.paper-edit-modal.open{display:grid}
+.paper-edit-card{width:min(440px,100%);background:#fff;border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 25px 80px rgba(0,0,0,.2)}
+.paper-edit-actions{display:flex;gap:8px;margin-top:12px}
+.paper-edit-actions button{flex:1}
+@media(max-width:650px){.paper-entry-grid{grid-template-columns:1fr}.paper-position-grid{grid-template-columns:1fr 1fr}.paper-detail-grid{grid-template-columns:1fr}}
+
+.paper-order-hint{color:var(--text)!important;background:var(--card)!important;border:1px solid var(--line)!important;}
+.paper-order-hint *{color:var(--text)!important;}
+</style>
+
+<style>
+/* Step 13 — Trade Alert Popup */
+.trade-alert-popup{position:fixed;right:14px;bottom:82px;width:min(430px,calc(100% - 28px));z-index:700;display:none}
+.trade-alert-popup.open{display:block;animation:eraAlertIn .22s ease-out}
+.trade-alert-card{background:linear-gradient(145deg,#101d34,#07101f);border:1px solid rgba(25,230,255,.30);border-radius:18px;padding:15px;box-shadow:0 24px 70px #000b}
+.trade-alert-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trade-alert-head b{font-size:14px}.trade-alert-badge{font-size:9px;font-weight:900;color:#07101f;background:var(--accent);padding:5px 8px;border-radius:999px}
+.trade-alert-sub{color:var(--muted);font-size:10px;margin:6px 0 12px}
+.trade-alert-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.trade-alert-metric{border:1px solid var(--line);background:#081321;border-radius:10px;padding:8px}.trade-alert-metric small{display:block;color:var(--muted);font-size:8px}.trade-alert-metric b{display:block;margin-top:3px;font-size:12px}
+.trade-alert-reason{margin-top:10px;border:1px solid var(--line);border-radius:11px;padding:9px;font-size:10px;line-height:1.5;color:#c7d5e7}
+.trade-alert-actions{display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:7px;margin-top:11px}.trade-alert-actions button{border:1px solid var(--line);border-radius:10px;padding:9px;font-size:10px;font-weight:800}.trade-alert-consider{background:rgba(25,230,255,.08);color:var(--accent)}.trade-alert-reject{background:rgba(255,82,124,.08);color:#ff8ba7}.trade-alert-paper{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff;border:0!important}
+.trade-alert-close{border:0;background:transparent;color:#91a5bd;font-size:18px}
+@keyframes eraAlertIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:600px){.trade-alert-popup{right:10px;left:10px;bottom:76px;width:auto}.trade-alert-grid{grid-template-columns:repeat(2,1fr)}.trade-alert-actions{grid-template-columns:1fr 1fr}.trade-alert-paper{grid-column:1/-1}}
+</style>
+<style>
+:root{--bg:#07101f;--card:#101c30;--card2:#14233b;--line:rgba(150,175,220,.16);--text:#eef4ff;--muted:#91a2bd;--accent:#8e7dff;--accent2:#5da9ff;--green:#35d9a0;--red:#ff6b86;--yellow:#f2c76e;--glow:rgba(142,125,255,.25)}
+:root[data-theme="light"]{--bg:#f4f1fb;--card:#fff;--card2:#f8f5ff;--line:rgba(86,72,130,.14);--text:#252345;--muted:#77728e;--accent:#7d5cff;--accent2:#b67cff;--green:#16ad7b;--red:#e95670;--yellow:#c58b1e;--glow:rgba(125,92,255,.18)}
+body{background:radial-gradient(circle at 15% 0%,rgba(142,125,255,.16),transparent 30%),radial-gradient(circle at 95% 20%,rgba(255,157,201,.10),transparent 28%),var(--bg);transition:.35s} .sidebar{background:linear-gradient(180deg,rgba(18,25,50,.95),rgba(10,16,32,.96));border-right:1px solid var(--line)} :root[data-theme="light"] .sidebar{background:linear-gradient(180deg,#e7e0fb,#dcd4f8)} .nav button{border-radius:16px;transition:.25s}.nav button.active{background:linear-gradient(90deg,rgba(142,125,255,.26),rgba(93,169,255,.12));box-shadow:0 8px 22px rgba(125,92,255,.14)}
+.era-home-hero{min-height:190px;border-radius:26px;padding:25px 28px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(154,125,255,.32),rgba(255,179,210,.12) 55%,rgba(93,169,255,.15));border:1px solid var(--line);box-shadow:0 18px 55px rgba(0,0,0,.14);overflow:hidden}.era-welcome-copy{max-width:720px}.era-welcome-copy h2{font-size:30px;margin:8px 0}.era-welcome-copy p{color:var(--muted);font-size:13px;line-height:1.55}.hero-status{display:inline-flex;gap:7px;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid var(--line);font-size:10px}.hero-orb{width:145px;height:145px;border-radius:42px;display:grid;place-items:center;position:relative;background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(125,92,255,.24));box-shadow:0 20px 45px rgba(125,92,255,.25);animation:eraFloat 4s ease-in-out infinite}.hero-orb-ring{position:absolute;width:95px;height:95px;border-radius:50%;border:1px solid rgba(255,255,255,.28);box-shadow:0 0 35px var(--glow)}.hero-orb-core{font-size:25px;font-weight:950;letter-spacing:2px}
+.era-index-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:15px}.era-index-card{padding:15px;border-radius:21px;background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid var(--line);box-shadow:0 14px 35px rgba(0,0,0,.1);transition:.25s}.era-index-card:hover{transform:translateY(-4px)}.era-index-card[data-card-index="NIFTY"]{--index-accent:#55c8ff}.era-index-card[data-card-index="BANKNIFTY"]{--index-accent:#51dca5}.era-index-card[data-card-index="FINNIFTY"]{--index-accent:#ff7197}.era-index-card[data-card-index="SENSEX"]{--index-accent:#8e7dff}.era-index-head{display:flex;justify-content:space-between;align-items:center}.index-symbol{font-size:11px;font-weight:900}.index-status{margin-left:6px;padding:3px 6px;border-radius:999px;color:var(--green);background:rgba(53,217,160,.1);font-size:7px;font-weight:900}.index-icon{width:27px;height:27px;border-radius:9px;display:grid;place-items:center;color:white;font-weight:900;background:linear-gradient(135deg,var(--index-accent),var(--accent))}.era-index-price{font-size:25px;font-weight:950;margin-top:13px}.era-index-change{font-size:10px;font-weight:800;margin-top:3px}.mini-chart{height:55px;margin-top:9px;border-radius:11px;overflow:hidden}.mini-chart svg{width:100%;height:100%}.mini-chart [data-field="area"]{fill:var(--index-accent);opacity:.1}.mini-chart [data-field="line"]{fill:none;stroke:var(--index-accent);stroke-width:3}.era-index-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.era-index-metrics div{padding:7px 6px;border-radius:10px;background:rgba(255,255,255,.035)}.era-index-metrics small{display:block;color:var(--muted);font-size:7px}.era-index-metrics b{font-size:9px}
+.era-ai-home-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:15px}.era-chat-card,.era-ai-analysis-card{padding:18px;border-radius:22px}.era-card-head{display:flex;justify-content:space-between;gap:12px}.era-card-head h3{margin:5px 0;font-size:20px}.era-card-head p{margin:0;color:var(--muted);font-size:11px}.ai-online{color:var(--green);font-size:9px;font-weight:900}.chat-board{height:150px;overflow:auto;margin-top:13px;padding:11px;border-radius:17px;background:rgba(0,0,0,.1);border:1px solid var(--line)}.era-chat-chips{display:flex;gap:7px;overflow:auto;margin:9px 0}.era-chat-chips button{border:1px solid var(--line);background:rgba(255,255,255,.04);padding:7px 10px;border-radius:999px;font-size:9px;white-space:nowrap}.analysis-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}.analysis-row>span:last-child{margin-left:auto;color:var(--muted)}.analysis-icon{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:rgba(125,92,255,.12);color:var(--accent)}.analysis-row b{font-size:10px}.analysis-row small{display:block;color:var(--muted);font-size:8px;margin-top:3px}.analysis-note{margin-top:10px;padding:10px;border-radius:12px;background:rgba(53,217,160,.06);color:var(--muted);font-size:9px}.era-deep-grid{display:grid;grid-template-columns:.9fr .9fr 1.2fr;gap:10px}.deep-card{padding:15px;border-radius:18px}.deep-title{font-size:11px;font-weight:900;margin-bottom:10px}.deep-values{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.deep-values div{padding:9px;border-radius:11px;background:rgba(255,255,255,.035)}.deep-values small{display:block;color:var(--muted);font-size:8px}.deep-values b{font-size:12px}.deep-note{color:var(--muted);font-size:8px;margin-top:7px}.theme-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.theme-toggle button{border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:10px;font-size:11px;font-weight:800}.theme-toggle button.active{border-color:var(--accent);color:var(--accent);background:rgba(125,92,255,.1)}
+@keyframes eraFloat{50%{transform:translateY(-7px)}}
+/* ERA CHAT FULLSCREEN / SWIPE-DOWN */
+body.chat-focus-lock{overflow:hidden;touch-action:none}
+body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(20,16,40,.34);backdrop-filter:blur(7px);z-index:248;opacity:1;animation:eraChatBackdrop .28s ease both}
+@keyframes eraChatBackdrop{from{opacity:0}to{opacity:1}}
+.era-chat-card.chat-fullscreen{position:fixed!important;inset:10px!important;width:auto!important;height:calc(100dvh - 20px)!important;max-height:none!important;margin:0!important;z-index:260!important;display:flex!important;flex-direction:column!important;border-radius:28px!important;box-shadow:0 30px 100px rgba(40,30,80,.28)!important;animation:eraChatOpen .32s cubic-bezier(.2,.8,.2,1) both;overflow:hidden}
+@keyframes eraChatOpen{from{opacity:.7;transform:translateY(90px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.era-chat-card.chat-fullscreen .chat-board{flex:1!important;height:auto!important;min-height:0!important;max-height:none!important;overflow-y:auto!important}
+.era-chat-card.chat-fullscreen .era-chat-chips{flex-shrink:0}
+.era-chat-card.chat-fullscreen .chat-compose{flex-shrink:0;position:sticky;bottom:0}
+.era-chat-swipe-hint{display:none;color:var(--muted);font-size:9px;text-align:center;padding:6px 0 2px;letter-spacing:.3px}
+.era-chat-card.chat-fullscreen .era-chat-swipe-hint{display:block;animation:eraHint 1.8s ease-in-out infinite}
+@keyframes eraHint{50%{transform:translateY(3px);opacity:.55}}
+.era-chat-card.chat-closing{animation:eraChatClose .25s ease both!important}
+@keyframes eraChatClose{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:.6;transform:translateY(90px) scale(.96)}}
+@media(max-width:650px){.era-chat-card.chat-fullscreen{inset:0!important;height:100dvh!important;border-radius:0!important}.era-chat-card.chat-fullscreen .era-card-head{padding-top:max(10px,env(safe-area-inset-top))}.era-chat-card.chat-fullscreen .chat-compose{padding-bottom:max(8px,env(safe-area-inset-bottom))}.era-chat-card.chat-fullscreen .chat-board{padding-bottom:12px}}
+@media(max-width:1050px){.era-index-grid{grid-template-columns:repeat(2,1fr)}.era-ai-home-grid{grid-template-columns:1fr}.era-deep-grid{grid-template-columns:1fr 1fr}.deep-signal{grid-column:1/-1}}@media(max-width:650px){main{padding:10px 10px 86px}.topbar h1{font-size:17px}.era-home-hero{min-height:145px;padding:17px;border-radius:21px}.era-welcome-copy h2{font-size:21px}.era-welcome-copy p{font-size:9px;max-width:245px}.hero-orb{width:82px;height:82px;border-radius:25px}.hero-orb-ring{width:58px;height:58px}.hero-orb-core{font-size:15px}.era-index-grid{grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.era-index-card{padding:11px;border-radius:17px}.index-symbol{font-size:9px}.index-icon{width:23px;height:23px;font-size:9px}.era-index-price{font-size:17px;margin-top:9px}.era-index-change{font-size:8px}.mini-chart{height:38px}.era-index-metrics{gap:3px;margin-top:6px}.era-index-metrics div{padding:5px 4px}.era-index-metrics small{font-size:6px}.era-index-metrics b{font-size:7px}.era-ai-home-grid{margin-top:10px;gap:9px}.era-chat-card,.era-ai-analysis-card{padding:12px;border-radius:17px}.era-card-head h3{font-size:16px}.era-card-head p{font-size:9px}.chat-board{height:125px}.era-chat-chips button{font-size:7px;padding:6px 8px}.era-deep-grid{grid-template-columns:1fr}.deep-signal{grid-column:auto}.mobile-nav{height:62px;left:8px;right:8px;bottom:8px;border-radius:19px;background:rgba(15,22,40,.92);backdrop-filter:blur(20px);border:1px solid var(--line);z-index:200}.mobile-nav button{font-size:7px}.mobile-nav button span{font-size:17px}.mobile-nav button.active{border-radius:13px}.sidebar{display:none}}
 </style>
 </head>
 <body><div id="authScreen" class="auth-screen"><div class="auth-card"><div class="auth-logo"><div class="logo-icon">E</div><div><div class="logo-name">ERA AI</div><div class="logo-tag">MARKET INTELLIGENCE</div></div></div><h2 id="authTitle">Welcome to ERA</h2><p id="authSubtitle">Login to keep your conversations and trade history connected.</p><div class="auth-tabs"><button class="auth-tab active" data-auth="email">Gmail OTP</button></div><input id="authInput" class="auth-input" placeholder="Enter Gmail address" autocomplete="email"><div class="auth-actions"><button class="primary" id="authContinue">Send OTP</button><button class="logout-btn" id="guestContinue" style="display:none">Continue as Guest</button></div><div id="otpBox" style="display:none;margin-top:12px"><input id="otpInput" class="auth-input" inputmode="numeric" maxlength="6" placeholder="Enter 6-digit OTP" autocomplete="one-time-code"><button class="primary" id="verifyOtp" style="width:100%;margin-top:8px">Verify & Login</button><button class="logout-btn" id="changeAuth" style="margin-top:8px">Change Gmail</button></div><div id="authMessage" class="auth-note"></div></div></div>
@@ -60,7 +333,7 @@
     <button data-view="options">▦ &nbsp; Options</button>
     <button data-view="charts">◒ &nbsp; Charts</button>
     <button data-view="portfolio">💼 &nbsp; Portfolio</button>
-    <button data-view="paper">🧪 &nbsp; Paper Trading</button>
+    <button data-view="paper">🧪 &nbsp; Paper Trading</button><button data-view="paper-performance">📈 &nbsp; Paper Performance</button>
     <button data-view="journal">📓 &nbsp; AI Journal</button>
     <button data-view="tools">🧮 &nbsp; Trading Tools</button>
     <button data-view="news">📰 &nbsp; News & Events</button>
@@ -73,32 +346,112 @@
   <div class="topbar"><div><h1 id="greeting">Good Morning, Trader 👋</h1><div class="live"><span class="live-dot"></span><span id="liveStatus">ERA AI is LIVE • Market Intelligence Active</span></div></div><div class="top-actions"><button class="icon-btn" id="bellBtn">🔔<span class="notification-badge" id="notificationBadge">0</span></button><button class="icon-btn" id="refreshBtn">↻</button><button class="icon-btn menu-btn" id="menuBtn" aria-label="Open ERA menu" title="ERA Menu">☰</button></div></div>
 
   <div id="view-home" class="view active">
-    <div class="index-tabs" id="homeIndices"><button class="active" data-index="NIFTY">NIFTY 50</button><button data-index="BANKNIFTY">BANKNIFTY</button><button data-index="SENSEX">SENSEX</button><button data-index="FINNIFTY">FINNIFTY</button></div>
-    <section class="hero">
-      <div class="card ai-card"><div class="ai-top"><div><div class="eyebrow">YOUR AI MARKET ASSISTANT</div><h2>Ask ERA anything.</h2><p>Live market context, technical structure, momentum and movement analysis — all from your home screen.</p></div><div class="online">● AI ONLINE</div></div><div class="robot-area"><div class="robot-glow"></div><div class="robot"><div class="antenna ant-left"><span class="ant-light"></span></div><div class="antenna ant-right"><span class="ant-light"></span></div><div class="eye eye-left"></div><div class="eye eye-right"></div><div class="ear ear-left"></div><div class="ear ear-right"></div><div class="robot-mouth"></div><div class="robot-body"></div></div></div><div class="chat-board-wrap">
-  <div class="robot-backdrop"><div class="robot-glow"></div><div class="robot"><div class="antenna ant-left"><span class="ant-light"></span></div><div class="antenna ant-right"><span class="ant-light"></span></div><div class="eye eye-left"></div><div class="eye eye-right"></div><div class="ear ear-left"></div><div class="ear ear-right"></div><div class="robot-mouth"></div><div class="robot-body"></div></div></div>
-  <div class="chat-board" id="chatBoard"><div class="bubble era">Hi! Main ERA hoon. Market, NIFTY ya trade setup ke baare mein poochho.</div></div>
-  <div class="chat-photo-preview" id="chatPhotoPreview"><img id="chatPhotoImg" alt=""><span>Screenshot attached</span><button id="chatPhotoRemove" type="button">×</button></div>
-  <div class="chat-compose">
-    <input id="homeChat" placeholder="Ask ERA…" autocomplete="off">
-    <input id="chatFile" class="chat-file" type="file" accept="image/*">
-    <button id="chatPhoto" class="chat-photo" type="button" title="Attach photo">📷</button>
-    <button id="chatMic" class="chat-mic" type="button" title="Voice input">🎙</button>
-    <button id="homeAsk" class="chat-send" type="button">Send</button>
-  </div>
-</div></div>
-      <div class="card market"><div class="market-header"><div class="market-name" id="homeMarketName">NIFTY 50</div><div class="live-pill">● LIVE</div></div><div class="price" id="homePrice">—</div><div class="change" id="homeChange">Waiting for live data…</div><div class="chart"><svg viewBox="0 0 600 150" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path id="homeArea" d="M0 120 L60 100 L120 110 L180 75 L240 90 L300 55 L360 70 L420 42 L480 60 L540 28 L600 20 L600 150 L0 150Z" fill="url(#cg)"/><path id="homeLine" d="M0 120 L60 100 L120 110 L180 75 L240 90 L300 55 L360 70 L420 42 L480 60 L540 28 L600 20" fill="none" stroke="var(--accent)" stroke-width="3"/></svg></div><div class="market-stats"><div><small>OPEN</small><br><b id="homeOpen">—</b></div><div><small>HIGH</small><br><b id="homeHigh">—</b></div><div><small>LOW</small><br><b id="homeLow">—</b></div></div></div>
+<section class="era-index-section">
+  <div class="section-title"><div><span class="eyebrow">LIVE MARKET DASHBOARD</span><h3 style="margin:5px 0 0">Four Index Analysis</h3></div><span id="heroMarketStatus">ERA AI is READY • Market Closed</span></div>
+  <section class="era-index-grid" id="eraIndexGrid"><article class="era-index-card" data-card-index="NIFTY"><div class="era-index-head"><div><span class="index-symbol">NIFTY 50</span><span class="index-status">LIVE</span></div><span class="index-icon">N</span></div><div class="era-index-price" data-field="price">—</div><div class="era-index-change" data-field="change">Waiting…</div><div class="mini-chart"><svg viewBox="0 0 320 70" preserveAspectRatio="none"><path data-field="area" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8 L320 70 L0 70Z"></path><path data-field="line" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8"></path></svg></div><div class="era-index-metrics"><div><small>Trend</small><b data-field="trend">—</b></div><div><small>Momentum</small><b data-field="momentum">—</b></div><div><small>Market</small><b data-field="status">—</b></div></div></article><article class="era-index-card" data-card-index="BANKNIFTY"><div class="era-index-head"><div><span class="index-symbol">BANKNIFTY</span><span class="index-status">LIVE</span></div><span class="index-icon">B</span></div><div class="era-index-price" data-field="price">—</div><div class="era-index-change" data-field="change">Waiting…</div><div class="mini-chart"><svg viewBox="0 0 320 70" preserveAspectRatio="none"><path data-field="area" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8 L320 70 L0 70Z"></path><path data-field="line" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8"></path></svg></div><div class="era-index-metrics"><div><small>Trend</small><b data-field="trend">—</b></div><div><small>Momentum</small><b data-field="momentum">—</b></div><div><small>Market</small><b data-field="status">—</b></div></div></article><article class="era-index-card" data-card-index="FINNIFTY"><div class="era-index-head"><div><span class="index-symbol">FINNIFTY</span><span class="index-status">LIVE</span></div><span class="index-icon">F</span></div><div class="era-index-price" data-field="price">—</div><div class="era-index-change" data-field="change">Waiting…</div><div class="mini-chart"><svg viewBox="0 0 320 70" preserveAspectRatio="none"><path data-field="area" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8 L320 70 L0 70Z"></path><path data-field="line" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8"></path></svg></div><div class="era-index-metrics"><div><small>Trend</small><b data-field="trend">—</b></div><div><small>Momentum</small><b data-field="momentum">—</b></div><div><small>Market</small><b data-field="status">—</b></div></div></article><article class="era-index-card" data-card-index="SENSEX"><div class="era-index-head"><div><span class="index-symbol">SENSEX</span><span class="index-status">LIVE</span></div><span class="index-icon">S</span></div><div class="era-index-price" data-field="price">—</div><div class="era-index-change" data-field="change">Waiting…</div><div class="mini-chart"><svg viewBox="0 0 320 70" preserveAspectRatio="none"><path data-field="area" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8 L320 70 L0 70Z"></path><path data-field="line" d="M0 60 L35 48 L70 54 L105 32 L140 42 L175 24 L210 30 L245 18 L280 24 L320 8"></path></svg></div><div class="era-index-metrics"><div><small>Trend</small><b data-field="trend">—</b></div><div><small>Momentum</small><b data-field="momentum">—</b></div><div><small>Market</small><b data-field="status">—</b></div></div></article></section>
+  </section>
+</section>
+<section class="era-chat-home section">
+<div class="card era-chat-card"><div class="era-card-head"><div><span class="eyebrow">YOUR AI MARKET ASSISTANT</span><h3>Ask ERA anything.</h3><p>Chat with ERA about all four indices, technical indicators, market movement, options and risk.</p></div><span class="ai-online">● AI ONLINE</span></div><div class="era-chat-swipe-hint">↓ Swipe down to return to Home</div><div class="chat-board" id="chatBoard"><div class="bubble era">Hi! Main ERA hoon. NIFTY, BANKNIFTY, FINNIFTY ya SENSEX ke baare mein poochho.</div></div><div class="era-chat-chips"><button type="button" data-chat-prompt="Analyze all four indices">All 4 Indices</button><button type="button" data-chat-prompt="Show technical indicators">Technical Indicators</button><button type="button" data-chat-prompt="Analyze market movement">Market Movement</button><button type="button" data-chat-prompt="Analyze options">Options Analysis</button></div><div class="chat-photo-preview" id="chatPhotoPreview"><img id="chatPhotoImg" alt=""><span>Screenshot attached</span><button id="chatPhotoRemove" type="button">×</button></div><div class="chat-compose"><input id="homeChat" placeholder="Ask ERA…" autocomplete="off"><input id="chatFile" class="chat-file" type="file" accept="image/*"><button id="chatPhoto" class="chat-photo" type="button">📷</button><button id="chatMic" class="chat-mic" type="button">🎙</button><button id="homeAsk" class="chat-send" type="button">➤</button></div></div>
+</section>
+</div>
+<div id="eraHomeCompat" style="display:none!important"><div id="homeIndices"><button data-index="NIFTY"></button><button data-index="BANKNIFTY"></button><button data-index="SENSEX"></button><button data-index="FINNIFTY"></button></div><span id="homeMarketName"></span><span id="homePrice"></span><span id="homeChange"></span><span id="homeOpen"></span><span id="homeHigh"></span><span id="homeLow"></span><span id="homeMomentumDetail"></span><span id="homeMarketStatusDetail"></span><svg><path id="homeArea"></path><path id="homeLine"></path></svg></div>
+
+<div id="view-market" class="view"><section class="section"><div class="section-title"><h3>Market</h3><span id="marketUpdated">—</span></div><div class="index-tabs"><button class="active market-index" data-index="NIFTY">NIFTY 50</button><button class="market-index" data-index="BANKNIFTY">BANKNIFTY</button><button class="market-index" data-index="SENSEX">SENSEX</button><button class="market-index" data-index="FINNIFTY">FINNIFTY</button></div><div class="card panel"><div class="price" id="marketPrice">—</div><div id="marketChange">—</div><div class="chart"><svg viewBox="0 0 600 150" preserveAspectRatio="none"><path d="M0 120 L50 105 L100 115 L150 70 L200 92 L250 55 L300 72 L350 45 L400 62 L450 35 L500 50 L550 25 L600 18" fill="none" stroke="var(--accent)" stroke-width="3"/></svg></div><div class="stats-grid"><div class="stat"><small>OPEN</small><strong id="marketOpen">—</strong></div><div class="stat"><small>HIGH</small><strong id="marketHigh">—</strong></div><div class="stat"><small>LOW</small><strong id="marketLow">—</strong></div><div class="stat"><small>PREV CLOSE</small><strong id="marketPrev">—</strong></div></div></div></section></div>
+
+  <div id="view-signal" class="view"><section class="section"><div class="section-title"><div><span class="eyebrow">ERA AI</span><h3 style="margin:5px 0 0">AI Intelligence & Signals</h3></div><span>Separate analysis for all 4 indices</span></div><div class="ai-index-signal-grid"><article class="ai-index-signal card" data-ai-index="NIFTY">
+ <div class="ai-signal-head"><div><span class="eyebrow">ERA SIGNAL</span><h3>NIFTY 50</h3><div class="ai-signal-status" id="ais-status-NIFTY">WAIT</div><small id="ais-option-NIFTY">No option setup yet</small></div><strong id="ais-conf-NIFTY">—</strong></div>
+ <div class="ai-signal-grid"><div><small>STRIKE</small><b id="ais-strike-NIFTY">—</b></div><div><small>ENTRY</small><b id="ais-entry-NIFTY">—</b></div><div><small>SL</small><b id="ais-sl-NIFTY">—</b></div><div><small>TARGET</small><b id="ais-target-NIFTY">—</b></div></div>
+ <div class="ai-checks"><div><small>Technical</small><b id="ais-tech-NIFTY">—</b></div><div><small>Movement</small><b id="ais-move-NIFTY">—</b></div><div><small>Momentum</small><b id="ais-momentum-NIFTY">—</b></div><div><small>Market</small><b id="ais-market-NIFTY">—</b></div></div>
+ <div class="ai-reason" id="ais-reason-NIFTY">Waiting for analysis…</div>
+ <div class="confidence-bar"><span id="ais-bar-NIFTY" style="width:0"></span></div>
+</article><article class="ai-index-signal card" data-ai-index="BANKNIFTY">
+ <div class="ai-signal-head"><div><span class="eyebrow">ERA SIGNAL</span><h3>BANKNIFTY</h3><div class="ai-signal-status" id="ais-status-BANKNIFTY">WAIT</div><small id="ais-option-BANKNIFTY">No option setup yet</small></div><strong id="ais-conf-BANKNIFTY">—</strong></div>
+ <div class="ai-signal-grid"><div><small>STRIKE</small><b id="ais-strike-BANKNIFTY">—</b></div><div><small>ENTRY</small><b id="ais-entry-BANKNIFTY">—</b></div><div><small>SL</small><b id="ais-sl-BANKNIFTY">—</b></div><div><small>TARGET</small><b id="ais-target-BANKNIFTY">—</b></div></div>
+ <div class="ai-checks"><div><small>Technical</small><b id="ais-tech-BANKNIFTY">—</b></div><div><small>Movement</small><b id="ais-move-BANKNIFTY">—</b></div><div><small>Momentum</small><b id="ais-momentum-BANKNIFTY">—</b></div><div><small>Market</small><b id="ais-market-BANKNIFTY">—</b></div></div>
+ <div class="ai-reason" id="ais-reason-BANKNIFTY">Waiting for analysis…</div>
+ <div class="confidence-bar"><span id="ais-bar-BANKNIFTY" style="width:0"></span></div>
+</article><article class="ai-index-signal card" data-ai-index="FINNIFTY">
+ <div class="ai-signal-head"><div><span class="eyebrow">ERA SIGNAL</span><h3>FINNIFTY</h3><div class="ai-signal-status" id="ais-status-FINNIFTY">WAIT</div><small id="ais-option-FINNIFTY">No option setup yet</small></div><strong id="ais-conf-FINNIFTY">—</strong></div>
+ <div class="ai-signal-grid"><div><small>STRIKE</small><b id="ais-strike-FINNIFTY">—</b></div><div><small>ENTRY</small><b id="ais-entry-FINNIFTY">—</b></div><div><small>SL</small><b id="ais-sl-FINNIFTY">—</b></div><div><small>TARGET</small><b id="ais-target-FINNIFTY">—</b></div></div>
+ <div class="ai-checks"><div><small>Technical</small><b id="ais-tech-FINNIFTY">—</b></div><div><small>Movement</small><b id="ais-move-FINNIFTY">—</b></div><div><small>Momentum</small><b id="ais-momentum-FINNIFTY">—</b></div><div><small>Market</small><b id="ais-market-FINNIFTY">—</b></div></div>
+ <div class="ai-reason" id="ais-reason-FINNIFTY">Waiting for analysis…</div>
+ <div class="confidence-bar"><span id="ais-bar-FINNIFTY" style="width:0"></span></div>
+</article><article class="ai-index-signal card" data-ai-index="SENSEX">
+ <div class="ai-signal-head"><div><span class="eyebrow">ERA SIGNAL</span><h3>SENSEX</h3><div class="ai-signal-status" id="ais-status-SENSEX">WAIT</div><small id="ais-option-SENSEX">No option setup yet</small></div><strong id="ais-conf-SENSEX">—</strong></div>
+ <div class="ai-signal-grid"><div><small>STRIKE</small><b id="ais-strike-SENSEX">—</b></div><div><small>ENTRY</small><b id="ais-entry-SENSEX">—</b></div><div><small>SL</small><b id="ais-sl-SENSEX">—</b></div><div><small>TARGET</small><b id="ais-target-SENSEX">—</b></div></div>
+ <div class="ai-checks"><div><small>Technical</small><b id="ais-tech-SENSEX">—</b></div><div><small>Movement</small><b id="ais-move-SENSEX">—</b></div><div><small>Momentum</small><b id="ais-momentum-SENSEX">—</b></div><div><small>Market</small><b id="ais-market-SENSEX">—</b></div></div>
+ <div class="ai-reason" id="ais-reason-SENSEX">Waiting for analysis…</div>
+ <div class="confidence-bar"><span id="ais-bar-SENSEX" style="width:0"></span></div>
+</article></div></section></div>
+  <div id="view-options" class="view">
+    <section class="section option-chain-section">
+      <div class="option-market-head card">
+        <div class="option-market-main">
+          <div class="option-market-name" id="optionMarketName">NIFTY 50</div>
+          <div class="option-market-price-row">
+            <strong id="optionMarketPrice">—</strong>
+            <span id="optionMarketChange">—</span>
+          </div>
+          <div class="option-market-status" id="optionMarketStatus">● MARKET —</div>
+        </div>
+        <div class="option-pcr-box">
+          <small>PCR</small>
+          <strong id="optionPCR">—</strong>
+          <span id="optionSentiment">—</span>
+        </div>
+      </div>
+
+      <div class="option-index-tabs">
+        <button class="active option-index" data-index="NIFTY">NIFTY</button>
+        <button class="option-index" data-index="BANKNIFTY">BANKNIFTY</button>
+        <button class="option-index" data-index="FINNIFTY">FINNIFTY</button>
+        <button class="option-index" data-index="SENSEX">SENSEX</button>
+      </div>
+
+      <div class="option-expiry-wrap">
+        <div class="option-expiry-tabs" id="optionExpiryTabs">
+          <button class="option-expiry-placeholder" disabled>Loading expiries…</button>
+        </div>
+      </div>
+
+      <div class="option-chain-card card">
+        <div class="option-chain-head">
+          <button class="option-side-btn" id="optionCallsBtn" type="button" aria-label="Show Calls">
+            <span class="option-arrow">‹</span><span>Calls</span>
+          </button>
+          <button class="option-chain-title" id="optionBothBtn" type="button">Option Chain</button>
+          <button class="option-side-btn option-put-btn" id="optionPutsBtn" type="button" aria-label="Show Puts">
+            <span>Puts</span><span class="option-arrow">›</span>
+          </button>
+        </div>
+
+        <div class="option-chain-mode-note" id="optionModeNote">Calls + Puts</div>
+
+        <div class="option-table-wrap">
+          <table class="option-chain-table">
+            <thead id="optionHead"></thead>
+            <tbody id="optionRows">
+              <tr><td colspan="7" class="empty">Load option chain to view data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="option-filter-bar" id="optionFilterBar">
+          <button type="button" data-option-filter="OI_HIGH">O = H</button>
+          <button type="button" data-option-filter="OI_LOW">O = L</button>
+          <button type="button" data-option-filter="HIGH_OI">High OI</button>
+          <button type="button" data-option-filter="HIGH_VOL">High Vol</button>
+          <button type="button" data-option-filter="HIGH_IV">High IV</button>
+        </div>
+
+        <div class="option-chain-footer">
+          <span id="optionSpot">Spot —</span>
+          <span id="optionUpdated">—</span>
+        </div>
+      </div>
     </section>
-    <section class="section"><div class="section-title"><h3>Market Movement</h3><span>AI detected</span></div><div class="movement"><div class="card movement-card"><div class="label">MARKET STRUCTURE</div><b id="homeStructure">WAITING</b><small id="homeStructureDetail">Waiting for analysis</small></div><div class="card movement-card"><div class="label">MOMENTUM</div><b id="homeMomentum">—</b><small id="homeMomentumDetail">RSI / VWAP</small></div><div class="card movement-card"><div class="label">MOVEMENT</div><b id="homeMovement">—</b><small id="homeMovementDetail">Live change</small></div><div class="card movement-card"><div class="label">MARKET STATUS</div><b id="homeMarketStatus">—</b><small id="homeMarketStatusDetail">Market closed</small></div></div></section>
-    <section class="section"><div class="section-title"><h3>Technical Dashboard</h3><span>Live analysis</span></div><div class="tech"><div class="card tech-card"><small>EMA 9 / 20</small><div class="tech-value" id="homeEma">—</div></div><div class="card tech-card"><small>RSI</small><div class="tech-value" id="homeRsi">—</div></div><div class="card tech-card"><small>VWAP</small><div class="tech-value" id="homeVwap">—</div></div><div class="card tech-card"><small>VOLUME</small><div class="tech-value" id="homeVolume">—</div></div></div></section>    <section class="section"><div class="section-title"><h3>ERA Intelligence Guide</h3><span>What ERA watches & why it matters</span></div><div class="card panel era-guide"><div class="guide-grid"><div class="guide-item"><b>EMA 9 / 20 / 50</b><small>Trend alignment. ERA uses EMA structure to judge bullish, bearish or sideways conditions.</small></div><div class="guide-item"><b>RSI</b><small>Momentum and exhaustion. Helps ERA detect strength, weakness, overbought and oversold conditions.</small></div><div class="guide-item"><b>VWAP</b><small>Session price benchmark. ERA compares price with VWAP to understand intraday positioning.</small></div><div class="guide-item"><b>Volume</b><small>Participation. A volume expansion can validate a move; weak participation can reduce confidence.</small></div><div class="guide-item"><b>Market Structure</b><small>HH/HL and LH/LL plus BOS/CHOCH help ERA identify trend continuation or a possible shift.</small></div><div class="guide-item"><b>Options Intelligence</b><small>Strike, expiry, OI, change in OI, IV, Greeks and PCR help ERA validate an options setup.</small></div><div class="guide-item"><b>Risk Engine</b><small>Position size, stop loss, daily loss and exposure checks help prevent unsafe paper trades.</small></div><div class="guide-item"><b>AI Confidence</b><small>ERA issues an option trade only when its calculated confidence is above 60%; otherwise it stays in WATCH / NO TRADE.</small></div></div></div></section>
-    <section class="section"><div class="section-title"><h3>Today's AI Signal</h3><span>ERA Analysis</span></div><div class="card signal"><div class="signal-top"><div><div class="signal-name">ERA SIGNAL</div><div class="signal-type" id="homeSignal">WAIT</div><div class="trade-meta" id="homeOptionName">No option setup yet</div></div><div class="confidence" id="homeConfidence">—</div></div><div class="signal-data"><div>STRIKE<br><b id="homeStrike">—</b></div><div>ENTRY<br><b id="homeEntry">—</b></div><div>STOP LOSS<br><b id="homeSL">—</b></div><div>TARGET<br><b id="homeTarget">—</b></div></div><div class="why-grid"><div class="why-card"><b>WHY?</b><div id="homeWhy">Waiting for confirmation.</div></div><div class="why-card"><b>WHY WAIT?</b><div id="homeWait">—</div></div></div><div class="confidence-bar"><span id="homeConfidenceBar" style="width:0"></span></div></div></section>
   </div>
-
-  <div id="view-market" class="view"><section class="section"><div class="section-title"><h3>Market</h3><span id="marketUpdated">—</span></div><div class="index-tabs"><button class="active market-index" data-index="NIFTY">NIFTY 50</button><button class="market-index" data-index="BANKNIFTY">BANKNIFTY</button><button class="market-index" data-index="SENSEX">SENSEX</button><button class="market-index" data-index="FINNIFTY">FINNIFTY</button></div><div class="card panel"><div class="price" id="marketPrice">—</div><div id="marketChange">—</div><div class="chart"><svg viewBox="0 0 600 150" preserveAspectRatio="none"><path d="M0 120 L50 105 L100 115 L150 70 L200 92 L250 55 L300 72 L350 45 L400 62 L450 35 L500 50 L550 25 L600 18" fill="none" stroke="var(--accent)" stroke-width="3"/></svg></div><div class="stats-grid"><div class="stat"><small>OPEN</small><strong id="marketOpen">—</strong></div><div class="stat"><small>HIGH</small><strong id="marketHigh">—</strong></div><div class="stat"><small>LOW</small><strong id="marketLow">—</strong></div><div class="stat"><small>PREV CLOSE</small><strong id="marketPrev">—</strong></div></div></div></section></div>
-
-  <div id="view-signal" class="view"><section class="section"><div class="section-title"><h3>AI Signal</h3><span>Selected index</span></div><div class="card signal"><div class="signal-top"><div><div class="signal-name">ERA SIGNAL</div><div class="signal-type" id="signalType">WAIT</div><div class="trade-meta" id="signalOptionName">No option setup yet</div></div><div class="confidence" id="signalConfidence">—</div></div><div class="signal-data"><div>STRIKE<br><b id="signalStrike">—</b></div><div>ENTRY<br><b id="signalEntry">—</b></div><div>SL<br><b id="signalSL">—</b></div><div>TARGET 1<br><b id="signalT1">—</b></div></div><div class="confidence-bar"><span id="signalBar"></span></div></div></section><section class="section"><div class="why-grid"><div class="card why-card"><b>WHY ERA GAVE THIS</b><div id="signalReasons">Waiting for analysis…</div></div><div class="card why-card"><b>WHY ERA IS WAITING</b><div id="signalWait">—</div></div></div></section></div>
-
-  <div id="view-options" class="view"><section class="section"><div class="section-title"><h3>Option Chain</h3><span id="optionUpdated">—</span></div><div class="subtabs"><button class="active option-index" data-index="NIFTY">NIFTY</button><button class="option-index" data-index="BANKNIFTY">BANKNIFTY</button><button class="option-index" data-index="FINNIFTY">FINNIFTY</button><button class="option-index" data-index="SENSEX">SENSEX</button></div><div class="card panel"><div class="two"><select class="select" id="expirySelect"><option value="">Loading expiries…</option></select><div class="pill" id="optionSpot">Spot —</div></div><div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>CE LTP</th><th>CE OI</th><th>CE ΔOI</th><th>STRIKE</th><th>PE ΔOI</th><th>PE OI</th><th>PE LTP</th></tr></thead><tbody id="optionRows"><tr><td colspan="7" class="empty">Load option chain to view data.</td></tr></tbody></table></div><div class="two" style="margin-top:12px"><div class="pill" id="optionPCR">PCR —</div><div class="pill" id="optionSentiment">Sentiment —</div></div></div></section></div>
 
   <div id="view-portfolio" class="view"><section class="section"><div class="section-title"><h3>Portfolio</h3><span>Local journal</span></div><div class="stats-grid"><div class="card stat"><small>OPEN POSITIONS</small><strong id="portfolioCount">0</strong></div><div class="card stat"><small>RECENT RECORDS</small><strong id="historyCount">0</strong></div><div class="card stat"><small>ENGINE</small><strong id="portfolioEngine">—</strong></div><div class="card stat"><small>LAST SCAN</small><strong id="portfolioScan">—</strong></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Positions / Trade Journal</h3><span>Saved locally on server</span></div><div class="table-wrap"><table class="table"><thead><tr><th>INDEX</th><th>TYPE</th><th>STRIKE</th><th>ENTRY</th><th>SL</th><th>TARGET</th><th>CONF.</th></tr></thead><tbody id="portfolioRows"><tr><td colspan="7" class="empty">No active trades.</td></tr></tbody></table></div></div></section></div>
 
@@ -108,22 +461,134 @@
 
   <div id="view-charts" class="view"><section class="section"><div class="section-title"><h3>Advanced Charts</h3><span id="chartUpdated">—</span></div><div class="card panel"><div class="toolbar"><select class="select" id="chartIndex"><option value="NIFTY">NIFTY 50</option><option value="BANKNIFTY">BANK NIFTY</option><option value="FINNIFTY">FIN NIFTY</option><option value="SENSEX">SENSEX</option></select><select class="select" id="chartInterval"><option value="1">1m</option><option value="3">3m</option><option value="5" selected>5m</option><option value="15">15m</option><option value="30">30m</option><option value="60">1H</option></select><button class="primary" id="loadChart" style="width:auto;margin-top:0">Load Chart</button></div><canvas id="chartCanvas" class="chart-canvas" width="1200" height="330"></canvas><div class="mini-grid" style="margin-top:10px"><div class="card stat"><small>EMA 9</small><strong id="chartEma9">—</strong></div><div class="card stat"><small>EMA 20</small><strong id="chartEma20">—</strong></div><div class="card stat"><small>RSI</small><strong id="chartRsi">—</strong></div><div class="card stat"><small>VWAP</small><strong id="chartVwap">—</strong></div><div class="card stat"><small>VOLUME</small><strong id="chartVolume">—</strong></div></div></div></section></div>
 
-  <div id="view-paper" class="view"><section class="section"><div class="section-title"><h3>Paper Trading</h3><span>Virtual capital • live option marks</span></div><div class="stats-grid"><div class="card stat"><small>AVAILABLE CASH</small><strong id="paperCash">—</strong></div><div class="card stat"><small>REALIZED P&L</small><strong id="paperPnl">—</strong></div><div class="card stat"><small>LIVE P&L</small><strong id="paperLivePnl">—</strong></div><div class="card stat"><small>OPEN POSITIONS</small><strong id="paperPositions">0</strong></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Place Paper Order</h3><span class="pill">NO REAL MONEY</span></div><div class="mini-grid"><select class="select" id="paperIndex"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="SENSEX">SENSEX</option></select><select class="select" id="paperExpiry"><option value="">Loading expiry…</option></select><select class="select" id="paperType"><option value="CE">CALL (CE)</option><option value="PE">PUT (PE)</option></select><select class="select" id="paperStrike"><option value="">Select strike</option></select></div><div class="paper-live"><div class="card"><small>OPTION</small><b id="paperSelectedOption">—</b></div><div class="card"><small>LIVE PREMIUM</small><b id="paperLivePrice">—</b></div><div class="card"><small>INSTRUMENT</small><b id="paperInstrumentStatus">Ready</b></div></div><div class="paper-mode"><button id="paperMarketMode" class="active" type="button">BUY AT MARKET PRICE</button><button id="paperLimitMode" type="button">BUY AT CUSTOM PRICE</button></div><div class="mini-grid"><input class="mini-input" id="paperPrice" type="number" step="0.05" placeholder="Custom entry premium" disabled><input class="mini-input" id="paperQty" type="number" min="1" step="1" placeholder="Quantity" value="1"><input class="mini-input" id="paperSL" type="number" step="0.05" placeholder="Stop Loss (premium)"><input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target (premium)"></div><button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ BUY PAPER @ MARKET</button><div class="result-box" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. ERA will use the live option premium for market-price paper execution.</div><div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div></div></section><section class="section"><div class="card panel"><div class="panel-head"><h3>Open Positions</h3><span class="pill">LIVE MARKING</span></div><div class="table-wrap"><table class="table"><thead><tr><th>INDEX</th><th>OPTION</th><th>STRIKE</th><th>QTY</th><th>ENTRY</th><th>CURRENT</th><th>LIVE P&L</th><th>STATUS</th><th></th></tr></thead><tbody id="paperRows"><tr><td colspan="9" class="empty">No paper positions.</td></tr></tbody></table></div></div></section></div>
+  <div id="view-paper" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Trading</h3><span>Virtual execution • live option marks</span></div><button class="pill" data-view="paper-performance">Performance ↗</button></div>
+      <div class="card panel" style="margin-bottom:10px"><div class="paper-performance-head"><div><small>OVERALL PAPER P&L</small><strong id="paperOverallPnl" style="display:block;font-size:25px;margin-top:4px">₹0</strong></div><span id="paperOverallMeta" class="pill">0 positions</span></div></div>
+      <div class="stats-grid">
+        <div class="card stat"><small>AVAILABLE CASH</small><strong id="paperCash">—</strong></div>
+        <div class="card stat"><small>REALIZED P&L</small><strong id="paperPnl">—</strong></div>
+        <div class="card stat"><small>LIVE P&L</small><strong id="paperLivePnl">—</strong></div>
+        <div class="card stat"><small>OPEN POSITIONS</small><strong id="paperPositions">0</strong></div>
+      </div>
+    </section>
+    <section class="section" id="paperTradeSection">
+      <div class="card panel">
+        <div class="panel-head"><h3>Place Paper Trade</h3><div class="paper-trade-nav"><button class="active" type="button" data-paper-jump="trade">Trade</button><button type="button" data-view="paper-positions">Positions</button><button type="button" data-view="paper-performance">Performance</button></div></div>
+        <div class="paper-side">
+          <button id="paperBuySide" class="active-buy" type="button">BUY</button>
+          <button id="paperSellSide" type="button">SELL</button>
+        </div>
+        <div class="paper-entry-grid">
+          <select class="select" id="paperIndex"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option><option value="FINNIFTY">FINNIFTY</option><option value="SENSEX">SENSEX</option></select>
+          <select class="select" id="paperType"><option value="CE">CALL (CE)</option><option value="PE">PUT (PE)</option></select>
+          <select class="select" id="paperExpiry"><option value="">Loading expiry…</option></select>
+          <select class="select" id="paperStrike"><option value="">Select strike</option></select>
+        </div>
+        <div class="paper-live">
+          <div class="card"><small>OPTION</small><b id="paperSelectedOption">—</b></div>
+          <div class="card"><small>LIVE PREMIUM</small><b id="paperLivePrice">—</b></div>
+          <div class="card"><small>INSTRUMENT</small><b id="paperInstrumentStatus">Ready</b></div>
+        </div>
+        <div class="paper-mode">
+          <button id="paperMarketMode" class="active" type="button">MARKET PRICE</button>
+          <button id="paperLimitMode" type="button">CUSTOM PRICE</button>
+        </div>
+        <div class="paper-entry-grid">
+          <input class="mini-input" id="paperPrice" type="number" step="0.05" placeholder="Entry premium" disabled>
+          <input class="mini-input" id="paperQty" type="number" min="1" step="1" placeholder="Quantity" value="1">
+          <input class="mini-input" id="paperSL" type="number" step="0.05" placeholder="Stop Loss">
+          <input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target">
+        </div>
+        <button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ PLACE PAPER BUY</button>
+        <div class="result-box paper-order-hint" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
+        <div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div>
+      </div>
+    </section>
+div>
+
+  <div id="view-paper-positions" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Positions</h3><span>Open paper trades • tick-by-tick P&L</span></div><button class="pill" data-view="paper">← Paper Trade</button></div>
+      <div class="card panel">
+        <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="view-paper-performance" class="view">
+    <section class="section">
+      <div class="section-title"><div><h3>Paper Performance</h3><span>Every paper trade is recorded here</span></div><button class="pill" data-view="paper">← Paper</button></div>
+      <div class="stats-grid">
+        <div class="card stat"><small>TOTAL TRADES</small><strong id="paperPerfTotal">0</strong></div>
+        <div class="card stat"><small>WIN RATE</small><strong id="paperPerfWinRate">0%</strong></div>
+        <div class="card stat"><small>REALIZED P&L</small><strong id="paperPerfPnl">₹0</strong></div>
+        <div class="card stat"><small>OPEN</small><strong id="paperPerfOpen">0</strong></div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="paper-performance-tabs" id="paperPerformanceTabs">
+        <button class="active" data-paper-filter="ALL">All</button><button data-paper-filter="OPEN">Open</button><button data-paper-filter="CLOSED">Closed</button><button data-paper-filter="PROFIT">In Profit</button><button data-paper-filter="LOSS">In Loss</button>
+      </div>
+      <div id="paperPerformanceList"><div class="card notification-item">Loading paper performance…</div></div>
+    </section>
+    <section class="section">
+      <div class="card panel paper-detail" id="paperTradeDetail">
+        <div class="paper-detail-head"><h3 style="margin:0">Trade Details</h3><button class="pill" id="paperDetailClose">Close</button></div>
+        <div class="paper-detail-pnl"><span id="paperDetailPnlLabel">Net Profit & Loss</span><strong id="paperDetailPnl">—</strong><small id="paperDetailStatus">—</small></div>
+        <div class="paper-detail-grid" id="paperDetailGrid"></div>
+        <div style="margin-top:16px"><h3>Order Logs</h3><div id="paperDetailLogs"></div></div>
+        <div style="margin-top:18px"><h3>Trade Journal</h3><div class="mini-grid"><input class="mini-input" id="paperJournalTitle" placeholder="Trade / setup title"><input class="mini-input" id="paperJournalRegime" placeholder="Market regime"><input class="mini-input" id="paperJournalResult" placeholder="Result / P&L"><input class="mini-input" id="paperJournalMistake" placeholder="Mistake / lesson"></div><textarea class="text-input" id="paperJournalNote" rows="4" style="width:100%;margin-top:8px" placeholder="What did you see, why did you take this trade, what did you learn?"></textarea><button class="primary" id="savePaperJournal" style="max-width:220px">Save Journal</button><div id="paperTradeJournalList" style="margin-top:10px"></div></div>
+      </div>
+    </section>
+  </div>
 
   <div id="view-journal" class="view"><section class="section"><div class="section-title"><h3>AI Trading Journal</h3><span>Evidence → decision → result</span></div><div class="card panel"><div class="mini-grid"><input class="mini-input" id="journalTitle" placeholder="Trade / setup title"><input class="mini-input" id="journalRegime" placeholder="Market regime"><input class="mini-input" id="journalResult" placeholder="Result / P&L"><input class="mini-input" id="journalMistake" placeholder="Mistake / lesson"></div><textarea class="text-input" id="journalNote" rows="4" style="width:100%;margin-top:8px" placeholder="Why did you enter, what did ERA see, what would you change?"></textarea><button class="primary" id="saveJournal" style="max-width:220px">Save Journal Entry</button></div></section><section class="section"><div class="notification-list" id="journalList"><div class="card notification-item">Loading journal…</div></div></section></div>
 
   <div id="view-tools" class="view"><section class="section"><div class="feature-tabs"><button class="active tool-tab" data-tool="calculator">Position Calculator</button><button class="tool-tab" data-tool="backtest">Backtest</button><button class="tool-tab" data-tool="risk">Risk Engine</button><button class="tool-tab" data-tool="alerts">Alerts</button></div><div id="tool-calculator" class="card panel tool-panel"><div class="mini-grid"><input class="mini-input" id="calcCapital" type="number" placeholder="Capital" value="100000"><input class="mini-input" id="calcRisk" type="number" placeholder="Risk %" value="1"><input class="mini-input" id="calcEntry" type="number" placeholder="Entry"><input class="mini-input" id="calcStop" type="number" placeholder="Stop"><input class="mini-input" id="calcTarget" type="number" placeholder="Target"><input class="mini-input" id="calcQty" type="number" placeholder="Qty" value="1"></div><button class="primary" id="runCalc" style="max-width:220px">Calculate</button><div class="result-box" id="calcResult">Enter trade values to calculate risk.</div></div><div id="tool-backtest" class="card panel tool-panel" style="display:none"><div class="mini-grid"><select class="select" id="btIndex"><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option><option>SENSEX</option></select><select class="select" id="btInterval"><option value="5">5m</option><option value="15">15m</option><option value="30">30m</option></select><input class="mini-input" id="btCapital" type="number" value="100000" placeholder="Capital"><button class="primary" id="runBacktest" style="margin-top:0">Run Backtest</button></div><div class="result-box" id="btResult">ERA backtest uses available Upstox candle data and reports the actual tested window.</div></div><div id="tool-risk" class="card panel tool-panel" style="display:none"><div class="mini-grid"><input class="mini-input" id="riskPerTrade" type="number" value="1" placeholder="Risk / trade %"><input class="mini-input" id="maxDailyLoss" type="number" value="2" placeholder="Max daily loss %"><input class="mini-input" id="maxTradeLoss" type="number" value="1" placeholder="Max trade loss %"><input class="mini-input" id="maxPositions" type="number" value="3" placeholder="Max positions"><input class="mini-input" id="maxTradesDay" type="number" value="5" placeholder="Max trades/day"><input class="mini-input" id="maxExposure" type="number" value="50" placeholder="Max exposure %"></div><label class="check-row"><input type="checkbox" id="killSwitch"> Kill switch — block new paper trades</label><button class="primary" id="saveRisk" style="max-width:220px">Save Risk Rules</button><div class="result-box" id="riskResult">Risk engine ready.</div></div><div id="tool-alerts" class="card panel tool-panel" style="display:none"><div class="mini-grid"><input class="mini-input" id="alertIndex" value="NIFTY" placeholder="Index"><input class="mini-input" id="alertPrice" type="number" placeholder="Price trigger"><input class="mini-input" id="alertNote" placeholder="Alert note"><button class="primary" id="saveAlert" style="margin-top:0">Create Alert</button></div><div class="notification-list" id="alertsList" style="margin-top:12px">Loading alerts…</div></div></section></div>
 
-  <div id="view-era" class="view"><section class="section"><div class="section-title"><h3>Era</h3><span>Settings</span></div><div class="card panel"><div class="eyebrow">ERA AI</div><h2 style="margin:7px 0">Smarter Analysis. Better Trades.</h2><p style="color:var(--muted);font-size:12px">Customize your ERA experience.</p></div></section><section class="section"><div class="settings-grid"><div class="card setting"><div class="panel-head"><b>Appearance</b><span class="pill">12 THEMES</span></div><div style="color:var(--muted);font-size:10px;margin-top:5px">Color Theme</div><div class="colors" id="colorOptions"></div></div><div class="card setting"><div class="panel-head"><b>Notifications</b><span class="pill">12 ALERT TYPES</span></div><div class="toolbar" style="margin:8px 0 12px"><button class="welcome-skip" id="enableSettingsNotifications">🔔 Enable Browser Notifications</button></div><div class="notification-list"><label class="setting-row">AI Signal <input class="toggle notify" data-key="tradeSetup" type="checkbox"></label><label class="setting-row">Price alert <input class="toggle notify" data-key="priceAlert" type="checkbox"></label><label class="setting-row">Breakout <input class="toggle notify" data-key="breakout" type="checkbox"></label><label class="setting-row">Breakdown <input class="toggle notify" data-key="breakdown" type="checkbox"></label><label class="setting-row">Volume spike <input class="toggle notify" data-key="volumeSpike" type="checkbox"></label><label class="setting-row">OI change <input class="toggle notify" data-key="oiChange" type="checkbox"></label><label class="setting-row">News <input class="toggle notify" data-key="news" type="checkbox"></label><label class="setting-row">SL hit <input class="toggle notify" data-key="slHit" type="checkbox"></label><label class="setting-row">Target hit <input class="toggle notify" data-key="targetHit" type="checkbox"></label><label class="setting-row">Market open <input class="toggle notify" data-key="marketOpen" type="checkbox"></label><label class="setting-row">Market close <input class="toggle notify" data-key="marketClose" type="checkbox"></label><label class="setting-row">API error <input class="toggle notify" data-key="apiError" type="checkbox"></label><label class="setting-row">Risk warning <input class="toggle notify" data-key="riskWarning" type="checkbox"></label><label class="setting-row">Market movement <input class="toggle notify" data-key="movement" type="checkbox"></label></div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>History</b><button class="pill" id="refreshHistory">Refresh</button></div><div class="history-tabs"><button class="history-tab active" data-history="all">All</button><button class="history-tab" data-history="chat">Chat</button><button class="history-tab" data-history="trade">Trades</button></div><div id="historyList" class="history-item">Loading history…</div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>Account</b><span class="pill" id="accountStatus">GUEST</span></div><div id="accountInfo" style="color:var(--muted);font-size:11px;margin-top:8px">Guest session</div><button class="logout-btn" id="logoutBtn">Log out</button></div></section></div>
+  <div id="view-era" class="view"><section class="section"><div class="section-title"><h3>Era</h3><span>Settings</span></div><div class="card panel"><div class="eyebrow">ERA AI</div><h2 style="margin:7px 0">Smarter Analysis. Better Trades.</h2><p style="color:var(--muted);font-size:12px">Customize your ERA experience.</p></div></section><section class="section"><div class="settings-grid"><div class="card setting"><div class="panel-head"><b>Appearance</b><span class="pill">LIGHT MODE</span></div><div style="color:var(--muted);font-size:10px;margin-top:5px">Light mode is active for ERA.</div><div id="colorOptions" style="display:none"></div></div><div class="card setting"><div class="panel-head"><b>Notifications</b><span class="pill">12 ALERT TYPES</span></div><div class="toolbar" style="margin:8px 0 12px"><button class="welcome-skip" id="enableSettingsNotifications">🔔 Enable Browser Notifications</button></div><div class="notification-list"><label class="setting-row">AI Signal <input class="toggle notify" data-key="tradeSetup" type="checkbox"></label><label class="setting-row">Price alert <input class="toggle notify" data-key="priceAlert" type="checkbox"></label><label class="setting-row">Breakout <input class="toggle notify" data-key="breakout" type="checkbox"></label><label class="setting-row">Breakdown <input class="toggle notify" data-key="breakdown" type="checkbox"></label><label class="setting-row">Volume spike <input class="toggle notify" data-key="volumeSpike" type="checkbox"></label><label class="setting-row">OI change <input class="toggle notify" data-key="oiChange" type="checkbox"></label><label class="setting-row">News <input class="toggle notify" data-key="news" type="checkbox"></label><label class="setting-row">SL hit <input class="toggle notify" data-key="slHit" type="checkbox"></label><label class="setting-row">Target hit <input class="toggle notify" data-key="targetHit" type="checkbox"></label><label class="setting-row">Market open <input class="toggle notify" data-key="marketOpen" type="checkbox"></label><label class="setting-row">Market close <input class="toggle notify" data-key="marketClose" type="checkbox"></label><label class="setting-row">API error <input class="toggle notify" data-key="apiError" type="checkbox"></label><label class="setting-row">Risk warning <input class="toggle notify" data-key="riskWarning" type="checkbox"></label><label class="setting-row">Market movement <input class="toggle notify" data-key="movement" type="checkbox"></label></div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>History</b><button class="pill" id="refreshHistory">Refresh</button></div><div class="history-tabs"><button class="history-tab active" data-history="all">All</button><button class="history-tab" data-history="chat">Chat</button><button class="history-tab" data-history="trade">Trades</button></div><div id="historyList" class="history-item">Loading history…</div></div></section><section class="section"><div class="card setting"><div class="panel-head"><b>Account</b><span class="pill" id="accountStatus">GUEST</span></div><div id="accountInfo" style="color:var(--muted);font-size:11px;margin-top:8px">Guest session</div><button class="logout-btn" id="logoutBtn">Log out</button></div></section></div>
 
   <footer class="footer">Era AI V8.2.5 · Autonomous Market Intelligence · Data and signals are informational and require independent verification.</footer>
 </main></div>
 <nav class="mobile-nav"><button class="active" data-view="home"><span>⌂</span>Home</button><button data-view="signal"><span>⚡</span>AI</button><button data-view="options"><span>▦</span>Options</button><button data-view="paper"><span>🧪</span>Paper</button><button data-view="era"><span>✦</span>More</button></nav>
+<div id="paperEditModal" class="paper-edit-modal">
+  <div class="paper-edit-card">
+    <div class="panel-head"><h3 style="margin:0">Edit Paper Trade</h3><button class="icon-btn" id="paperEditClose">×</button></div>
+    <div class="result-box" id="paperEditSummary">—</div>
+    <div class="mini-grid"><input class="mini-input" id="paperEditSL" type="number" step="0.05" placeholder="Stop Loss"><input class="mini-input" id="paperEditTarget" type="number" step="0.05" placeholder="Target"></div>
+    <div class="paper-edit-actions"><button class="welcome-skip" id="paperEditCancel">Cancel</button><button class="primary" id="paperEditSave">Save changes</button></div>
+  </div>
+</div>
 <div class="toast-container" id="toastContainer"></div>
+<div id="tradeAlertPopup" class="trade-alert-popup" aria-live="polite">
+  <div class="trade-alert-card">
+    <div class="trade-alert-head">
+      <div><span class="trade-alert-badge">ERA TRADE ALERT</span><b id="tradeAlertTitle" style="display:block;margin-top:7px">New Trade Setup</b></div>
+      <button class="trade-alert-close" id="tradeAlertClose" aria-label="Close trade alert">×</button>
+    </div>
+    <div class="trade-alert-sub" id="tradeAlertSub">Waiting for setup details…</div>
+    <div class="trade-alert-grid">
+      <div class="trade-alert-metric"><small>OPTION</small><b id="tradeAlertOption">—</b></div>
+      <div class="trade-alert-metric"><small>STRIKE</small><b id="tradeAlertStrike">—</b></div>
+      <div class="trade-alert-metric"><small>EXPIRY</small><b id="tradeAlertExpiry">—</b></div>
+      <div class="trade-alert-metric"><small>ENTRY</small><b id="tradeAlertEntry">—</b></div>
+      <div class="trade-alert-metric"><small>STOP LOSS</small><b id="tradeAlertSL">—</b></div>
+      <div class="trade-alert-metric"><small>TARGET 1</small><b id="tradeAlertTarget">—</b></div>
+    </div>
+    <div class="trade-alert-reason" id="tradeAlertReason">—</div>
+    <div class="trade-alert-actions">
+      <button class="trade-alert-consider" id="tradeAlertConsider">CONSIDER</button>
+      <button class="trade-alert-reject" id="tradeAlertReject">REJECT</button>
+      <button class="trade-alert-paper" id="tradeAlertPaper">PAPER TRADE</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 const BACKEND=location.origin;
-const S={index:localStorage.getItem('eraSelectedIndex')||'NIFTY',market:{},analysis:{},activeTrades:[],settings:{},optionIndex:'NIFTY',history:[],journal:[],paper:{},marketOpen:false};
+const S={index:localStorage.getItem('eraSelectedIndex')||'NIFTY',market:{},analysis:{},activeTrades:[],settings:{},optionIndex:'NIFTY',optionMode:'BOTH',optionFilter:'ATM',optionExpiry:'',optionData:null,history:[],journal:[],paper:{},marketOpen:false};
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 const num=v=>Number.isFinite(Number(v))?Number(v):null;
@@ -132,37 +597,672 @@ const pct=v=>num(v)===null?'—':`${Number(v)>0?'+':''}${Number(v).toFixed(2)}%`
 function safeAnswer(value){if(typeof value==='string')return value;if(Array.isArray(value))return value.map(x=>typeof x==='string'?x:(x?.text||x?.content||x?.answer||'')).filter(Boolean).join('\n');if(value&&typeof value==='object')return value.answer||value.text||value.content||value.message||JSON.stringify(value);return String(value??'')}
 function errorText(value){if(typeof value==='string')return value;if(value?.message)return String(value.message);if(value?.error?.message)return String(value.error.message);try{return JSON.stringify(value)}catch{return String(value)}}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=errorText(msg);$('toastContainer').appendChild(d);setTimeout(()=>d.remove(),3500)}
-async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
-function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
+function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-positions'){loadPaper();}if(view==='paper-performance'){loadPaper();loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));document.querySelectorAll('.paper-trade-nav [data-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setView(b.dataset.view);}));
 document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>setView(b.dataset.feature));
 function selected(){return S.analysis[S.index]||null} function marketOf(){return S.market[S.index]||selected()?.market||null}
 function whyText(a){const reasons=a?.reasons||[];return reasons.length?reasons.slice(0,3).join(' • '):(a?.suggestion||'No strong confirmation yet.')}
 function waitText(a){const risks=a?.risks||[];return risks.length?risks.slice(0,3).join(' • '):(a?.suggestion==='TRADE CONSIDER'?'No major wait condition.':'ERA is waiting for stronger confirmation.')}
+function renderHomeIndexCards(){const data=S.homeAnalyses||{};document.querySelectorAll('.era-index-card').forEach(card=>{const index=card.dataset.cardIndex;const d=data[index]||{};const market={...(d.market||{}),...(S.market[index]||{})};const a=d.analysis||{};const t=a.technical||{};const structure=(t.structure?.label||a.structure?.label||'WAIT').toUpperCase();const change=num(market.changePercent??market.change_pct);const trend=structure==='BULLISH'?'Bullish':structure==='BEARISH'?'Bearish':'Neutral';const momentum=t.rsi>=60?'Strong':t.rsi<=40?'Weak':'Balanced';card.querySelector('[data-field="price"]').textContent=fmt(market.price);const ce=card.querySelector('[data-field="change"]');ce.textContent=change===null?(market.change||'—'):pct(change);ce.className='era-index-change '+(change!==null&&change>=0?'bullish':'bearish');const te=card.querySelector('[data-field="trend"]');te.textContent=trend;te.className=structure==='BULLISH'?'bullish':structure==='BEARISH'?'bearish':'sideways';const me=card.querySelector('[data-field="momentum"]');me.textContent=momentum;me.className=momentum==='Strong'?'bullish':momentum==='Weak'?'bearish':'sideways';const status=Boolean(d.marketOpen)?'LIVE':'CLOSED';const st=card.querySelector('[data-field="status"]');st.textContent=status;st.className=status==='LIVE'?'bullish':'sideways';const badge=card.querySelector('.index-status');badge.textContent=status;});const selected=S.homeAnalyses?.[S.index];if(selected){$('selectedAnalysisLabel').textContent=selected.market?.name||S.index+' analysis';$('heroMarketStatus').textContent=selected.marketOpen?'ERA AI is LIVE • Market Intelligence Active':'ERA AI is READY • Market Closed';}}
+
 function renderHome(){const m=marketOf(),a=selected();if(!m)return;$('homeMarketName').textContent=m.name||S.index;$('homePrice').textContent=fmt(m.price);const ch=num(m.changePercent??m.change_pct);$('homeChange').textContent=ch===null?(m.change||'—'):pct(ch);$('homeChange').className=(ch??0)>=0?'change bullish':'change bearish';$('homeOpen').textContent=fmt(m.open);$('homeHigh').textContent=fmt(m.high);$('homeLow').textContent=fmt(m.low);if(!a)return;const t=a.technical||{};const structureLabel=t.structure?.label||a.structure?.label||'WAITING';$('homeStructure').textContent=structureLabel==='BULLISH'?'BULLISH':structureLabel==='BEARISH'?'BEARISH':structureLabel;$('homeStructureDetail').textContent=(t.bos?'BOS • ':'')+(t.choch?'CHOCH • ':'')+(t.structureDetails?.bosDirection?`BOS ${t.structureDetails.bosDirection} • `:'')+(t.structureDetails?.chochDirection?`CHOCH ${t.structureDetails.chochDirection} • `:'')+(structureLabel==='BULLISH'?'Higher High + Higher Low':structureLabel==='BEARISH'?'Lower High + Lower Low':'Range / transition');const dir=a.movement?.direction||'NONE';$('homeMovement').textContent=a.movement?.percent!==undefined?pct(a.movement.percent):dir;$('homeMovement').className=dir==='UP'?'bullish':dir==='DOWN'?'bearish':'sideways';$('homeMovementDetail').textContent=dir==='UP'?'3-candle bullish momentum':dir==='DOWN'?'3-candle bearish momentum':'Range / confirmation';$('homeMomentum').textContent=t.rsi>=60?'STRONG':t.rsi<=40?'WEAK':'BALANCED';$('homeMomentumDetail').textContent=`RSI ${fmt(t.rsi)} • VWAP ${fmt(t.vwap)}`;$('homeMarketStatus').textContent=S.marketOpen?'LIVE':'CLOSED';$('homeMarketStatus').className=S.marketOpen?'bullish':'sideways';$('homeMarketStatusDetail').textContent=S.marketOpen?'Market is open':'Market is closed';$('homeEma').textContent=`${fmt(t.ema9)} / ${fmt(t.ema20)}`;$('homeRsi').textContent=fmt(t.rsi);$('homeVwap').textContent=fmt(t.vwap);const hv=num(t.volume);const mv=num(m.volume);$('homeVolume').textContent=(hv!==null&&hv>0)?fmt(hv):(mv!==null&&mv>0?fmt(mv):'—');const tr=a.trades?.[0];$('homeSignal').textContent=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a.suggestion||'WAIT');$('homeOptionName').textContent=tr?`${S.index} ${tr.optionType} • Strike ${fmt(tr.strike)} • Expiry ${a.options?.expiry||'—'}`:'No option setup yet';$('homeConfidence').textContent=`${a.confidence??'—'}% CONFIDENCE`;$('homeConfidenceBar').style.width=`${Math.max(0,Math.min(100,Number(a.confidence)||0))}%`;$('homeStrike').textContent=tr?fmt(tr.strike):'—';$('homeEntry').textContent=tr?fmt(tr.entry):'—';$('homeSL').textContent=tr?fmt(tr.stopLoss):'—';$('homeTarget').textContent=tr?fmt(tr.targets?.[0]):'—';$('homeWhy').textContent=whyText(a);$('homeWait').textContent=waitText(a)}
 function renderMarket(){const m=marketOf();if(!m)return;$('marketPrice').textContent=fmt(m.price);const ch=num(m.changePercent??m.change_pct);$('marketChange').textContent=ch===null?(m.change||'—'):pct(ch);$('marketChange').className=(ch??0)>=0?'bullish':'bearish';$('marketOpen').textContent=fmt(m.open);$('marketHigh').textContent=fmt(m.high);$('marketLow').textContent=fmt(m.low);$('marketPrev').textContent=fmt(m.previousClose??m.prevClose)}
+function renderAllAISignals(){const data=S.homeAnalyses||{};['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'].forEach(idx=>{const d=data[idx]||{};const a=d.analysis||{};const t=a.technical||{};const m=d.market||{};const tr=a.trades?.[0];const structure=(t.structure?.label||a.structure?.label||'WAIT').toUpperCase();const signal=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a.suggestion||'WAIT');const conf=Number(a.confidence||0);const move=a.movement?.direction||'NONE';const momentum=t.rsi>=60?'STRONG':t.rsi<=40?'WEAK':'BALANCED';const tech=structure==='BULLISH'?'BULLISH':structure==='BEARISH'?'BEARISH':'NEUTRAL';const q=(id,v)=>{const e=$(id);if(e)e.textContent=v};q(`ais-status-${idx}`,signal);q(`ais-option-${idx}`,tr?`${idx} ${tr.optionType||''} • Strike ${fmt(tr.strike)} • Expiry ${a.options?.expiry||'—'}`:'No validated option setup yet');q(`ais-conf-${idx}`,conf?`${conf}%`:'—');q(`ais-strike-${idx}`,tr?fmt(tr.strike):'—');q(`ais-entry-${idx}`,tr?fmt(tr.entry):'—');q(`ais-sl-${idx}`,tr?fmt(tr.stopLoss):'—');q(`ais-target-${idx}`,tr?fmt(tr.targets?.[0]):'—');q(`ais-tech-${idx}`,tech);q(`ais-move-${idx}`,move);q(`ais-momentum-${idx}`,momentum);q(`ais-market-${idx}`,d.marketOpen?'LIVE':'CLOSED');q(`ais-reason-${idx}`,tr?whyText(a):waitText(a));const bar=$(`ais-bar-${idx}`);if(bar)bar.style.width=`${Math.max(0,Math.min(100,conf))}%`;});}
 function renderSignal(){const a=selected(),tr=a?.trades?.[0];$('signalType').textContent=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a?.suggestion||'WAIT');$('signalOptionName').textContent=tr?`${S.index} ${tr.optionType} • Strike ${fmt(tr.strike)} • Expiry ${a?.options?.expiry||'—'}`:'No option setup yet';$('signalConfidence').textContent=a?`${a.confidence}% CONFIDENCE`:'—';$('signalBar').style.width=`${Math.max(0,Math.min(100,Number(a?.confidence)||0))}%`;$('signalStrike').textContent=tr?fmt(tr.strike):'—';$('signalEntry').textContent=tr?fmt(tr.entry):'—';$('signalSL').textContent=tr?fmt(tr.stopLoss):'—';$('signalT1').textContent=tr?fmt(tr.targets?.[0]):'—';$('signalReasons').textContent=whyText(a);$('signalWait').textContent=waitText(a)}
 function renderPortfolio(){const rows=S.activeTrades||[];$('portfolioCount').textContent=rows.length;$('historyCount').textContent=S.history.length;$('portfolioEngine').textContent=S.settings?.engineRunning?'RUNNING':'—';$('portfolioScan').textContent=S.settings?.lastScan?new Date(S.settings.lastScan).toLocaleTimeString('en-IN'):'—';$('portfolioRows').innerHTML=rows.length?rows.slice(0,30).map(t=>`<tr><td>${esc(t.index)}</td><td>${esc(t.optionType)} ${esc(t.signal)}</td><td>${fmt(t.strike)}</td><td>${fmt(t.entry)}</td><td>${fmt(t.stopLoss)}</td><td>${fmt(t.targets?.[0])}</td><td>${esc(t.confidence)}%</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No active trades.</td></tr>'}
 function renderTrades(){const rows=S.activeTrades||[];$('tradesGrid').innerHTML=rows.length?rows.map(t=>`<div class="card trade-card"><div class="trade-head"><div><div class="trade-title">${esc(t.index)} ${esc(t.optionType)} • ${esc(t.signal)}</div><div class="trade-meta">${esc(t.status||'SETUP')} • ${esc(t.direction||'')} • ${esc(t.confidence)}% confidence</div></div><span class="pill">${fmt(t.strike)}</span></div><div class="trade-fields"><div>OPTION<b>${esc(t.optionType)}</b></div><div>STRIKE<b>${fmt(t.strike)}</b></div><div>EXPIRY<b>${esc(selected()?.options?.expiry||'—')}</b></div><div>ENTRY<b>${fmt(t.entry)}</b></div><div>STOP LOSS<b>${fmt(t.stopLoss)}</b></div><div>TARGET 1<b>${fmt(t.targets?.[0])}</b></div><div>TARGET 2<b>${fmt(t.targets?.[1])}</b></div><div>CONFIDENCE<b>${esc(t.confidence)}%</b></div></div><div style="margin-top:10px;color:var(--muted);font-size:10px">RR 1:${esc(t.rr)} • ${esc(t.invalidation||'Risk condition defined')}</div><button class="primary use-trade" data-trade='${esc(JSON.stringify(t))}'>Use in Paper Trading</button></div>`).join(''):'<div class="card trade-card">ERA has no validated trade setup right now. NO TRADE is a valid decision.</div>';document.querySelectorAll('.use-trade').forEach(b=>b.onclick=()=>{const t=JSON.parse(b.dataset.trade.replace(/&#039;/g,"'"));$('paperIndex').value=t.index||S.index;$('paperType').value=t.optionType||'';$('paperStrike').value=t.strike||'';$('paperPrice').value=t.entry||'';$('paperSL').value=t.stopLoss||'';$('paperTarget').value=t.targets?.[0]||'';setView('paper')})}
-async function loadAnalysis(){try{const d=await api('/api/analysis?index='+encodeURIComponent(S.index));S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};renderHome();renderMarket();renderSignal();renderPortfolio();renderTrades();$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('liveStatus').textContent=d.marketOpen?'ERA AI is LIVE • Market Intelligence Active':'ERA AI online • Market closed';}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
+let analysisLoadPromise=null;
+async function loadAnalysis(){if(analysisLoadPromise)return analysisLoadPromise;analysisLoadPromise=(async()=>{try{const d=await api('/api/analysis');if(!d||!d.ok)throw new Error(d?.error||'Market analysis unavailable');S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};S.homeAnalyses={};for(const index of ['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'])S.homeAnalyses[index]={market:S.market?.[index]||{},analysis:S.analysis?.[index]||{},marketOpen:S.marketOpen};
+const safeRender=(fn)=>{try{fn()}catch(renderErr){console.warn('[ERA UI] render skipped:',renderErr?.message||renderErr)}};
+safeRender(renderHome);
+safeRender(renderHomeIndexCards);
+safeRender(renderAllAISignals);
+safeRender(renderMarket);
+safeRender(renderSignal);
+safeRender(renderPortfolio);
+safeRender(renderTrades);
+if($('marketUpdated'))$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}finally{analysisLoadPromise=null}})();return analysisLoadPromise}
+
+// STEP 4 — LIVE MARKET SYNC
+// The backend already receives live ticks. This layer connects the existing UI
+// to that stream without redesigning the UI or replacing the existing scanner.
+let realtimeSource=null;
+let realtimeConnected=false;
+
+function realtimeStatusLabel(status){
+  if(status==='LIVE') return '🟢 LIVE • Market feed connected';
+  if(status==='RECONNECTING') return '🟡 RECONNECTING • Syncing market feed';
+  return '🔴 OFFLINE • Live feed unavailable';
+}
+
+function updateRealtimeStatusText(snapshot){
+  const status=snapshot?.status;
+  if(status){
+    realtimeConnected=status==='LIVE';
+    const marketOpen=typeof snapshot.marketOpen==='boolean'?snapshot.marketOpen:S.marketOpen;
+    $('liveStatus').textContent=marketOpen?realtimeStatusLabel(status):'ERA AI • Market closed';
+  }
+}
+
+function applyRealtimeSnapshot(snapshot){
+  if(!snapshot||!snapshot.indices)return;
+  for(const [index,tick] of Object.entries(snapshot.indices)){
+    if(!tick||!Number.isFinite(Number(tick.price)))continue;
+    const old=S.market[index]||{};
+    S.market[index]={...old,price:Number(tick.price),open:tick.open,high:tick.high,low:tick.low,close:tick.close,volume:tick.cumulativeVolume,oi:tick.oi,timestamp:tick.timestamp,stale:tick.stale,realtime:tick};
+    if(!S.homeAnalyses[index])S.homeAnalyses[index]={};
+    S.homeAnalyses[index].market={...(S.homeAnalyses[index].market||{}),...tick,price:Number(tick.price)};
+    S.homeAnalyses[index].marketOpen=Boolean(snapshot.marketOpen);
+  }
+  S.marketOpen=Boolean(snapshot.marketOpen);
+  updateRealtimeStatusText(snapshot);
+  const m=marketOf();
+  if(!m)return;
+  renderHome();
+  renderHomeIndexCards();
+  renderMarket();
+  if($('marketUpdated'))$('marketUpdated').textContent=new Date(m.timestamp||snapshot.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+}
+
+function applyRealtimeTick(payload){
+  const index=payload?.index;
+  const tick=payload?.tick;
+  if(!index||!tick||!Number.isFinite(Number(tick.price)))return;
+  const old=S.market[index]||{};
+  S.market[index]={...old,price:Number(tick.price),open:tick.open,high:tick.high,low:tick.low,close:tick.close,volume:tick.cumulativeVolume,oi:tick.oi,timestamp:tick.timestamp,stale:false,realtime:tick};
+  if(!S.homeAnalyses[index])S.homeAnalyses[index]={};
+  S.homeAnalyses[index].market={...(S.homeAnalyses[index].market||{}),...tick,price:Number(tick.price)};
+  S.homeAnalyses[index].marketOpen=Boolean(S.marketOpen);
+  renderHomeIndexCards();
+  if(index!==S.index)return;
+  renderHome();
+  renderMarket();
+  if($('marketUpdated'))$('marketUpdated').textContent=new Date(tick.timestamp||payload.at||Date.now()).toLocaleTimeString('en-IN');
+}
+
+
+// ============================================================
+// STEP 13 — TRADE ALERT POPUP UI
+// ============================================================
+let currentTradeAlert = null;
+let tradeAlertPopupTimer = null;
+function renderTradeAlertPopup(alert, open=true){
+  if(!alert?.trade)return;
+  currentTradeAlert=alert;
+  const t=alert.trade;
+  $('tradeAlertTitle').textContent=`${t.index||S.index} ${t.signal||'TRADE'} SETUP`;
+  $('tradeAlertSub').textContent=`Confidence ${t.confidence??'—'}% • ${alert.status||'NEW'}`;
+  $('tradeAlertOption').textContent=t.optionType||'—';
+  $('tradeAlertStrike').textContent=fmt(t.strike);
+  $('tradeAlertExpiry').textContent=t.expiry||'—';
+  $('tradeAlertEntry').textContent=fmt(t.entry);
+  $('tradeAlertSL').textContent=fmt(t.stopLoss);
+  $('tradeAlertTarget').textContent=fmt(t.targets?.[0]);
+  $('tradeAlertReason').textContent=(t.why||t.reason||t.reasoning||t.decisionReasons?.[0]||'ERA has confirmed this setup through its deterministic trade gate.');
+  const disabled=alert.status==='REJECTED'||alert.status==='PAPER_TRADE';
+  $('tradeAlertConsider').disabled=disabled; $('tradeAlertReject').disabled=disabled; $('tradeAlertPaper').disabled=disabled;
+  $('tradeAlertPopup').classList.toggle('open',open);
+}
+async function loadTradeAlerts(){
+  try{
+    const d=await api(`/api/trade-alerts?index=${encodeURIComponent(S.index)}`);
+    const active=(d.alerts||[]).find(a=>['NEW','CONSIDER'].includes(a.status));
+    if(active)renderTradeAlertPopup(active,false);
+  }catch(_){}
+}
+async function tradeAlertAction(action){
+  if(!currentTradeAlert)return;
+  try{
+    const d=await api(`/api/trade-alerts/${encodeURIComponent(currentTradeAlert.id)}/action`,{method:'POST',body:JSON.stringify({action})});
+    currentTradeAlert=d.alert||currentTradeAlert;
+    renderTradeAlertPopup(currentTradeAlert,true);
+    if(action==='PAPER_TRADE'){toast('Paper trade created from ERA trade alert');loadPaper();}
+    else if(action==='REJECT')toast('Trade setup rejected');
+    else toast('Trade setup marked as CONSIDER');
+  }catch(e){toast('Trade alert: '+errorText(e.message));}
+}
+$('tradeAlertClose').onclick=()=>$('tradeAlertPopup').classList.remove('open');
+$('tradeAlertConsider').onclick=()=>tradeAlertAction('CONSIDER');
+$('tradeAlertReject').onclick=()=>tradeAlertAction('REJECT');
+$('tradeAlertPaper').onclick=()=>tradeAlertAction('PAPER_TRADE');
+
+function applyRealtimeOptionTick(payload){
+  const key=payload?.instrumentKey;
+  const tick=payload?.tick;
+  if(!key||!tick)return;
+  if(paperSelectedInstrument?.instrumentKey===key && Number.isFinite(Number(tick.ltp))){
+    paperSelectedInstrument.ltp=Number(tick.ltp);
+    if($('paperLivePrice'))$('paperLivePrice').textContent=fmt(tick.ltp);
+    if(paperEntryMode==='market')$('paperOrderHint').textContent=`${paperSideMode} market entry will use current premium ₹${fmt(tick.ltp)}.`;
+  }
+  if(!S.optionData)return;
+  const rows=S.optionData.rows||S.optionData.data||[];
+  let changed=false;
+  for(const row of rows){
+    for(const sideName of ['call','put']){
+      const side=row?.[sideName];
+      if(side?.instrumentKey!==key)continue;
+      const prevLtp=Number(side.ltp);
+      const prevOi=Number(side.oi);
+      if(Number.isFinite(Number(tick.ltp))){side.changeLtp=Number(tick.ltp)-(Number.isFinite(Number(tick.closePrice))?Number(tick.closePrice):(Number.isFinite(Number(side.closePrice))?Number(side.closePrice):Number(tick.ltp)));side.ltp=Number(tick.ltp);}
+      if(Number.isFinite(Number(tick.oi))){side.changeOI=Number.isFinite(Number(tick.changeOI))?Number(tick.changeOI):side.changeOI;side.oi=Number(tick.oi);}
+      if(Number.isFinite(Number(tick.volume)))side.volume=Number(tick.volume);
+      if(Number.isFinite(Number(tick.iv)))side.iv=Number(tick.iv);
+      if(Number.isFinite(Number(tick.bidPrice)))side.bidPrice=Number(tick.bidPrice);
+      if(Number.isFinite(Number(tick.askPrice)))side.askPrice=Number(tick.askPrice);
+      if(Number.isFinite(prevLtp)&&Number.isFinite(Number(tick.ltp))&&prevLtp!==Number(tick.ltp))changed=true;
+      else if(Number.isFinite(prevOi)&&Number.isFinite(Number(tick.oi))&&prevOi!==Number(tick.oi))changed=true;
+      else if(Number.isFinite(Number(tick.volume))||Number.isFinite(Number(tick.iv)))changed=true;
+    }
+  }
+  if(changed){
+    S.optionData.updatedAt=payload.at||Date.now();
+    renderOptionMarket(S.optionData);
+    renderOptionRows();
+  }
+}
+
+function connectRealtimeSync(){
+  if(!('EventSource' in window)){
+    $('liveStatus').textContent='🟡 LIVE SYNC • Browser stream unavailable';
+    return;
+  }
+  if(realtimeSource)realtimeSource.close();
+  realtimeSource=new EventSource(BACKEND+'/api/realtime/stream');
+  realtimeSource.addEventListener('snapshot',e=>{try{applyRealtimeSnapshot(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('tick',e=>{try{applyRealtimeTick(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('option-tick',e=>{try{applyRealtimeOptionTick(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
+  realtimeSource.addEventListener('trade-alert',e=>{try{const d=JSON.parse(e.data);if(d?.alert)renderTradeAlertPopup(d.alert,true)}catch(_){}});
+  realtimeSource.addEventListener('trade-alert-update',e=>{try{const d=JSON.parse(e.data);if(d?.alert&&currentTradeAlert?.id===d.alert.id)renderTradeAlertPopup(d.alert,true)}catch(_){}});
+  realtimeSource.addEventListener('paper-position-update',e=>{try{const d=JSON.parse(e.data);if(d?.paper){S.paper={...S.paper,...d.paper};if(d.type==='CLOSED'){toast(`Paper ${d.position?.reason||'position'} closed • P&L ₹${fmt(d.position?.pnl||0)}`);loadPaperPerformance();}renderPaperState();if($('view-paper-performance')?.classList.contains('active'))renderPaperPerformance();}}catch(_){}});
+  realtimeSource.onopen=()=>{realtimeConnected=true;};
+  realtimeSource.onerror=()=>{realtimeConnected=false;updateRealtimeStatusText({status:'RECONNECTING',marketOpen:S.marketOpen});};
+}
+
 async function loadNews(){try{const d=await api('/api/news');$('newsUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('newsGrid').innerHTML=(d.news||[]).slice(0,20).map(n=>`<div class="card news-item"><a href="${esc(n.link||'#')}" target="_blank" rel="noopener">${esc(n.title)}</a><small>${esc(n.pubDate||'')}</small></div>`).join('')||'<div class="card news-item">No news available.</div>'}catch(e){toast('News: '+errorText(e.message))}}
-async function loadOptions(){try{const idx=S.optionIndex||'NIFTY';const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);let expiries=Array.isArray(ex.expiries)?ex.expiries:[];const current=$('expirySelect').value;const keep=expiries.includes(current)?current:(expiries[0]||'');$('expirySelect').innerHTML=expiries.length?expiries.map(x=>`<option value=\"${esc(x)}\">${esc(x)}</option>`).join(''):'<option value=\"\">Expiry unavailable</option>';if(keep)$('expirySelect').value=keep;await loadOptionChainForExpiry(keep)}catch(e){$('expirySelect').innerHTML='<option value=\"\">Expiry unavailable</option>';$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
-async function loadOptionChainForExpiry(expiry){try{const idx=S.optionIndex||'NIFTY';const q=expiry?`&expiry=${encodeURIComponent(expiry)}`:'';const d=await api(`/api/options/chain?index=${encodeURIComponent(idx)}${q}`);S.optionData=d;const rows=d.rows||d.data||[];$('optionSpot').textContent='Spot '+fmt(d.spot);$('optionUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');$('optionPCR').textContent=`PCR ${fmt(d.summary?.pcr)}`;$('optionSentiment').textContent=`Sentiment ${d.summary?.sentiment||'—'}`;if(d.expiry&&!Array.from($('expirySelect').options).some(o=>o.value===String(d.expiry))){const o=document.createElement('option');o.value=d.expiry;o.textContent=d.expiry;$('expirySelect').appendChild(o)}if(d.expiry)$('expirySelect').value=String(d.expiry);$('optionRows').innerHTML=rows.map((r,i)=>`<tr class=\"${i===Math.floor(rows.length/2)?'selected-row':''}\"><td>${fmt(r.call?.ltp)}</td><td>${fmt(r.call?.oi)}</td><td>${fmt(r.call?.changeOI)}</td><td><b>${fmt(r.strike)}</b></td><td>${fmt(r.put?.changeOI)}</td><td>${fmt(r.put?.oi)}</td><td>${fmt(r.put?.ltp)}</td></tr>`).join('')||'<tr><td colspan=\"7\" class=\"empty\">No option rows available.</td></tr>'}catch(e){$('optionRows').innerHTML=`<tr><td colspan=\"7\" class=\"empty\">${esc(errorText(e.message))}</td></tr>`}}
-async function loadSettings(){try{const d=await api('/api/settings');S.settings=d.settings||{};document.querySelectorAll('.notify').forEach(x=>x.checked=S.settings.notifications?.[x.dataset.key]!==false)}catch(e){toast('Settings: '+errorText(e.message))}}
-async function saveSettings(){try{const notifications={};document.querySelectorAll('.notify').forEach(x=>notifications[x.dataset.key]=x.checked);const d=await api('/api/settings',{method:'POST',body:JSON.stringify({movementThreshold:Number(S.settings.movementThreshold||20),minConfidence:61,notifications})});S.settings=d.settings;toast('ERA notification settings saved')}catch(e){toast('Save failed: '+errorText(e.message))}}
-async function loadHistory(){try{const d=await api('/api/history');S.history=d.history||[];renderHistory()}catch(e){toast('History: '+errorText(e.message))}}
+function optionQty(v){
+  const n=Number(v);
+  if(!Number.isFinite(n))return '—';
+  const a=Math.abs(n);
+  if(a>=1e7)return `${(n/1e7).toFixed(2).replace(/\.00$/,'')} Cr`;
+  if(a>=1e5)return `${(n/1e5).toFixed(2).replace(/\.00$/,'')} L`;
+  if(a>=1e3)return `${(n/1e3).toFixed(1).replace(/\.0$/,'')} K`;
+  return n.toLocaleString('en-IN',{maximumFractionDigits:0});
+}
+function optionOIChange(side){
+  const oi=Number(side?.oi);
+  const ch=Number(side?.changeOI);
+  if(!Number.isFinite(ch)||ch===0)return {text:'—',up:true};
+  const prev=oi-ch;
+  const pctChange=Number.isFinite(prev)&&prev!==0?(ch/prev)*100:null;
+  const sign=ch>0?'+':'';
+  const pctText=pctChange===null?'':` (${sign}${pctChange.toFixed(2)}%)`;
+  return {text:`${sign}${optionQty(ch)}${pctText}`,up:ch>0};
+}
+function optionLtpChange(side){
+  const ch=Number(side?.changeLtp);
+  const ltp=Number(side?.ltp);
+  if(!Number.isFinite(ch)||ch===0)return {text:'—',up:true};
+  const close=ltp-ch;
+  const pctChange=Number.isFinite(close)&&close!==0?(ch/close)*100:null;
+  const sign=ch>0?'+':'';
+  const pctText=pctChange===null?'':` (${sign}${pctChange.toFixed(2)}%)`;
+  return {text:`${sign}${fmt(ch)}${pctText}`,up:ch>0};
+}
+function optionRowPcr(row){
+  const c=Number(row?.call?.oi)||0, p=Number(row?.put?.oi)||0;
+  return c>0?p/c:null;
+}
+function optionNearestIndex(rows,spot){
+  if(!rows.length)return -1;
+  const s=Number(spot);
+  if(!Number.isFinite(s))return Math.floor(rows.length/2);
+  let best=0,dist=Infinity;
+  rows.forEach((r,i)=>{const d=Math.abs(Number(r.strike)-s);if(Number.isFinite(d)&&d<dist){dist=d;best=i}});
+  return best;
+}
+function optionRowsForDisplay(rows,spot){
+  const data=Array.isArray(rows)?rows.filter(r=>Number.isFinite(Number(r?.strike))).slice():[];
+  if(!data.length)return [];
+  const atm=optionNearestIndex(data,spot);
+  const mode=S.optionFilter||'ATM';
+  if(mode==='ATM'){
+    return data;
+  }
+  const sideKey=S.optionMode==='PUT'?'put':S.optionMode==='CALL'?'call':null;
+  const score=(r)=>{
+    const c=r?.call||{},p=r?.put||{};
+    if(mode==='OI_HIGH'||mode==='HIGH_OI')return Number(sideKey ? r[sideKey]?.oi : Math.max(Number(c.oi)||0,Number(p.oi)||0));
+    if(mode==='OI_LOW')return Number(sideKey ? r[sideKey]?.oi : Math.min(Number(c.oi)||0,Number(p.oi)||0));
+    if(mode==='HIGH_VOL')return Number(sideKey ? r[sideKey]?.volume : Math.max(Number(c.volume)||0,Number(p.volume)||0));
+    if(mode==='HIGH_IV')return Number(sideKey ? r[sideKey]?.iv : Math.max(Number(c.iv)||0,Number(p.iv)||0));
+    return 0;
+  };
+  const sorted=data.slice().sort((a,b)=>score(b)-score(a));
+  return sorted.slice(0,11);
+}
+function renderOptionMarket(d){
+  const idx=S.optionIndex||'NIFTY';
+  const names={NIFTY:'NIFTY 50',BANKNIFTY:'BANK NIFTY',FINNIFTY:'FIN NIFTY',SENSEX:'SENSEX'};
+  const market=S.homeAnalyses?.[idx]?.market||((idx===S.index)?S.market:null)||{};
+  const spot=Number(d?.spot);
+  $('optionMarketName').textContent=market.name||names[idx]||idx;
+  $('optionMarketPrice').textContent=fmt(Number.isFinite(spot)?spot:market.price);
+  const ch=num(market.changePercent??market.change_pct);
+  $('optionMarketChange').textContent=ch===null?(market.change||'—'):pct(ch);
+  $('optionMarketChange').className=ch===null?'':(ch>=0?'bullish':'bearish');
+  const live=Boolean(S.homeAnalyses?.[idx]?.marketOpen ?? ((idx===S.index)?S.marketOpen:false));
+  $('optionMarketStatus').textContent=live?'● MARKET LIVE':'■ MARKET CLOSED';
+  $('optionMarketStatus').style.color=live?'#4f9227':'#918aa3';
+  $('optionPCR').textContent=fmt(d?.summary?.pcr);
+  $('optionSentiment').textContent=d?.summary?.sentiment||'—';
+  $('optionSpot').textContent=`Spot ${fmt(spot)}`;
+  $('optionUpdated').textContent=new Date(d?.updatedAt||Date.now()).toLocaleTimeString('en-IN');
+}
+function renderOptionHead(){
+  const mode=S.optionMode||'BOTH';
+  if(mode==='BOTH'){
+    $('optionHead').innerHTML='<tr><th>OI<small>change</small></th><th>LTP<small>change</small></th><th class="strike-head">Strike<small>PCR</small></th><th>LTP<small>change</small></th><th>OI<small>change</small></th></tr>';
+    $('optionModeNote').textContent='Calls + Puts';
+  }else{
+    $('optionHead').innerHTML='<tr><th>Strike<small>PCR</small></th><th>LTP<small>change</small></th><th>OI<small>change</small></th><th>Vol.<small>today</small></th><th>IV<small>%</small></th></tr>';
+    $('optionModeNote').textContent=mode==='CALL'?'Showing Calls':'Showing Puts';
+  }
+  $('optionCallsBtn').classList.toggle('active',mode==='CALL');
+  $('optionPutsBtn').classList.toggle('active',mode==='PUT');
+  $('optionBothBtn').classList.toggle('active',mode==='BOTH');
+}
+function renderOptionRows(){
+  const d=S.optionData||{};
+  const allRows=d.rows||d.data||[];
+  const rows=optionRowsForDisplay(allRows,d.spot);
+  const atmStrike=Number(d.summary?.atm);
+  renderOptionHead();
+  if(!rows.length){
+    $('optionRows').innerHTML='<tr><td colspan="5" class="empty">No option rows available.</td></tr>';
+    return;
+  }
+  const mode=S.optionMode||'BOTH';
+  $('optionRows').innerHTML=rows.map(r=>{
+    const isAtm=Number.isFinite(atmStrike)&&Number(r.strike)===atmStrike;
+    const ce=r.call||{},pe=r.put||{};
+    const coichg=optionOIChange(ce), poichg=optionOIChange(pe); const cltpchg=optionLtpChange(ce), pltpchg=optionLtpChange(pe);
+    if(mode==='BOTH'){
+      return `<tr class="${isAtm?'atm-row':''}" data-strike-row="${Number(r.strike)}">
+        <td><span class="option-cell-main">${optionQty(ce.oi)}</span><span class="option-cell-sub ${coichg.up?'':'down'}">${esc(coichg.text)}</span></td>
+        <td><span class="option-cell-main">${fmt(ce.ltp)}</span><span class="option-cell-sub ${cltpchg.up?'':'down'}">${esc(cltpchg.text)}</span></td>
+        <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
+        <td><span class="option-cell-main">${fmt(pe.ltp)}</span><span class="option-cell-sub ${pltpchg.up?'':'down'}">${esc(pltpchg.text)}</span></td>
+        <td><span class="option-cell-main">${optionQty(pe.oi)}</span><span class="option-cell-sub ${poichg.up?'':'down'}">${esc(poichg.text)}</span></td>
+      </tr>`;
+    }
+    const side=mode==='CALL'?ce:pe;
+    const ch=optionOIChange(side); const ltpCh=optionLtpChange(side);
+    const iv=Number(side.iv);
+    return `<tr class="${isAtm?'atm-row':''}" data-strike-row="${Number(r.strike)}">
+      <td class="strike-cell"><b>${fmt(r.strike)}</b><span class="option-cell-sub">${fmt(optionRowPcr(r))}</span></td>
+      <td><span class="option-cell-main">${fmt(side.ltp)}</span><span class="option-cell-sub ${ltpCh.up?'':'down'}">${esc(ltpCh.text)}</span></td>
+      <td><span class="option-cell-main">${optionQty(side.oi)}</span><span class="option-cell-sub ${ch.up?'':'down'}">${esc(ch.text)}</span></td>
+      <td><span class="option-cell-main">${optionQty(side.volume)}</span><span class="option-cell-sub">${side.volume?'LIVE':'—'}</span></td>
+      <td><span class="option-cell-main">${Number.isFinite(iv)&&iv>0?iv.toFixed(2):'—'}</span><span class="option-cell-sub">${Number.isFinite(iv)&&iv>0?'IV':'—'}</span></td>
+    </tr>`;
+  }).join('');
+  if((S.optionFilter||'ATM')==='ATM') {
+    const wrap=document.querySelector('.option-table-wrap');
+    const atmRow=wrap?.querySelector('#optionRows .atm-row');
+    if(wrap&&atmRow) {
+      requestAnimationFrame(()=>{
+        wrap.scrollTop=Math.max(0,atmRow.offsetTop-(wrap.clientHeight/2)+(atmRow.offsetHeight/2));
+      });
+    }
+  }
+}
+function optionExpiryLabel(value){
+  const s=String(value||'');
+  const m=s.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/);
+  if(!m)return s;
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${m[3]} ${months[Number(m[2])-1]||m[2]}`;
+}
+function renderOptionExpiryTabs(expiries){
+  const tabs=$('optionExpiryTabs');
+  const list=Array.isArray(expiries)?expiries:[];
+  if(!list.length){
+    tabs.innerHTML='<button class="option-expiry-placeholder" disabled>Expiry unavailable</button>';
+    return;
+  }
+  tabs.innerHTML=list.map(x=>`<button type="button" class="${String(x)===String(S.optionExpiry)?'active':''}" data-expiry="${esc(x)}">${esc(optionExpiryLabel(x))}</button>`).join('');
+  tabs.querySelectorAll('[data-expiry]').forEach(b=>b.onclick=()=>{S.optionExpiry=b.dataset.expiry;renderOptionExpiryTabs(list);loadOptionChainForExpiry(S.optionExpiry)});
+}
+async function loadOptions(){
+  try{
+    const idx=S.optionIndex||'NIFTY';
+    const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);
+    const expiries=Array.isArray(ex.expiries)?ex.expiries:[];
+    const keep=expiries.includes(S.optionExpiry)?S.optionExpiry:(expiries[0]||'');
+    S.optionExpiry=keep;
+    renderOptionExpiryTabs(expiries);
+    await loadOptionChainForExpiry(keep);
+  }catch(e){
+    renderOptionExpiryTabs([]);
+    $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
+  }
+}
+async function loadOptionChainForExpiry(expiry){
+  try{
+    const idx=S.optionIndex||'NIFTY';
+    const q=expiry?`&expiry=${encodeURIComponent(expiry)}`:'';
+    const d=await api(`/api/options/chain?index=${encodeURIComponent(idx)}${q}`);
+    S.optionData=d;
+    renderOptionMarket(d);
+    renderOptionRows();
+    if(d.expiry){S.optionExpiry=String(d.expiry);renderOptionExpiryTabs(Array.from(document.querySelectorAll('#optionExpiryTabs [data-expiry]')).map(x=>x.dataset.expiry))}
+  }catch(e){
+    $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
+  }
+}
+async function loadSettings(){try{const d=await api('/api/settings');S.settings=d.settings||{};document.querySelectorAll('.notify').forEach(x=>x.checked=S.settings.notifications?.[x.dataset.key]!==false)}catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Settings: '+errorText(e.message))}}
+async function saveSettings(){try{const notifications={};document.querySelectorAll('.notify').forEach(x=>notifications[x.dataset.key]=x.checked);const d=await api('/api/settings',{method:'POST',body:JSON.stringify({movementThreshold:Number(S.settings.movementThreshold||20),minConfidence:61,notifications})});S.settings=d.settings;toast('ERA notification settings saved')}catch(e){if(/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message))){showAuth();authMessage('Please login again with Gmail OTP to save notification settings.');return;}toast('Save failed: '+errorText(e.message))}}
+async function loadHistory(){try{const d=await api('/api/history');S.history=d.history||[];renderHistory()}catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('History: '+errorText(e.message))}}
 function renderHistory(){const f=S.historyFilter||'all';const rows=S.history.filter(x=>f==='all'||x.type===f);$('historyList').innerHTML=rows.length?rows.slice(0,200).map(x=>x.type==='chat'?`<div class="history-item"><b>CHAT</b><small>${esc(x.createdAt?new Date(x.createdAt).toLocaleString('en-IN'):'')}<br><strong>You:</strong> ${esc(x.userMessage||'')}<br><strong>ERA:</strong> ${esc(safeAnswer(x.answer||''))}</small></div>`:`<div class="history-item"><b>TRADE • ${esc(x.index||'')} ${esc(x.optionType||'')}</b><small>${esc(x.createdAt?new Date(x.createdAt).toLocaleString('en-IN'):'')}<br>Strike ${fmt(x.strike)} • Entry ${fmt(x.entry)} • SL ${fmt(x.stopLoss)} • Target ${fmt(x.targets?.[0])} • Confidence ${esc(x.confidence)}%</small></div>`).join(''):'<div class="history-item">No history yet.</div>'}
+let chatFullscreen=false,chatTouchStartY=0,chatTouchLastY=0;
+function openEraChat(){
+  const card=document.querySelector('.era-chat-card');
+  if(!card||chatFullscreen)return;
+  chatFullscreen=true;
+  card.classList.remove('chat-closing');
+  card.classList.add('chat-fullscreen');
+  document.body.classList.add('chat-focus-lock');
+  setTimeout(()=>{const input=$('homeChat');if(input)input.focus({preventScroll:true});const board=$('chatBoard');if(board)board.scrollTop=board.scrollHeight;},180);
+}
+function closeEraChat(){
+  const card=document.querySelector('.era-chat-card');
+  if(!card||!chatFullscreen)return;
+  card.classList.remove('chat-fullscreen');
+  card.classList.add('chat-closing');
+  setTimeout(()=>{card.classList.remove('chat-closing');document.body.classList.remove('chat-focus-lock');chatFullscreen=false;},240);
+}
+function bindEraChatFullscreen(){
+  const card=document.querySelector('.era-chat-card'),board=$('chatBoard');
+  if(!card||!board||card.dataset.chatFullscreenBound==='1')return;
+  card.dataset.chatFullscreenBound='1';
+
+  const openIfNeeded=(e)=>{
+    if(chatFullscreen)return;
+    const t=e?.target;
+    if(t&&t.closest&&t.closest('.chat-compose,.era-chat-chips,.chat-photo-preview'))return;
+    openEraChat();
+  };
+
+  board.addEventListener('pointerup',openIfNeeded,{passive:true});
+  board.addEventListener('click',openIfNeeded);
+
+  board.addEventListener('touchstart',e=>{
+    if(!chatFullscreen)return;
+    chatTouchStartY=e.touches[0]?.clientY||0;
+    chatTouchLastY=chatTouchStartY;
+  },{passive:true});
+
+  board.addEventListener('touchmove',e=>{
+    if(!chatFullscreen)return;
+    chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;
+  },{passive:true});
+
+  board.addEventListener('touchend',()=>{
+    if(!chatFullscreen)return;
+    const delta=chatTouchLastY-chatTouchStartY;
+    if(delta>90&&board.scrollTop<=8)closeEraChat();
+    chatTouchStartY=0;chatTouchLastY=0;
+  },{passive:true});
+
+  card.addEventListener('touchstart',e=>{
+    if(!chatFullscreen)return;
+    chatTouchStartY=e.touches[0]?.clientY||0;
+    chatTouchLastY=chatTouchStartY;
+  },{passive:true});
+
+  card.addEventListener('touchmove',e=>{
+    if(!chatFullscreen)return;
+    chatTouchLastY=e.touches[0]?.clientY||chatTouchLastY;
+  },{passive:true});
+
+  card.addEventListener('touchend',()=>{
+    if(!chatFullscreen)return;
+    const delta=chatTouchLastY-chatTouchStartY;
+    if(delta>110)closeEraChat();
+    chatTouchStartY=0;chatTouchLastY=0;
+  },{passive:true});
+}
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&chatFullscreen)closeEraChat()});
+
 let selectedImageData='';function addChatBubble(role,text,typing=false){const board=$('chatBoard');if(!board)return null;const b=document.createElement('div');b.className=`bubble ${role}${typing?' typing':''}`;b.textContent=safeAnswer(text);board.appendChild(b);board.scrollTop=board.scrollHeight;return b}function clearChatPhoto(){selectedImageData='';$('chatFile').value='';$('chatPhotoPreview').style.display='none';$('chatPhotoImg').removeAttribute('src')}
-async function askEra(){const input=$('homeChat'),q=input.value.trim();if(!q&&!selectedImageData)return;const visibleQuestion=q||'Analyze this screenshot';addChatBubble('user',selectedImageData?`${visibleQuestion} [Screenshot attached]`:visibleQuestion);input.value='';const typing=addChatBubble('era','ERA is checking the market…',true);try{const body={message:q,index:S.index};if(selectedImageData)body.image=selectedImageData;const d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});typing.textContent=safeAnswer(d.answer)||'No response';typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
+async function askEra(){const input=$('homeChat'),q=input.value.trim();if(!q&&!selectedImageData)return;const visibleQuestion=q||'Analyze this screenshot';addChatBubble('user',selectedImageData?`${visibleQuestion} [Screenshot attached]`:visibleQuestion);input.value='';const typing=addChatBubble('era','ERA is checking the market…',true);try{const body={message:q,index:S.index};if(selectedImageData)body.image=selectedImageData;let d;
+try{
+  d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});
+  typing.textContent=safeAnswer(d.answer)||'No response';
+}catch(chatErr){
+  throw chatErr;
+}
+typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
 function selectIndex(k){S.index=k;localStorage.setItem('eraSelectedIndex',k);document.querySelectorAll('[data-index]').forEach(x=>x.classList.toggle('active',x.dataset.index===k));renderHome();renderMarket();renderSignal()}
 async function loadChart(){try{const index=$('chartIndex').value||S.index,interval=$('chartInterval').value||5;const d=await api(`/api/candles?index=${index}&interval=${interval}`);const c=d.candles||[];drawChart(c);$('chartUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');const closes=c.map(x=>Number(x[4]));const calcEma=(v,p)=>{if(v.length<p)return null;let e=v.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<v.length;i++)e=(v[i]*(2/(p+1)))+e*(1-2/(p+1));return e};const rsiCalc=v=>{if(v.length<15)return null;let g=0,l=0;for(let i=1;i<15;i++){const z=v[i]-v[i-1];if(z>0)g+=z;else l-=z}let ag=g/14,al=l/14;for(let i=15;i<v.length;i++){const z=v[i]-v[i-1];ag=(ag*13+Math.max(z,0))/14;al=(al*13+Math.max(-z,0))/14}return al?100-(100/(1+ag/al)):100};$('chartEma9').textContent=fmt(calcEma(closes,9));$('chartEma20').textContent=fmt(calcEma(closes,20));$('chartRsi').textContent=fmt(rsiCalc(closes));const volSum=c.reduce((s,x)=>s+Math.max(0,Number(x[5]||0)),0);const weighted=volSum>0?c.reduce((s,x)=>s+(Number(x[4]||0)*Math.max(0,Number(x[5]||0))),0)/volSum:(closes.length?c.reduce((s,x)=>s+((Number(x[2]||0)+Number(x[3]||0)+Number(x[4]||0))/3),0)/closes.length:null);$('chartVwap').textContent=fmt(weighted);if($('chartVolume'))$('chartVolume').textContent=fmt(c.length?Number(c[c.length-1][5]||0):null)}catch(e){toast('Chart: '+errorText(e.message))}}
 function drawChart(c){const canvas=$('chartCanvas'),ctx=canvas.getContext('2d');const dpr=window.devicePixelRatio||1,w=canvas.clientWidth||1200,h=330;canvas.width=w*dpr;canvas.height=h*dpr;ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);if(!c.length){ctx.fillStyle='#8196b2';ctx.fillText('No candle data available.',20,30);return}const highs=c.map(x=>Number(x[2])),lows=c.map(x=>Number(x[3])),max=Math.max(...highs),min=Math.min(...lows),range=max-min||1;ctx.strokeStyle='rgba(24,48,76,.8)';for(let y=30;y<h;y+=60){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke()}const step=w/Math.max(1,c.length-1);ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();ctx.lineWidth=2;ctx.beginPath();c.forEach((x,i)=>{const y=20+(max-Number(x[4]))/range*(h-40);if(i===0)ctx.moveTo(i*step,y);else ctx.lineTo(i*step,y)});ctx.stroke();c.slice(-80).forEach((x,i)=>{const px=(i/(Math.max(1,Math.min(80,c.length)-1)))*w;const y=20+(max-Number(x[4]))/range*(h-40);ctx.fillStyle=Number(x[4])>=Number(x[1])?'#27e69b':'#ff527c';ctx.fillRect(px-1,y-1,3,3)})}
-let paperOptionRows=[];let paperSelectedInstrument=null;let paperEntryMode='market';
-async function loadPaperOptions(){try{const index=$('paperIndex').value||S.index;let expiries=[];try{const ex=await api(`/api/options/expiries?index=${encodeURIComponent(index)}`);expiries=ex.expiries||[];}catch(_){}const current=$('paperExpiry').value;const selectedExpiry=expiries.includes(current)?current:(expiries[0]||current||'');$('paperExpiry').innerHTML=expiries.length?expiries.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''):(selectedExpiry?`<option value="${esc(selectedExpiry)}">${esc(selectedExpiry)}</option>`:'<option value="">Expiry unavailable</option>');if(selectedExpiry)$('paperExpiry').value=selectedExpiry;const expiryParam=selectedExpiry?`&expiry=${encodeURIComponent(selectedExpiry)}`:'';const d=await api(`/api/options/chain?index=${encodeURIComponent(index)}${expiryParam}`);paperOptionRows=d.rows||d.data||[];const returnedExpiry=d.expiry||selectedExpiry;if(returnedExpiry&&!expiries.includes(returnedExpiry)){const opt=document.createElement('option');opt.value=returnedExpiry;opt.textContent=returnedExpiry;$('paperExpiry').appendChild(opt);$('paperExpiry').value=returnedExpiry;}const strikes=[...new Set(paperOptionRows.map(r=>Number(r.strike)).filter(Number.isFinite))].sort((a,b)=>a-b);$('paperStrike').innerHTML='<option value="">Select exact strike</option>'+strikes.map(x=>`<option value="${x}">${fmt(x)}</option>`).join('');updatePaperSelection();}catch(e){$('paperInstrumentStatus').textContent='Options unavailable';toast('Paper options: '+errorText(e.message))}}
-function updatePaperSelection(){const strike=Number($('paperStrike').value);const type=$('paperType').value;const row=paperOptionRows.find(r=>Number(r.strike)===strike);const side=type==='CE'?row?.call:row?.put;paperSelectedInstrument=side||null;$('paperSelectedOption').textContent=row&&side?`${$('paperIndex').value} ${type} ${fmt(strike)}`:'Select exact option';$('paperLivePrice').textContent=side?fmt(side.ltp):'—';$('paperInstrumentStatus').textContent=side?.instrumentKey?'LIVE':'Select strike';if(side&&paperEntryMode==='market')$('paperOrderHint').textContent=`Market entry will use current premium ₹${fmt(side.ltp)}.`;else if(side)$('paperOrderHint').textContent='Custom entry mode selected. Enter your premium above.';}
-async function loadPaper(){try{const d=await api('/api/paper/refresh',{method:'POST'});S.paper=d.paper||{};$('paperCash').textContent=fmt(S.paper.cash);$('paperPnl').textContent=fmt(S.paper.realizedPnl);$('paperLivePnl').textContent=fmt(S.paper.unrealizedPnl||0);$('paperLivePnl').className=(Number(S.paper.unrealizedPnl||0)>=0?'bullish':'bearish')+' paper-pnl';$('paperPositions').textContent=(S.paper.positions||[]).length;if($('paperRisk'))$('paperRisk').textContent=d.risk?.killSwitch?'BLOCKED':'SAFE';$('paperRows').innerHTML=(S.paper.positions||[]).length?S.paper.positions.map(p=>{const lp=num(p.unrealizedPnl)?Number(p.unrealizedPnl):((Number(p.currentPrice||0)-Number(p.entry||0))*Number(p.quantity||0));return `<tr><td>${esc(p.index)}</td><td>${esc(p.optionType)}</td><td>${fmt(p.strike)}</td><td>${fmt(p.quantity)}</td><td>${fmt(p.entry)}</td><td>${fmt(p.currentPrice)}</td><td class=\"${lp>=0?'bullish':'bearish'}\">${fmt(lp)}</td><td>${esc(p.status||'OPEN')}</td><td><button class=\"paper-close\" data-close=\"${esc(p.id)}\">CLOSE</button></td></tr>`}).join(''):'<tr><td colspan="9" class="empty">No paper positions.</td></tr>';document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closePaper(b.dataset.close));}catch(e){toast('Paper: '+errorText(e.message))}}
-async function placePaper(){try{if(!paperSelectedInstrument?.instrumentKey)throw new Error('Select an exact option strike first.');const live=Number(paperSelectedInstrument.ltp||0);const custom=Number($('paperPrice').value||0);const price=paperEntryMode==='market'?live:custom;if(!(price>0))throw new Error('Valid option premium is required.');const b={side:'BUY',index:$('paperIndex').value,optionType:$('paperType').value,strike:Number($('paperStrike').value),expiry:$('paperExpiry').value,price,entryMode:paperEntryMode,quantity:Number($('paperQty').value||1),stopLoss:Number($('paperSL').value||0),target:Number($('paperTarget').value||0),instrumentKey:paperSelectedInstrument.instrumentKey};await api('/api/paper/order',{method:'POST',body:JSON.stringify(b)});toast(`Paper BUY ${b.optionType} ${b.strike} @ ₹${fmt(price)}`);await loadPaper()}catch(e){toast('Paper order: '+errorText(e.message))}}
-async function closePaper(id){try{await api('/api/paper/order',{method:'POST',body:JSON.stringify({side:'SELL',positionId:id})});toast('Paper position closed');loadPaper()}catch(e){toast('Close: '+errorText(e.message))}}
+let paperOptionRows=[];let paperSelectedInstrument=null;let paperEntryMode='market';let paperSideMode='BUY';let paperPerformanceData=[];let paperPerformanceFilter='ALL';let selectedPaperTradeId=null;let editingPaperPositionId=null;
+
+function paperDate(value){
+  if(!value)return '—';
+  try{return new Date(value).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});}catch(_){return String(value);}
+}
+function paperSideLabel(side){return String(side||'BUY').toUpperCase()==='SELL'?'SELL':'BUY';}
+function paperPnl(position){
+  const entry=Number(position?.entry||0), current=Number(position?.currentPrice||0), qty=Number(position?.quantity||0);
+  return paperSideLabel(position?.side)==='SELL'?(entry-current)*qty:(current-entry)*qty;
+}
+function setPaperSide(side){
+  paperSideMode=paperSideLabel(side);
+  $('paperBuySide').classList.toggle('active-buy',paperSideMode==='BUY');
+  $('paperSellSide').classList.toggle('active-sell',paperSideMode==='SELL');
+  $('paperBuy').textContent=paperSideMode==='BUY'?'⚡ PLACE PAPER BUY':'⚡ PLACE PAPER SELL';
+  $('paperSL').placeholder=paperSideMode==='BUY'?'Stop Loss (below entry)':'Stop Loss (above entry)';
+  $('paperTarget').placeholder=paperSideMode==='BUY'?'Target (above entry)':'Target (below entry)';
+  updatePaperSelection();
+}
+async function loadPaperOptions(){
+  try{
+    const index=$('paperIndex').value||S.index;
+    let expiries=[];
+    try{const ex=await api(`/api/options/expiries?index=${encodeURIComponent(index)}`);expiries=ex.expiries||[];}catch(_){}
+    const current=$('paperExpiry').value;
+    const selectedExpiry=expiries.includes(current)?current:(expiries[0]||current||'');
+    $('paperExpiry').innerHTML=expiries.length?expiries.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join(''):(selectedExpiry?`<option value="${esc(selectedExpiry)}">${esc(selectedExpiry)}</option>`:'<option value="">Expiry unavailable</option>');
+    if(selectedExpiry)$('paperExpiry').value=selectedExpiry;
+    const expiryParam=selectedExpiry?`&expiry=${encodeURIComponent(selectedExpiry)}`:'';
+    const d=await api(`/api/options/chain?index=${encodeURIComponent(index)}${expiryParam}`);
+    paperOptionRows=d.rows||d.data||[];
+    const returnedExpiry=d.expiry||selectedExpiry;
+    if(returnedExpiry&&!expiries.includes(returnedExpiry)){const opt=document.createElement('option');opt.value=returnedExpiry;opt.textContent=returnedExpiry;$('paperExpiry').appendChild(opt);$('paperExpiry').value=returnedExpiry;}
+    const strikes=[...new Set(paperOptionRows.map(r=>Number(r.strike)).filter(Number.isFinite))].sort((a,b)=>a-b);
+    $('paperStrike').innerHTML='<option value="">Select strike</option>'+strikes.map(x=>`<option value="${x}">${fmt(x)}</option>`).join('');
+    updatePaperSelection();
+  }catch(e){$('paperInstrumentStatus').textContent='Options unavailable';toast('Paper options: '+errorText(e.message))}
+}
+function updatePaperSelection(){
+  const strike=Number($('paperStrike').value);
+  const type=$('paperType').value;
+  const row=paperOptionRows.find(r=>Number(r.strike)===strike);
+  const side=type==='CE'?row?.call:row?.put;
+  paperSelectedInstrument=side||null;
+  $('paperSelectedOption').textContent=row&&side?`${$('paperIndex').value} ${paperSideMode} ${type} ${fmt(strike)}`:'Select exact option';
+  $('paperLivePrice').textContent=side?fmt(side.ltp):'—';
+  $('paperInstrumentStatus').textContent=side?.instrumentKey?'LIVE':'Select strike';
+  if(side&&paperEntryMode==='market')$('paperOrderHint').textContent=`${paperSideMode} market entry will use current premium ₹${fmt(side.ltp)}.`;
+  else if(side)$('paperOrderHint').textContent=`${paperSideMode} custom entry selected. Enter your premium above.`;
+}
+function renderPaperState(){
+  const p=S.paper||{};
+  $('paperCash').textContent=fmt(p.cash);
+  $('paperPnl').textContent=fmt(p.realizedPnl);
+  $('paperLivePnl').textContent=fmt(p.unrealizedPnl||0);
+  $('paperLivePnl').className=(Number(p.unrealizedPnl||0)>=0?'bullish':'bearish')+' paper-pnl';
+  const overall=Number(p.realizedPnl||0)+Number(p.unrealizedPnl||0); $('paperOverallPnl').textContent=`₹${fmt(overall)}`; $('paperOverallPnl').className=overall>=0?'bullish':'bearish'; $('paperOverallMeta').textContent=`${(p.positions||[]).length} position${(p.positions||[]).length===1?'':'s'}`;
+  $('paperPositions').textContent=(p.positions||[]).length;
+  const positions=p.positions||[];
+  $('paperPositionsList').innerHTML=positions.length?positions.map(pos=>{
+    const pnl=paperPnl(pos);
+    const side=paperSideLabel(pos.side);
+    const pnlClass=pnl>=0?'bullish':'bearish';
+    return `<div class="paper-position-card">
+      <div class="paper-position-top">
+        <div><div class="paper-position-title">${esc(pos.index)} ${esc(side)} ${esc(pos.strike)} ${esc(pos.optionType)}</div><div class="paper-position-meta">${esc(pos.quantity)} Qty • ${esc(pos.expiry||'—')} • ${esc(pos.status||'RUNNING')}</div></div>
+        <div class="paper-position-pnl ${pnlClass}">₹${fmt(pnl)}<div style="font-size:9px">${pct(pos.pnlPercent)}</div></div>
+      </div>
+      <div class="paper-position-grid">
+        <div><small>ENTRY PRICE</small><b>₹${fmt(pos.entry)}</b></div>
+        <div><small>CURRENT PRICE</small><b>₹${fmt(pos.currentPrice)}</b></div>
+        <div><small>STOP LOSS</small><b>₹${fmt(pos.stopLoss)}</b></div>
+        <div><small>TARGET</small><b>₹${fmt(pos.target)}</b></div>
+        <div><small>QUANTITY</small><b>${fmt(pos.quantity)}</b></div>
+        <div><small>MARGIN / VALUE</small><b>₹${fmt(pos.marginUsed||Number(pos.entry||0)*Number(pos.quantity||0))}</b></div>
+        <div><small>OPENED</small><b>${esc(paperDate(pos.openedAt))}</b></div>
+        <div><small>LAST TICK</small><b>${esc(paperDate(pos.lastTickAt))}</b></div>
+      </div>
+      <div class="paper-position-actions"><button class="welcome-skip paper-edit" data-edit-position="${esc(pos.id)}">EDIT</button><button class="paper-close" data-exit-position="${esc(pos.id)}">EXIT</button></div>
+    </div>`;
+  }).join(''):'<div class="card notification-item">No paper positions.</div>';
+  document.querySelectorAll('[data-edit-position]').forEach(b=>b.onclick=()=>openPaperEdit(b.dataset.editPosition));
+  document.querySelectorAll('[data-exit-position]').forEach(b=>b.onclick=()=>closePaper(b.dataset.exitPosition));
+}
+async function loadPaper(){
+  try{
+    const d=await api('/api/paper');
+    S.paper=d.paper||{};
+    renderPaperState();
+  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}
+}
+async function placePaper(){
+  try{
+    if(!paperSelectedInstrument?.instrumentKey)throw new Error('Select an exact option strike first.');
+    const live=Number(paperSelectedInstrument.ltp||0);
+    const custom=Number($('paperPrice').value||0);
+    const price=paperEntryMode==='market'?live:custom;
+    if(!(price>0))throw new Error('Valid option premium is required.');
+    const b={side:paperSideMode,index:$('paperIndex').value,optionType:$('paperType').value,strike:Number($('paperStrike').value),expiry:$('paperExpiry').value,price,entryMode:paperEntryMode,quantity:Number($('paperQty').value||1),stopLoss:Number($('paperSL').value||0),target:Number($('paperTarget').value||0),instrumentKey:paperSelectedInstrument.instrumentKey,source:'MANUAL_PAPER'};
+    await api('/api/paper/order',{method:'POST',body:JSON.stringify(b)});
+    toast(`Paper ${b.side} ${b.optionType} ${b.strike} @ ₹${fmt(price)}`);
+    await loadPaper();
+    loadPaperPerformance();
+  }catch(e){toast('Paper order: '+errorText(e.message))}
+}
+async function closePaper(id){
+  try{
+    const d=await api('/api/paper/exit',{method:'POST',body:JSON.stringify({positionId:id,reason:'MANUAL_EXIT'})});
+    const c=d.closed;
+    if(c)toast(`Paper exit @ ₹${fmt(c.exit)} • P&L ${fmt(c.pnl)}`);else toast('Paper position closed');
+    S.paper=d.paper||S.paper;
+    renderPaperState();
+    loadPaperPerformance();
+  }catch(e){toast('Close: '+errorText(e.message))}
+}
+function openPaperEdit(id){
+  const p=(S.paper?.positions||[]).find(x=>x.id===id);
+  if(!p)return;
+  editingPaperPositionId=id;
+  $('paperEditSummary').textContent=`${p.index} ${paperSideLabel(p.side)} ${p.optionType} ${fmt(p.strike)} • Entry ₹${fmt(p.entry)}`;
+  $('paperEditSL').value=p.stopLoss??'';
+  $('paperEditTarget').value=p.target??'';
+  $('paperEditModal').classList.add('open');
+}
+function closePaperEdit(){editingPaperPositionId=null;$('paperEditModal').classList.remove('open')}
+async function savePaperEdit(){
+  if(!editingPaperPositionId)return;
+  try{
+    const d=await api('/api/paper/edit',{method:'POST',body:JSON.stringify({positionId:editingPaperPositionId,stopLoss:Number($('paperEditSL').value||0),target:Number($('paperEditTarget').value||0)})});
+    S.paper=d.paper||S.paper;
+    closePaperEdit();
+    renderPaperState();
+    toast('Paper trade updated');
+    loadPaperPerformance();
+  }catch(e){toast('Edit: '+errorText(e.message))}
+}
+function paperHistoryMatches(t){
+  if(paperPerformanceFilter==='OPEN')return t.status==='OPEN';
+  if(paperPerformanceFilter==='CLOSED')return t.status==='CLOSED';
+  if(paperPerformanceFilter==='PROFIT')return Number(t.pnl||0)>0;
+  if(paperPerformanceFilter==='LOSS')return Number(t.pnl||0)<0;
+  return true;
+}
+function renderPaperPerformance(){
+  const all=paperPerformanceData||[];
+  const liveMap=new Map((S.paper?.positions||[]).map(p=>[p.tradeId,p]));
+  const list=all.filter(paperHistoryMatches);
+  const stats={total:all.length,open:all.filter(x=>x.status==='OPEN').length,closed:all.filter(x=>x.status==='CLOSED').length,wins:all.filter(x=>x.status==='CLOSED'&&Number(x.pnl||0)>0).length,realizedPnl:all.filter(x=>x.status==='CLOSED').reduce((s,x)=>s+Number(x.pnl||0),0)};
+  $('paperPerfTotal').textContent=fmt(stats.total);
+  $('paperPerfOpen').textContent=fmt(stats.open);
+  $('paperPerfWinRate').textContent=stats.closed?`${fmt(stats.wins/stats.closed*100)}%`:'0%';
+  $('paperPerfPnl').textContent=`₹${fmt(stats.realizedPnl)}`;
+  $('paperPerformanceList').innerHTML=list.length?list.map(t=>{
+    const live=liveMap.get(t.tradeId);
+    const pnl=t.status==='OPEN'&&live?paperPnl(live):Number(t.pnl||0);
+    const side=paperSideLabel(t.side);
+    return `<div class="paper-history-card" data-paper-trade="${esc(t.tradeId)}">
+      <div class="paper-history-row"><div><div class="paper-history-title">${esc(t.index)} ${esc(side)} ${esc(t.optionType)} ${fmt(t.strike)}</div><div class="paper-history-sub">${esc(t.quantity)} Qty • Entry ₹${fmt(t.entry)} • ${esc(t.status)} • ${esc(t.expiry||'—')}</div></div><div class="paper-history-pnl ${pnl>=0?'bullish':'bearish'}">${t.status==='OPEN'?'LIVE':'₹'+fmt(pnl)}</div></div>
+      <div class="paper-history-sub">${esc(paperDate(t.openedAt))}${t.closedAt?' → '+esc(paperDate(t.closedAt)):''}</div>
+    </div>`;
+  }).join(''):'<div class="card notification-item">No paper trades in this filter.</div>';
+  document.querySelectorAll('[data-paper-trade]').forEach(b=>b.onclick=()=>openPaperTradeDetail(b.dataset.paperTrade));
+}
+async function loadPaperPerformance(){
+  try{
+    const d=await api('/api/trade-history?executionType=PAPER');
+    paperPerformanceData=d.history||[];
+    renderPaperPerformance();
+  }catch(e){toast('Performance: '+errorText(e.message))}
+}
+async function openPaperTradeDetail(tradeId){
+  try{
+    const d=await api(`/api/trade-history/${encodeURIComponent(tradeId)}`);
+    const t=d.trade||{};
+    selectedPaperTradeId=tradeId;
+    const livePosition=(S.paper?.positions||[]).find(p=>p.tradeId===t.tradeId);
+    const pnl=t.status==='OPEN'&&livePosition?paperPnl(livePosition):Number(t.pnl||0);
+    $('paperTradeDetail').classList.add('open');
+    $('paperDetailPnl').textContent=`₹${fmt(pnl)} (${pct(livePosition?.pnlPercent??t.pnlPercent)})`;
+    $('paperDetailPnl').className=pnl>=0?'bullish':'bearish';
+    $('paperDetailStatus').textContent=`${t.status||'—'} • ${paperSideLabel(t.side)} ${t.optionType||''}`;
+    $('paperDetailGrid').innerHTML=[
+      ['Instrument',`${t.index||'—'} ${paperSideLabel(t.side)} ${t.optionType||''} ${fmt(t.strike)}`],
+      ['Status',t.status||'—'],['Quantity',fmt(t.quantity)],['Entry Price',`₹${fmt(t.entry)}`],
+      ['Current Price',livePosition?`₹${fmt(livePosition.currentPrice)}`:'—'],['Exit Price',t.exit==null?'—':`₹${fmt(t.exit)}`],['Stop Loss',`₹${fmt(t.stopLoss)}`],
+      ['Target',t.targets?.[0]==null?'—':`₹${fmt(t.targets[0])}`],['Expiry',t.expiry||'—'],
+      ['Validity Till',t.expiry?`${t.expiry} • 3:30 PM`:'—'],['Margin Used',`₹${fmt(livePosition?.marginUsed||t.entry*Number(t.quantity||0))}`],['Est. Charges','₹0 (Paper)'],['Opened',paperDate(t.openedAt)],
+      ['Closed',paperDate(t.closedAt)],['Confidence',t.confidence==null?'—':`${fmt(t.confidence)}%`],
+      ['Reason',t.result||'—'],['Source',t.source||'PAPER']
+    ].map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');
+    const events=d.events||[];
+    $('paperDetailLogs').innerHTML=events.length?events.slice().reverse().map(e=>`<div class="paper-order-log"><b>${esc(e.eventType||'EVENT')}</b><div style="font-size:10px;color:var(--muted)">${esc(e.reason||e.result||'Paper trade event')} • ${esc(paperDate(e.executedAt))}</div><div style="font-size:11px;margin-top:4px">Price ₹${fmt(e.price)} • Qty ${fmt(e.quantity)}</div></div>`).join(''):'<div class="muted">No order logs.</div>';
+    await loadPaperTradeJournal(tradeId);
+    $('paperTradeDetail').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){toast('Trade details: '+errorText(e.message))}
+}
+async function loadPaperTradeJournal(tradeId){
+  try{
+    const d=await api(`/api/journal?tradeId=${encodeURIComponent(tradeId)}`);
+    const rows=d.journal||[];
+    $('paperTradeJournalList').innerHTML=rows.length?rows.map(x=>`<div class="card notification-item"><b>${esc(x.title||'Journal entry')}</b><small>${esc(paperDate(x.createdAt))} • ${esc(x.regime||'REGIME —')}</small><div style="margin-top:6px;font-size:11px">${esc(x.note||'')}</div><div class="muted" style="margin-top:6px;font-size:10px">Result: ${esc(x.result||'—')} • Lesson: ${esc(x.mistake||'—')}</div></div>`).join(''):'<div class="muted">No journal entries for this trade yet.</div>';
+  }catch(e){$('paperTradeJournalList').textContent='Journal unavailable'}
+}
+async function savePaperJournal(){
+  if(!selectedPaperTradeId)return;
+  try{
+    await api('/api/journal',{method:'POST',body:JSON.stringify({tradeId:selectedPaperTradeId,title:$('paperJournalTitle').value,note:$('paperJournalNote').value,regime:$('paperJournalRegime').value,result:$('paperJournalResult').value,mistake:$('paperJournalMistake').value})});
+    ['paperJournalTitle','paperJournalNote','paperJournalRegime','paperJournalResult','paperJournalMistake'].forEach(id=>$(id).value='');
+    toast('Trade journal saved');
+    loadPaperTradeJournal(selectedPaperTradeId);
+  }catch(e){toast('Journal: '+errorText(e.message))}
+}
 async function loadJournal(){try{const d=await api('/api/journal');S.journal=d.journal||[];$('journalList').innerHTML=S.journal.length?S.journal.map(x=>`<div class="card notification-item"><b>${esc(x.title||'Journal entry')}</b><small>${esc(new Date(x.createdAt).toLocaleString('en-IN'))} • ${esc(x.regime||'REGIME —')}</small><div style="margin-top:7px;font-size:11px">${esc(x.note||'')}</div><div class="muted" style="margin-top:7px;font-size:10px">Result: ${esc(x.result||'—')} • Lesson: ${esc(x.mistake||'—')}</div></div>`).join(''):'<div class="card notification-item">No journal entries yet.</div>'}catch(e){toast('Journal: '+errorText(e.message))}}
 async function saveJournal(){try{await api('/api/journal',{method:'POST',body:JSON.stringify({title:$('journalTitle').value,note:$('journalNote').value,regime:$('journalRegime').value,result:$('journalResult').value,mistake:$('journalMistake').value})});['journalTitle','journalNote','journalRegime','journalResult','journalMistake'].forEach(id=>$(id).value='');toast('Journal entry saved');loadJournal()}catch(e){toast('Journal: '+errorText(e.message))}}
 async function runCalc(){try{const d=await api('/api/calculator',{method:'POST',body:JSON.stringify({capital:Number($('calcCapital').value),riskPct:Number($('calcRisk').value),entry:Number($('calcEntry').value),stop:Number($('calcStop').value),target:Number($('calcTarget').value),qty:Number($('calcQty').value)})});$('calcResult').innerHTML=`Risk / unit: <b>${fmt(d.riskPerUnit)}</b> • Capital at risk: <b>${fmt(d.capitalRisk)}</b> • Suggested qty: <b>${fmt(d.suggestedQty)}</b> • R:R: <b>${fmt(d.rr)}</b> • P&L at target: <b>${fmt(d.pnl)}</b>`}catch(e){toast('Calculator: '+errorText(e.message))}}
@@ -173,24 +1273,94 @@ async function loadAlerts(){try{const d=await api('/api/alerts');$('alertsList')
 async function saveAlert(){try{await api('/api/alerts',{method:'POST',body:JSON.stringify({index:$('alertIndex').value||S.index,price:Number($('alertPrice').value),note:$('alertNote').value})});$('alertNote').value='';toast('Alert created');loadAlerts()}catch(e){toast('Alert: '+errorText(e.message))}}
 function showTool(name){document.querySelectorAll('.tool-panel').forEach(x=>x.style.display='none');$('tool-'+name).style.display='block';document.querySelectorAll('.tool-tab').forEach(x=>x.classList.toggle('active',x.dataset.tool===name));if(name==='risk')loadRisk();if(name==='alerts')loadAlerts()}
 // Welcome, menu, notifications and paper trading bindings
-$('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotifications(true);if(ok){$('notificationModal').classList.remove('open');$('notificationModalStatus').textContent='Notifications enabled.';}};$('notificationModalLater').onclick=()=>{$('notificationModal').classList.remove('open');};$('enableNotifications2').onclick=()=>setupPushNotifications(true);$('enableSettingsNotifications').onclick=()=>setupPushNotifications(true);$('enterEra')?.remove();$('skipWelcome')?.remove();$('menuBtn').onclick=()=>$('menuDrawer').classList.add('open');$('closeMenu').onclick=()=>$('menuDrawer').classList.remove('open');$('menuBackdrop').onclick=()=>$('menuDrawer').classList.remove('open');document.querySelectorAll('[data-menu-view]').forEach(b=>b.onclick=()=>{$('menuDrawer').classList.remove('open');setView(b.dataset.menuView)});$('bellBtn').onclick=()=>{$('notificationPanel').classList.toggle('open');loadAlerts()};$('closeNotifications').onclick=()=>$('notificationPanel').classList.remove('open');$('openAlerts').onclick=()=>{$('notificationPanel').classList.remove('open');setView('tools');showTool('alerts')};$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;$('paperMarketMode').onclick=()=>{paperEntryMode='market';$('paperMarketMode').classList.add('active');$('paperLimitMode').classList.remove('active');$('paperPrice').disabled=true;$('paperBuy').textContent='⚡ BUY PAPER @ MARKET';updatePaperSelection()};$('paperLimitMode').onclick=()=>{paperEntryMode='limit';$('paperLimitMode').classList.add('active');$('paperMarketMode').classList.remove('active');$('paperPrice').disabled=false;$('paperBuy').textContent='BUY PAPER @ CUSTOM PRICE';updatePaperSelection()};
+$('notificationModalEnable').onclick=async()=>{const ok=await setupPushNotifications(true);if(ok){$('notificationModal').classList.remove('open');$('notificationModalStatus').textContent='Notifications enabled.';}};$('notificationModalLater').onclick=()=>{$('notificationModal').classList.remove('open');};$('enableNotifications2').onclick=()=>setupPushNotifications(true);$('enableSettingsNotifications').onclick=()=>setupPushNotifications(true);$('enterEra')?.remove();$('skipWelcome')?.remove();$('menuBtn').onclick=()=>$('menuDrawer').classList.add('open');$('closeMenu').onclick=()=>$('menuDrawer').classList.remove('open');$('menuBackdrop').onclick=()=>$('menuDrawer').classList.remove('open');document.querySelectorAll('[data-menu-view]').forEach(b=>b.onclick=()=>{$('menuDrawer').classList.remove('open');setView(b.dataset.menuView)});$('bellBtn').onclick=()=>{$('notificationPanel').classList.toggle('open');loadAlerts()};$('closeNotifications').onclick=()=>$('notificationPanel').classList.remove('open');$('openAlerts').onclick=()=>{$('notificationPanel').classList.remove('open');setView('tools');showTool('alerts')};
+document.querySelectorAll('[data-paper-jump]').forEach(btn=>{
+  btn.onclick=()=>{
+    const target=btn.dataset.paperJump;
+    document.querySelectorAll('[data-paper-jump]').forEach(b=>b.classList.toggle('active',b===btn));
+    if(target==='trade')setView('paper');
+  };
+});
+$('paperBuySide').onclick=()=>setPaperSide('BUY');$('paperSellSide').onclick=()=>setPaperSide('SELL');$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;
+$('paperMarketMode').onclick=()=>{paperEntryMode='market';$('paperMarketMode').classList.add('active');$('paperLimitMode').classList.remove('active');$('paperPrice').disabled=true;updatePaperSelection()};
+$('paperLimitMode').onclick=()=>{paperEntryMode='limit';$('paperLimitMode').classList.add('active');$('paperMarketMode').classList.remove('active');$('paperPrice').disabled=false;updatePaperSelection()};
+$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper();loadPaperPerformance()}};
+$('paperEditClose').onclick=closePaperEdit;$('paperEditCancel').onclick=closePaperEdit;$('paperEditSave').onclick=savePaperEdit;$('paperDetailClose').onclick=()=>{$('paperTradeDetail').classList.remove('open');selectedPaperTradeId=null};
+$('savePaperJournal').onclick=savePaperJournal;
+document.querySelectorAll('[data-paper-filter]').forEach(b=>b.onclick=()=>{paperPerformanceFilter=b.dataset.paperFilter;document.querySelectorAll('[data-paper-filter]').forEach(x=>x.classList.toggle('active',x===b));renderPaperPerformance()});
+loadTradeAlerts();
+
 // Core bindings
-document.querySelectorAll('#homeIndices button,.market-index').forEach(b=>b.onclick=()=>selectIndex(b.dataset.index));document.querySelectorAll('.option-index').forEach(b=>b.onclick=()=>{S.optionIndex=b.dataset.index;document.querySelectorAll('.option-index').forEach(x=>x.classList.toggle('active',x===b));loadOptions()});$('expirySelect').onchange=()=>loadOptionChainForExpiry($('expirySelect').value);$('homeAsk').onclick=askEra;$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('paperBuy').onclick=placePaper;$('paperRefresh').onclick=loadPaper;$('paperReset').onclick=async()=>{if(confirm('Reset paper account?')){await api('/api/paper/reset',{method:'POST'});loadPaper()}};$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
+document.querySelectorAll('#homeIndices button,.market-index').forEach(b=>b.onclick=()=>selectIndex(b.dataset.index));
+document.querySelectorAll('.option-index').forEach(b=>b.onclick=()=>{
+  S.optionIndex=b.dataset.index;
+  S.optionExpiry='';
+  S.optionFilter='ATM';
+  document.querySelectorAll('.option-index').forEach(x=>x.classList.toggle('active',x===b));
+  loadOptions();
+});
+$('optionCallsBtn').onclick=()=>{S.optionMode='CALL';S.optionFilter='ATM';renderOptionRows()};
+$('optionPutsBtn').onclick=()=>{S.optionMode='PUT';S.optionFilter='ATM';renderOptionRows()};
+$('optionBothBtn').onclick=()=>{S.optionMode='BOTH';S.optionFilter='ATM';renderOptionRows()};
+document.querySelectorAll('[data-option-filter]').forEach(b=>b.onclick=()=>{
+  S.optionFilter=b.dataset.optionFilter;
+  document.querySelectorAll('[data-option-filter]').forEach(x=>x.classList.toggle('active',x===b));
+  renderOptionRows();
+});
+$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
 // Gmail/email OTP only — existing email OTP flow preserved.
 let pendingAuthValue='';
 function showApp(showWelcome=false){if($('authScreen'))$('authScreen').style.display='none';document.querySelector('.app').style.display='block';const u=localStorage.getItem('eraUser')||'Guest';$('accountStatus').textContent=u==='Guest'?'GUEST':'SIGNED IN';$('accountInfo').textContent=u; if(showWelcome&&window.__showWelcome){window.__showWelcome();}}
 function showAuth(){if($('authScreen'))$('authScreen').style.display='grid';document.querySelector('.app').style.display='none';$('welcomeScreen').style.display='none';$('notificationModal').classList.remove('open');}
+let authCheckInProgress=false;
+async function ensureAuthenticatedSession(){
+  if(authCheckInProgress)return false;
+  authCheckInProgress=true;
+  try{
+    const r=await fetch(BACKEND+'/api/auth/me',{method:'GET',credentials:'include',headers:{'Cache-Control':'no-cache'}});
+    if(r.ok){
+      const d=await r.json().catch(()=>null);
+      if(d?.authenticated&&d.user){
+        localStorage.setItem('eraUser',d.user.email||d.user.mobile||'Verified user');
+        localStorage.setItem('eraUserData',JSON.stringify(d.user));
+        return true;
+      }
+    }
+    localStorage.removeItem('eraUser');
+    localStorage.removeItem('eraUserData');
+    showAuth();
+    authMessage('Your ERA session expired. Please login again with Gmail OTP.');
+    return false;
+  }catch(e){
+    return false;
+  }finally{
+    authCheckInProgress=false;
+  }
+}
+
 async function setupPushNotifications(fromUserGesture=false){const status=$('notificationModalStatus')||$('notificationStatus');try{if(!('Notification' in window)){if(status)status.textContent='This browser does not support notifications.';return false}if(Notification.permission==='denied'){if(status)status.textContent='Notifications are blocked. Open Android/browser site settings and allow ERA notifications.';toast('Notifications are blocked — allow them in site settings');return false}let permission=Notification.permission;if(permission!=='granted'){permission=await Notification.requestPermission()}if(permission!=='granted'){if(status)status.textContent='Notification permission was not granted.';return false}if(status)status.textContent='Notifications enabled on this device.';if($('notificationStatus'))$('notificationStatus').textContent='Notifications are enabled for this device.';try{if('serviceWorker' in navigator){const reg=await navigator.serviceWorker.register('/service-worker.js?v=8.2.5',{updateViaCache:'none'});await reg.update();try{await reg.showNotification('ERA AI',{body:'Notifications are enabled successfully.',icon:'/icon-192.png',badge:'/icon-192.png',tag:'era-test',data:{type:'test'}})}catch(_){}const k=await api('/api/push/public-key');if(k.publicKey&&'PushManager' in window){let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:k.publicKey});await api('/api/subscribe',{method:'POST',body:JSON.stringify({subscription:sub})})}}}catch(pushErr){console.warn('ERA push registration:',pushErr);if(status)status.textContent='Browser notifications are enabled. Server push setup is unavailable right now.'}toast('ERA notifications enabled');return true}catch(e){if(status)status.textContent='Notification setup: '+errorText(e.message);return false}}
 window.__showWelcome=()=>{const w=$('welcomeScreen');if(!w)return;w.style.display='grid';$('welcomeStatus').textContent='';setTimeout(()=>{w.style.display='none';setView('home');if(!('Notification' in window)||Notification.permission!=='granted')$('notificationModal').classList.add('open');},2900);};
 function authMessage(msg){$('authMessage').textContent=errorText(msg||'')}
 function validGmailClient(value){return /^[^\s@]+@gmail\.com$/.test(String(value||'').trim().toLowerCase())}
 $('guestContinue').onclick=()=>{localStorage.setItem('eraUser','Guest');showApp(true)};$('authContinue').onclick=async()=>{const v=$('authInput').value.trim();if(!validGmailClient(v)){authMessage('Enter a valid Gmail address.');$('authInput').focus();return}try{authMessage('Sending OTP…');const d=await api('/api/auth/send-otp',{method:'POST',body:JSON.stringify({mode:'email',value:v})});pendingAuthValue=d.destination||v;$('otpBox').style.display='block';$('otpInput').value='';$('otpInput').focus();$('authContinue').style.display='none';$('guestContinue').style.display='none';authMessage(d.message||'OTP sent. Enter it below.')}catch(e){authMessage(errorText(e.message))}};$('verifyOtp').onclick=async()=>{const otp=$('otpInput').value.trim();if(!/^\d{6}$/.test(otp)){authMessage('Enter the 6-digit OTP.');return}try{authMessage('Verifying…');const d=await api('/api/auth/verify-otp',{method:'POST',body:JSON.stringify({mode:'email',value:pendingAuthValue,otp})});if(!d.user)throw new Error('Login failed.');localStorage.setItem('eraUser',d.user.email||'Verified user');localStorage.setItem('eraUserData',JSON.stringify(d.user));showApp(true);}catch(e){authMessage(errorText(e.message))}};$('changeAuth').onclick=()=>{pendingAuthValue='';$('otpBox').style.display='none';$('authContinue').style.display='block';$('guestContinue').style.display='block';authMessage('Enter your Gmail address to request a new OTP.')};$('logoutBtn').onclick=()=>{localStorage.removeItem('eraUser');localStorage.removeItem('eraUserData');showAuth()};
-if(localStorage.getItem('eraUser'))showApp();else showAuth();
+if(localStorage.getItem('eraUser')){
+  showApp();
+  ensureAuthenticatedSession().then(ok=>{
+    if(ok) loadAnalysis();
+  });
+}else showAuth();
 // Theme engine preserved.
-const themes=[['Cyan','19e6ff','7657ff'],['Violet','9b5cff','ff4fd8'],['Electric Blue','3da5ff','315cff'],['Emerald','28e69b','00b894'],['Lime','b6f36b','20d66b'],['Amber','ffc857','ff7a45'],['Rose','ff5b8a','9b4dff'],['Ice','b8f4ff','5b8cff'],['Aqua','18f1d1','087cff'],['Neon Pink','ff3cac','784ba0'],['Solar','ffcf4a','ff5e5e'],['Royal','6f63ff','00d4ff']];function rgb(h){return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)].join(',')}function applyTheme(i){const t=themes[i]||themes[0];document.documentElement.style.setProperty('--accent','#'+t[1]);document.documentElement.style.setProperty('--accent2','#'+t[2]);document.documentElement.style.setProperty('--glow',`rgba(${rgb(t[1])},.25)`);localStorage.setItem('eraTheme',i);document.querySelectorAll('.color').forEach((x,n)=>x.classList.toggle('active',n===i))}themes.forEach((t,i)=>{const b=document.createElement('button');b.className='color';b.title=t[0];b.style.background=`linear-gradient(135deg,#${t[1]},#${t[2]})`;b.onclick=()=>applyTheme(i);$('colorOptions').appendChild(b)});applyTheme(Number(localStorage.getItem('eraTheme')||0));
+function applyEraTheme(){document.documentElement.dataset.theme='light';localStorage.setItem('eraThemeMode','light');}applyEraTheme();
 // Push registration is requested only from an explicit user gesture (welcome screen / notification panel).
 if('serviceWorker' in navigator){navigator.serviceWorker.register('/service-worker.js').catch(e=>console.warn('Service worker:',e.message));}
-(async()=>{await loadAnalysis();await loadPaper();setInterval(loadAnalysis,15000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
+let paperRefreshBusy=false;
+async function refreshPaperLive(){
+  if(paperRefreshBusy)return;
+  paperRefreshBusy=true;
+  try{await loadPaper();}catch(_){ }
+  finally{paperRefreshBusy=false;}
+}
+(async()=>{await loadPaper();connectRealtimeSync();setInterval(loadAnalysis,30000);setInterval(()=>{if((S.paper?.positions||[]).length)refreshPaperLive()},5000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
 </script>
 </body>
 </html>
