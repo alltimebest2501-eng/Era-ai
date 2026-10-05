@@ -272,9 +272,6 @@ body{background:linear-gradient(145deg,#eee8fb 0%,#fff8fc 48%,#f2edff 100%)!impo
 .paper-edit-actions{display:flex;gap:8px;margin-top:12px}
 .paper-edit-actions button{flex:1}
 @media(max-width:650px){.paper-entry-grid{grid-template-columns:1fr}.paper-position-grid{grid-template-columns:1fr 1fr}.paper-detail-grid{grid-template-columns:1fr}}
-
-.paper-order-hint{color:var(--text)!important;background:var(--card)!important;border:1px solid var(--line)!important;}
-.paper-order-hint *{color:var(--text)!important;}
 </style>
 
 <style>
@@ -474,7 +471,7 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
     </section>
     <section class="section" id="paperTradeSection">
       <div class="card panel">
-        <div class="panel-head"><h3>Place Paper Trade</h3><div class="paper-trade-nav"><button class="active" type="button" data-paper-jump="trade">Trade</button><button type="button" data-view="paper-positions">Positions</button><button type="button" data-view="paper-performance">Performance</button></div></div>
+        <div class="panel-head"><h3>Place Paper Trade</h3><div class="paper-trade-nav"><button class="active" type="button" data-paper-jump="trade">Trade</button><button type="button" data-paper-jump="positions">Positions</button><button type="button" data-paper-jump="performance">Performance</button></div></div>
         <div class="paper-side">
           <button id="paperBuySide" class="active-buy" type="button">BUY</button>
           <button id="paperSellSide" type="button">SELL</button>
@@ -501,17 +498,19 @@ body.chat-focus-lock::before{content:"";position:fixed;inset:0;background:rgba(2
           <input class="mini-input" id="paperTarget" type="number" step="0.05" placeholder="Target">
         </div>
         <button class="primary" id="paperBuy" style="width:100%;margin-top:10px">⚡ PLACE PAPER BUY</button>
-        <div class="result-box paper-order-hint" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
+        <div class="result-box" id="paperOrderHint">Select index → expiry → CE/PE → exact strike. Market price uses the latest option premium.</div>
         <div class="toolbar" style="margin-top:10px"><button class="icon-btn" id="paperRefresh">↻</button><button class="icon-btn danger" id="paperReset">Reset</button></div>
       </div>
     </section>
-div>
-
-  <div id="view-paper-positions" class="view">
-    <section class="section">
-      <div class="section-title"><div><h3>Paper Positions</h3><span>Open paper trades • tick-by-tick P&L</span></div><button class="pill" data-view="paper">← Paper Trade</button></div>
+    <section class="section" id="paperPositionsSection">
       <div class="card panel">
+        <div class="paper-performance-head"><div><h3 style="margin:0">Positions</h3><small style="color:var(--muted)">Open paper trades • tick-by-tick P&L</small></div><button class="pill" type="button" data-paper-jump="trade">← Paper Trade</button></div>
         <div id="paperPositionsList"><div class="card notification-item">No paper positions.</div></div>
+      </div>
+    </section>
+    <section class="section" id="paperPerformanceSection">
+      <div class="card panel">
+        <div class="paper-performance-head"><div><h3 style="margin:0">Performance</h3><small style="color:var(--muted)">All paper trades, open + closed</small></div><button class="primary" style="width:auto;margin:0" data-view="paper-performance">View all</button></div>
       </div>
     </section>
   </div>
@@ -597,10 +596,9 @@ const pct=v=>num(v)===null?'—':`${Number(v)>0?'+':''}${Number(v).toFixed(2)}%`
 function safeAnswer(value){if(typeof value==='string')return value;if(Array.isArray(value))return value.map(x=>typeof x==='string'?x:(x?.text||x?.content||x?.answer||'')).filter(Boolean).join('\n');if(value&&typeof value==='object')return value.answer||value.text||value.content||value.message||JSON.stringify(value);return String(value??'')}
 function errorText(value){if(typeof value==='string')return value;if(value?.message)return String(value.message);if(value?.error?.message)return String(value.error.message);try{return JSON.stringify(value)}catch{return String(value)}}
 function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=errorText(msg);$('toastContainer').appendChild(d);setTimeout(()=>d.remove(),3500)}
-async function api(path,opts={}){const headers={'Content-Type':'application/json','Cache-Control':'no-cache',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include',cache:'no-store'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
-async function refreshAll(){const jobs=[loadAnalysis()];const active=document.querySelector('.view.active')?.id||'';if(active==='view-options')jobs.push(loadOptions());if(active==='view-paper'||active==='view-paper-positions'||active==='view-paper-performance'){jobs.push(loadPaper(),loadPaperPerformance())}if(active==='view-era'){jobs.push(loadSettings(),loadHistory(),loadAlerts())}await Promise.allSettled(jobs);toast('ERA market data refreshed')}
-function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-positions'){loadPaper();}if(view==='paper-performance'){loadPaper();loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
-document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));document.querySelectorAll('.paper-trade-nav [data-view]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();setView(b.dataset.view);}));
+async function api(path,opts={}){const headers={'Content-Type':'application/json',...(opts.headers||{})};const user=localStorage.getItem('eraUser');if(user)headers['x-era-user']=user;const r=await fetch(BACKEND+path,{...opts,headers,credentials:'include'});let data={};try{data=await r.json()}catch{}if(!r.ok)throw new Error(errorText(data.error)||`HTTP ${r.status}`);return data}
+function setView(view){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$('view-'+view)?.classList.add('active');document.querySelectorAll('[data-view]').forEach(x=>x.classList.toggle('active',x.dataset.view===view));window.scrollTo({top:0,behavior:'smooth'});if(view==='options')loadOptions();if(view==='news')loadNews();if(view==='era'){loadSettings();loadHistory();loadAlerts();}if(view==='trades')renderTrades();if(view==='charts')loadChart();if(view==='paper'){loadPaper();loadPaperOptions();}if(view==='paper-performance'){loadPaperPerformance();}if(view==='journal')loadJournal();if(view==='tools'){loadRisk();loadAlerts()}}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
 document.querySelectorAll('[data-feature]').forEach(b=>b.onclick=()=>setView(b.dataset.feature));
 function selected(){return S.analysis[S.index]||null} function marketOf(){return S.market[S.index]||selected()?.market||null}
 function whyText(a){const reasons=a?.reasons||[];return reasons.length?reasons.slice(0,3).join(' • '):(a?.suggestion||'No strong confirmation yet.')}
@@ -613,8 +611,7 @@ function renderAllAISignals(){const data=S.homeAnalyses||{};['NIFTY','BANKNIFTY'
 function renderSignal(){const a=selected(),tr=a?.trades?.[0];$('signalType').textContent=tr?`${tr.optionType||''} ${tr.signal||'BUY'}`:(a?.suggestion||'WAIT');$('signalOptionName').textContent=tr?`${S.index} ${tr.optionType} • Strike ${fmt(tr.strike)} • Expiry ${a?.options?.expiry||'—'}`:'No option setup yet';$('signalConfidence').textContent=a?`${a.confidence}% CONFIDENCE`:'—';$('signalBar').style.width=`${Math.max(0,Math.min(100,Number(a?.confidence)||0))}%`;$('signalStrike').textContent=tr?fmt(tr.strike):'—';$('signalEntry').textContent=tr?fmt(tr.entry):'—';$('signalSL').textContent=tr?fmt(tr.stopLoss):'—';$('signalT1').textContent=tr?fmt(tr.targets?.[0]):'—';$('signalReasons').textContent=whyText(a);$('signalWait').textContent=waitText(a)}
 function renderPortfolio(){const rows=S.activeTrades||[];$('portfolioCount').textContent=rows.length;$('historyCount').textContent=S.history.length;$('portfolioEngine').textContent=S.settings?.engineRunning?'RUNNING':'—';$('portfolioScan').textContent=S.settings?.lastScan?new Date(S.settings.lastScan).toLocaleTimeString('en-IN'):'—';$('portfolioRows').innerHTML=rows.length?rows.slice(0,30).map(t=>`<tr><td>${esc(t.index)}</td><td>${esc(t.optionType)} ${esc(t.signal)}</td><td>${fmt(t.strike)}</td><td>${fmt(t.entry)}</td><td>${fmt(t.stopLoss)}</td><td>${fmt(t.targets?.[0])}</td><td>${esc(t.confidence)}%</td></tr>`).join(''):'<tr><td colspan="7" class="empty">No active trades.</td></tr>'}
 function renderTrades(){const rows=S.activeTrades||[];$('tradesGrid').innerHTML=rows.length?rows.map(t=>`<div class="card trade-card"><div class="trade-head"><div><div class="trade-title">${esc(t.index)} ${esc(t.optionType)} • ${esc(t.signal)}</div><div class="trade-meta">${esc(t.status||'SETUP')} • ${esc(t.direction||'')} • ${esc(t.confidence)}% confidence</div></div><span class="pill">${fmt(t.strike)}</span></div><div class="trade-fields"><div>OPTION<b>${esc(t.optionType)}</b></div><div>STRIKE<b>${fmt(t.strike)}</b></div><div>EXPIRY<b>${esc(selected()?.options?.expiry||'—')}</b></div><div>ENTRY<b>${fmt(t.entry)}</b></div><div>STOP LOSS<b>${fmt(t.stopLoss)}</b></div><div>TARGET 1<b>${fmt(t.targets?.[0])}</b></div><div>TARGET 2<b>${fmt(t.targets?.[1])}</b></div><div>CONFIDENCE<b>${esc(t.confidence)}%</b></div></div><div style="margin-top:10px;color:var(--muted);font-size:10px">RR 1:${esc(t.rr)} • ${esc(t.invalidation||'Risk condition defined')}</div><button class="primary use-trade" data-trade='${esc(JSON.stringify(t))}'>Use in Paper Trading</button></div>`).join(''):'<div class="card trade-card">ERA has no validated trade setup right now. NO TRADE is a valid decision.</div>';document.querySelectorAll('.use-trade').forEach(b=>b.onclick=()=>{const t=JSON.parse(b.dataset.trade.replace(/&#039;/g,"'"));$('paperIndex').value=t.index||S.index;$('paperType').value=t.optionType||'';$('paperStrike').value=t.strike||'';$('paperPrice').value=t.entry||'';$('paperSL').value=t.stopLoss||'';$('paperTarget').value=t.targets?.[0]||'';setView('paper')})}
-let analysisLoadPromise=null;
-async function loadAnalysis(){if(analysisLoadPromise)return analysisLoadPromise;analysisLoadPromise=(async()=>{try{const d=await api('/api/analysis');if(!d||!d.ok)throw new Error(d?.error||'Market analysis unavailable');S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};S.homeAnalyses={};for(const index of ['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'])S.homeAnalyses[index]={market:S.market?.[index]||{},analysis:S.analysis?.[index]||{},marketOpen:S.marketOpen};
+async function loadAnalysis(){try{const indexes=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];const results=await Promise.all(indexes.map(index=>api('/api/analysis?index='+encodeURIComponent(index)).then(d=>({index,d})).catch(error=>({index,error}))));const selectedResult=results.find(x=>x.index===S.index);const d=selectedResult?.d||results.find(x=>x.d)?.d;if(!d)throw new Error('Market analysis unavailable');S.market=d.market||d.markets||{};S.analysis=d.analysis||d.indexes||{};S.activeTrades=d.activeTrades||[];S.marketOpen=Boolean(d.marketOpen);S.settings={...S.settings,engineRunning:d.engineRunning,lastScan:d.lastScan};S.homeAnalyses={};results.forEach(x=>{if(x.d)S.homeAnalyses[x.index]=x.d});
 const safeRender=(fn)=>{try{fn()}catch(renderErr){console.warn('[ERA UI] render skipped:',renderErr?.message||renderErr)}};
 safeRender(renderHome);
 safeRender(renderHomeIndexCards);
@@ -624,7 +621,7 @@ safeRender(renderSignal);
 safeRender(renderPortfolio);
 safeRender(renderTrades);
 if($('marketUpdated'))$('marketUpdated').textContent=new Date(d.updatedAt||Date.now()).toLocaleTimeString('en-IN');
-updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}finally{analysisLoadPromise=null}})();return analysisLoadPromise}
+updateRealtimeStatusText();}catch(e){$('liveStatus').textContent='ERA AI online • Live data unavailable';toast('Market refresh: '+errorText(e.message))}}
 
 // STEP 4 — LIVE MARKET SYNC
 // The backend already receives live ticks. This layer connects the existing UI
@@ -778,7 +775,7 @@ function connectRealtimeSync(){
   realtimeSource.addEventListener('status',e=>{try{updateRealtimeStatusText(JSON.parse(e.data))}catch(_){}});
   realtimeSource.addEventListener('trade-alert',e=>{try{const d=JSON.parse(e.data);if(d?.alert)renderTradeAlertPopup(d.alert,true)}catch(_){}});
   realtimeSource.addEventListener('trade-alert-update',e=>{try{const d=JSON.parse(e.data);if(d?.alert&&currentTradeAlert?.id===d.alert.id)renderTradeAlertPopup(d.alert,true)}catch(_){}});
-  realtimeSource.addEventListener('paper-position-update',e=>{try{const d=JSON.parse(e.data);if(!d)return;if(d.paper)S.paper={...S.paper,...d.paper};if(d.position){const arr=Array.isArray(S.paper.positions)?S.paper.positions:[];const k=arr.findIndex(p=>p.id===d.position.id||p.tradeId===d.position.tradeId);if(d.type==='CLOSED'){if(k>=0)arr.splice(k,1);toast(`Paper ${d.position.reason||'position'} closed • P&L ₹${fmt(d.position.pnl||0)}`);loadPaperPerformance();}else if(k>=0)arr[k]={...arr[k],...d.position};else arr.push(d.position);S.paper.positions=arr;}renderPaperState();if($('view-paper-performance')?.classList.contains('active'))renderPaperPerformance();}catch(_){}});
+  realtimeSource.addEventListener('paper-position-update',e=>{try{const d=JSON.parse(e.data);if(d?.paper){S.paper={...S.paper,...d.paper};if(d.type==='CLOSED'){toast(`Paper ${d.position?.reason||'position'} closed • P&L ₹${fmt(d.position?.pnl||0)}`);loadPaperPerformance();}renderPaperState();if($('view-paper-performance')?.classList.contains('active'))renderPaperPerformance();}}catch(_){}});
   realtimeSource.onopen=()=>{realtimeConnected=true;};
   realtimeSource.onerror=()=>{realtimeConnected=false;updateRealtimeStatusText({status:'RECONNECTING',marketOpen:S.marketOpen});};
 }
@@ -938,27 +935,19 @@ function renderOptionExpiryTabs(expiries){
   tabs.innerHTML=list.map(x=>`<button type="button" class="${String(x)===String(S.optionExpiry)?'active':''}" data-expiry="${esc(x)}">${esc(optionExpiryLabel(x))}</button>`).join('');
   tabs.querySelectorAll('[data-expiry]').forEach(b=>b.onclick=()=>{S.optionExpiry=b.dataset.expiry;renderOptionExpiryTabs(list);loadOptionChainForExpiry(S.optionExpiry)});
 }
-let optionLoadPromise=null;
 async function loadOptions(){
-  if(optionLoadPromise)return optionLoadPromise;
-  optionLoadPromise=(async()=>{
+  try{
     const idx=S.optionIndex||'NIFTY';
-    try{
-      let expiries=[];
-      try{
-        const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);
-        expiries=Array.isArray(ex.expiries)?ex.expiries:[];
-      }catch(_){ expiries=[]; }
-      const keep=expiries.includes(S.optionExpiry)?S.optionExpiry:(expiries[0]||'');
-      S.optionExpiry=keep;
-      renderOptionExpiryTabs(expiries);
-      await loadOptionChainForExpiry(keep);
-    }catch(e){
-      renderOptionExpiryTabs([]);
-      $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
-    }finally{optionLoadPromise=null}
-  })();
-  return optionLoadPromise;
+    const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);
+    const expiries=Array.isArray(ex.expiries)?ex.expiries:[];
+    const keep=expiries.includes(S.optionExpiry)?S.optionExpiry:(expiries[0]||'');
+    S.optionExpiry=keep;
+    renderOptionExpiryTabs(expiries);
+    await loadOptionChainForExpiry(keep);
+  }catch(e){
+    renderOptionExpiryTabs([]);
+    $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
+  }
 }
 async function loadOptionChainForExpiry(expiry){
   try{
@@ -1053,7 +1042,20 @@ try{
   d=await api('/api/chat',{method:'POST',body:JSON.stringify(body)});
   typing.textContent=safeAnswer(d.answer)||'No response';
 }catch(chatErr){
-  throw chatErr;
+  const msg=String(chatErr?.message||'');
+  if(/more credits|max_tokens|can only afford|tokens/i.test(msg)){
+    const brain=await api('/api/ai/brain',{method:'POST',body:JSON.stringify({index:S.index,question:q||visibleQuestion})});
+    const b=brain?.brain||{};
+    const parts=[];
+    if(b.decision)parts.push(`Decision: ${b.decision}`);
+    if(b.summary)parts.push(b.summary);
+    if(Array.isArray(b.evidence)&&b.evidence.length)parts.push('Evidence:\n• '+b.evidence.slice(0,4).map(x=>typeof x==='string'?x:(x?.text||x?.reason||JSON.stringify(x))).join('\n• '));
+    if(Array.isArray(b.risks)&&b.risks.length)parts.push('Risk:\n• '+b.risks.slice(0,4).join('\n• '));
+    if(b.tradePlan)parts.push('Trade Plan:\n'+(typeof b.tradePlan==='string'?b.tradePlan:JSON.stringify(b.tradePlan,null,2)));
+    typing.textContent=safeAnswer(parts.join('\n\n')||'ERA could not generate a readable response.');
+  }else{
+    throw chatErr;
+  }
 }
 typing.classList.remove('typing');clearChatPhoto();loadHistory()}catch(e){typing.textContent='Sorry, '+errorText(e.message);typing.classList.remove('typing')}}
 function selectIndex(k){S.index=k;localStorage.setItem('eraSelectedIndex',k);document.querySelectorAll('[data-index]').forEach(x=>x.classList.toggle('active',x.dataset.index===k));renderHome();renderMarket();renderSignal()}
@@ -1144,15 +1146,12 @@ function renderPaperState(){
   document.querySelectorAll('[data-edit-position]').forEach(b=>b.onclick=()=>openPaperEdit(b.dataset.editPosition));
   document.querySelectorAll('[data-exit-position]').forEach(b=>b.onclick=()=>closePaper(b.dataset.exitPosition));
 }
-let paperLoadPromise=null;
 async function loadPaper(){
-  if(paperLoadPromise)return paperLoadPromise;
-  paperLoadPromise=(async()=>{try{
-    const d=await api('/api/paper');
+  try{
+    const d=await api('/api/paper/refresh',{method:'POST'});
     S.paper=d.paper||{};
     renderPaperState();
-  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}finally{paperLoadPromise=null}})();
-  return paperLoadPromise;
+  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}
 }
 async function placePaper(){
   try{
@@ -1226,15 +1225,12 @@ function renderPaperPerformance(){
   }).join(''):'<div class="card notification-item">No paper trades in this filter.</div>';
   document.querySelectorAll('[data-paper-trade]').forEach(b=>b.onclick=()=>openPaperTradeDetail(b.dataset.paperTrade));
 }
-let paperPerformancePromise=null;
 async function loadPaperPerformance(){
-  if(paperPerformancePromise)return paperPerformancePromise;
-  paperPerformancePromise=(async()=>{try{
+  try{
     const d=await api('/api/trade-history?executionType=PAPER');
     paperPerformanceData=d.history||[];
     renderPaperPerformance();
-  }catch(e){toast('Performance: '+errorText(e.message))}finally{paperPerformancePromise=null}})();
-  return paperPerformancePromise;
+  }catch(e){toast('Performance: '+errorText(e.message))}
 }
 async function openPaperTradeDetail(tradeId){
   try{
@@ -1293,7 +1289,10 @@ document.querySelectorAll('[data-paper-jump]').forEach(btn=>{
   btn.onclick=()=>{
     const target=btn.dataset.paperJump;
     document.querySelectorAll('[data-paper-jump]').forEach(b=>b.classList.toggle('active',b===btn));
-    if(target==='trade')setView('paper');
+    if(target==='performance'){setView('paper-performance');return;}
+    const map={trade:'paperTradeSection',positions:'paperPositionsSection'};
+    const el=$(map[target]);
+    if(el)el.scrollIntoView({behavior:'smooth',block:'start'});
   };
 });
 $('paperBuySide').onclick=()=>setPaperSide('BUY');$('paperSellSide').onclick=()=>setPaperSide('SELL');$('paperIndex').onchange=loadPaperOptions;$('paperExpiry').onchange=loadPaperOptions;$('paperType').onchange=updatePaperSelection;$('paperStrike').onchange=updatePaperSelection;
@@ -1322,7 +1321,7 @@ document.querySelectorAll('[data-option-filter]').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('[data-option-filter]').forEach(x=>x.classList.toggle('active',x===b));
   renderOptionRows();
 });
-$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=refreshAll;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
+$('homeAsk').onclick=askEra;document.querySelectorAll('.era-chat-chips button').forEach(b=>b.onclick=()=>{ $('homeChat').value=b.dataset.chatPrompt||''; askEra(); });$('homeChat').addEventListener('keydown',e=>{if(e.key==='Enter')askEra()});bindEraChatFullscreen();$('chatPhoto').onclick=()=>$('chatFile').click();$('chatPhotoRemove').onclick=clearChatPhoto;$('chatFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{selectedImageData=r.result;$('chatPhotoImg').src=selectedImageData;$('chatPhotoPreview').style.display='flex'};r.readAsDataURL(f)});const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;if(SpeechRecognition){const rec=new SpeechRecognition();rec.lang='en-IN';rec.interimResults=false;rec.maxAlternatives=1;$('chatMic').onclick=()=>{try{rec.start()}catch{}};rec.onresult=e=>{$('homeChat').value=e.results[0][0].transcript};rec.onerror=()=>toast('Voice input unavailable.')}else $('chatMic').disabled=true;$('refreshBtn').onclick=loadAnalysis;$('refreshHistory').onclick=loadHistory;document.querySelectorAll('.history-tab').forEach(b=>b.onclick=()=>{S.historyFilter=b.dataset.history;document.querySelectorAll('.history-tab').forEach(x=>x.classList.toggle('active',x===b));renderHistory()});$('loadChart').onclick=loadChart;$('saveJournal').onclick=saveJournal;$('runCalc').onclick=runCalc;$('runBacktest').onclick=runBacktest;$('saveRisk').onclick=saveRisk;$('saveAlert').onclick=saveAlert;document.querySelectorAll('.tool-tab').forEach(b=>b.onclick=()=>showTool(b.dataset.tool));document.querySelectorAll('.notify').forEach(b=>b.onchange=()=>saveSettings());
 // Gmail/email OTP only — existing email OTP flow preserved.
 let pendingAuthValue='';
 function showApp(showWelcome=false){if($('authScreen'))$('authScreen').style.display='none';document.querySelector('.app').style.display='block';const u=localStorage.getItem('eraUser')||'Guest';$('accountStatus').textContent=u==='Guest'?'GUEST':'SIGNED IN';$('accountInfo').textContent=u; if(showWelcome&&window.__showWelcome){window.__showWelcome();}}
@@ -1372,11 +1371,10 @@ let paperRefreshBusy=false;
 async function refreshPaperLive(){
   if(paperRefreshBusy)return;
   paperRefreshBusy=true;
-  try{const d=await api('/api/paper/refresh',{method:'POST'});S.paper=d.paper||S.paper;renderPaperState();if($('view-paper-performance')?.classList.contains('active'))loadPaperPerformance();}catch(_){try{await loadPaper();}catch(__){ }}
+  try{await loadPaper();}catch(_){ }
   finally{paperRefreshBusy=false;}
 }
-async function pollRealtimeFallback(){try{const d=await api('/api/realtime/ticks');if(d?.indices)applyRealtimeSnapshot(d);}catch(_){}}
-(async()=>{await loadPaper();connectRealtimeSync();setInterval(loadAnalysis,30000);setInterval(pollRealtimeFallback,1000);setInterval(()=>{if((S.paper?.positions||[]).length)refreshPaperLive()},3000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
+(async()=>{await loadAnalysis();await loadPaper();connectRealtimeSync();setInterval(loadAnalysis,15000);setInterval(()=>{if((S.paper?.positions||[]).length)refreshPaperLive()},5000);setInterval(()=>{if(document.getElementById('view-news').classList.contains('active'))loadNews()},300000)})();
 </script>
 </body>
 </html>
