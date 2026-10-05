@@ -937,8 +937,10 @@ function renderOptionExpiryTabs(expiries){
   tabs.innerHTML=list.map(x=>`<button type="button" class="${String(x)===String(S.optionExpiry)?'active':''}" data-expiry="${esc(x)}">${esc(optionExpiryLabel(x))}</button>`).join('');
   tabs.querySelectorAll('[data-expiry]').forEach(b=>b.onclick=()=>{S.optionExpiry=b.dataset.expiry;renderOptionExpiryTabs(list);loadOptionChainForExpiry(S.optionExpiry)});
 }
+let optionLoadPromise=null;
 async function loadOptions(){
-  try{
+  if(optionLoadPromise)return optionLoadPromise;
+  optionLoadPromise=(async()=>{try{
     const idx=S.optionIndex||'NIFTY';
     const ex=await api(`/api/options/expiries?index=${encodeURIComponent(idx)}`);
     const expiries=Array.isArray(ex.expiries)?ex.expiries:[];
@@ -949,7 +951,8 @@ async function loadOptions(){
   }catch(e){
     renderOptionExpiryTabs([]);
     $('optionRows').innerHTML=`<tr><td colspan="5" class="empty">${esc(errorText(e.message))}</td></tr>`;
-  }
+  }finally{optionLoadPromise=null}})();
+  return optionLoadPromise;
 }
 async function loadOptionChainForExpiry(expiry){
   try{
@@ -1135,12 +1138,15 @@ function renderPaperState(){
   document.querySelectorAll('[data-edit-position]').forEach(b=>b.onclick=()=>openPaperEdit(b.dataset.editPosition));
   document.querySelectorAll('[data-exit-position]').forEach(b=>b.onclick=()=>closePaper(b.dataset.exitPosition));
 }
+let paperLoadPromise=null;
 async function loadPaper(){
-  try{
+  if(paperLoadPromise)return paperLoadPromise;
+  paperLoadPromise=(async()=>{try{
     const d=await api('/api/paper');
     S.paper=d.paper||{};
     renderPaperState();
-  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}
+  }catch(e){if(!/Authentication required|AUTH_REQUIRED|401/i.test(String(e.message)))toast('Paper: '+errorText(e.message))}finally{paperLoadPromise=null}})();
+  return paperLoadPromise;
 }
 async function placePaper(){
   try{
@@ -1214,12 +1220,15 @@ function renderPaperPerformance(){
   }).join(''):'<div class="card notification-item">No paper trades in this filter.</div>';
   document.querySelectorAll('[data-paper-trade]').forEach(b=>b.onclick=()=>openPaperTradeDetail(b.dataset.paperTrade));
 }
+let paperPerformancePromise=null;
 async function loadPaperPerformance(){
-  try{
+  if(paperPerformancePromise)return paperPerformancePromise;
+  paperPerformancePromise=(async()=>{try{
     const d=await api('/api/trade-history?executionType=PAPER');
     paperPerformanceData=d.history||[];
     renderPaperPerformance();
-  }catch(e){toast('Performance: '+errorText(e.message))}
+  }catch(e){toast('Performance: '+errorText(e.message))}finally{paperPerformancePromise=null}})();
+  return paperPerformancePromise;
 }
 async function openPaperTradeDetail(tradeId){
   try{
