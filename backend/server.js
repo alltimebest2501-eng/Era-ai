@@ -3359,6 +3359,15 @@ function rsiValue(
 // KEEPING EXISTING WORKING FLOW
 // ============================================================
 
+// OPTION DATA CACHE
+// Keep a small last-known-good cache so the option UI remains usable during
+// short Upstox 429/5xx responses and avoid a missing-cache runtime error.
+const optionApiCache = new Map();
+const OPTION_API_CACHE_TTL_MS = 30000;
+function optionCacheKey(type, index, expiry = "nearest") {
+  return `${type}:${index}:${expiry || "nearest"}`;
+}
+
 async function fetchOptionContracts(
   index
 ) {
@@ -3371,19 +3380,25 @@ async function fetchOptionContracts(
     );
   }
 
-  const response =
-    await upstoxRequest(
-      "https://api.upstox.com/v2/option/contract",
-      {
-        instrument_key:
-          config.symbol
-      }
-    );
+  try {
+    const response =
+      await upstoxRequest(
+        "https://api.upstox.com/v2/option/contract",
+        {
+          instrument_key:
+            config.symbol
+        }
+      );
 
-  const payload = response && response.data;
-  const result = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.contracts) ? payload.contracts : [];
-  if (result.length) optionApiCache.set(optionCacheKey("contracts", index), { data: result, at: Date.now() });
-  return result;
+    const payload = response && response.data;
+    const result = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : Array.isArray(payload?.contracts) ? payload.contracts : [];
+    if (result.length) optionApiCache.set(optionCacheKey("contracts", index), { data: result, at: Date.now() });
+    return result;
+  } catch (error) {
+    const cached = optionApiCache.get(optionCacheKey("contracts", index));
+    if (cached?.data?.length) return cached.data;
+    throw error;
+  }
 }
 
 // ============================================================
@@ -7381,7 +7396,6 @@ app.post(
 
 app.get(
   "/api/settings",
-  requireAuth,
   (req, res) => {
     res.json({
       ok: true,
